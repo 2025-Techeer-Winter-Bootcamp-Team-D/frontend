@@ -77,6 +77,7 @@ function App() {
             initialIndustryId={selectedIndustry}
             starred={starred}
             onToggleStar={toggleStar}
+            setCompanyCode={setSelectedCompanyCode}
           />
         );
       case PageView.COMPANY_COMPARE:
