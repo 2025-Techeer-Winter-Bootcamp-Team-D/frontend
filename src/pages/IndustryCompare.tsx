@@ -793,8 +793,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     border: "none",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   }}
-                  formatter={(value: number) => [
-                    value.toLocaleString(),
+                  formatter={(value: number | undefined) => [
+                    value ? value.toLocaleString() : "0",
                     "지수",
                   ]}
                 />

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -7,7 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
+} from "recharts";
 
 interface StockChartProps {
   color?: string;
@@ -15,49 +15,52 @@ interface StockChartProps {
   period?: string;
 }
 
-const StockChart: React.FC<StockChartProps> = ({ color = "#0046FF", showAxes = true, period = '1D' }) => {
-  
+const StockChart: React.FC<StockChartProps> = ({
+  color = "#0046FF",
+  showAxes = true,
+  period = "1D",
+}) => {
   const data = useMemo(() => {
     switch (period) {
-        case '1W':
-            return [
-                { time: 'Mon', price: 76000 },
-                { time: 'Tue', price: 75500 },
-                { time: 'Wed', price: 76200 },
-                { time: 'Thu', price: 77100 },
-                { time: 'Fri', price: 78200 },
-            ];
-        case '3M':
-            return [
-                { time: 'Oct', price: 72000 },
-                { time: 'Nov', price: 74500 },
-                { time: 'Dec', price: 73000 },
-                { time: 'Jan', price: 76500 },
-                { time: 'Feb', price: 78200 },
-            ];
-        case '6M':
-        case '1Y':
-        case 'All':
-            return [
-                { time: '23.08', price: 68000 },
-                { time: '23.09', price: 69500 },
-                { time: '23.10', price: 67000 },
-                { time: '23.11', price: 71000 },
-                { time: '23.12', price: 74000 },
-                { time: '24.01', price: 73500 },
-                { time: '24.02', price: 78200 },
-            ];
-        default: // Fallback or 1D (if used elsewhere)
-            return [
-                { time: '09:00', price: 76000 },
-                { time: '10:00', price: 76500 },
-                { time: '11:00', price: 76200 },
-                { time: '12:00', price: 77100 },
-                { time: '13:00', price: 78000 },
-                { time: '14:00', price: 77800 },
-                { time: '15:00', price: 78200 },
-                { time: '15:30', price: 78500 },
-            ];
+      case "1W":
+        return [
+          { time: "Mon", price: 76000 },
+          { time: "Tue", price: 75500 },
+          { time: "Wed", price: 76200 },
+          { time: "Thu", price: 77100 },
+          { time: "Fri", price: 78200 },
+        ];
+      case "3M":
+        return [
+          { time: "Oct", price: 72000 },
+          { time: "Nov", price: 74500 },
+          { time: "Dec", price: 73000 },
+          { time: "Jan", price: 76500 },
+          { time: "Feb", price: 78200 },
+        ];
+      case "6M":
+      case "1Y":
+      case "All":
+        return [
+          { time: "23.08", price: 68000 },
+          { time: "23.09", price: 69500 },
+          { time: "23.10", price: 67000 },
+          { time: "23.11", price: 71000 },
+          { time: "23.12", price: 74000 },
+          { time: "24.01", price: 73500 },
+          { time: "24.02", price: 78200 },
+        ];
+      default: // Fallback or 1D (if used elsewhere)
+        return [
+          { time: "09:00", price: 76000 },
+          { time: "10:00", price: 76500 },
+          { time: "11:00", price: 76200 },
+          { time: "12:00", price: 77100 },
+          { time: "13:00", price: 78000 },
+          { time: "14:00", price: 77800 },
+          { time: "15:00", price: 78200 },
+          { time: "15:30", price: 78500 },
+        ];
     }
   }, [period]);
 
@@ -65,7 +68,11 @@ const StockChart: React.FC<StockChartProps> = ({ color = "#0046FF", showAxes = t
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart
         data={data}
-        margin={showAxes ? { top: 10, right: 0, left: 0, bottom: 0 } : { top: 0, right: 0, left: 0, bottom: 0 }}
+        margin={
+          showAxes
+            ? { top: 10, right: 0, left: 0, bottom: 0 }
+            : { top: 0, right: 0, left: 0, bottom: 0 }
+        }
       >
         <defs>
           <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
@@ -73,36 +80,50 @@ const StockChart: React.FC<StockChartProps> = ({ color = "#0046FF", showAxes = t
             <stop offset="95%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
-        {showAxes && <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />}
+        {showAxes && (
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke="#E5E7EB"
+          />
+        )}
         {showAxes && (
           <>
-            <XAxis 
-              dataKey="time" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fontSize: 12, fill: '#94A3B8' }} 
-            />
-            <YAxis 
-              domain={['auto', 'auto']} 
-              orientation="right" 
-              axisLine={false} 
+            <XAxis
+              dataKey="time"
+              axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#94A3B8' }}
+              tick={{ fontSize: 12, fill: "#94A3B8" }}
+            />
+            <YAxis
+              domain={["auto", "auto"]}
+              orientation="right"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: "#94A3B8" }}
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
             />
           </>
         )}
-        <Tooltip 
-          contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-          formatter={(value: number) => [`${value.toLocaleString()}원`, '주가']}
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            borderRadius: "12px",
+            border: "none",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          }}
+          formatter={(value: number | undefined) => [
+            value ? `${value.toLocaleString()}원` : "0원",
+            "주가",
+          ]}
         />
-        <Area 
-          type="monotone" 
-          dataKey="price" 
-          stroke={color} 
+        <Area
+          type="monotone"
+          dataKey="price"
+          stroke={color}
           strokeWidth={2}
-          fillOpacity={1} 
-          fill="url(#colorPrice)" 
+          fillOpacity={1}
+          fill="url(#colorPrice)"
         />
       </AreaChart>
     </ResponsiveContainer>
