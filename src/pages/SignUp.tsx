@@ -1,26 +1,40 @@
-import React, { useState } from 'react';
-import { PageView } from '../types';
-import GlassCard from '../components/Layout/GlassCard';
-import { User, Mail, Lock, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
+import React, { useState } from "react";
+import { PageView } from "../types";
+import { User, Mail, Lock, Eye, EyeOff, Check, X } from "lucide-react";
 
 interface SignUpProps {
   setPage: (page: PageView) => void;
+  previousPage?: PageView;
+  onClose: () => void;
 }
 
-const SignUp: React.FC<SignUpProps> = ({ setPage }) => {
+const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
+  const handleClose = () => {
+    onClose();
+  };
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-[#002C9C]">
-      {/* Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-500/30 rounded-full mix-blend-screen filter blur-[100px] animate-blob"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/30 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000"></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop with blur */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={handleClose}
+      />
 
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
-        <GlassCard className="p-8 md:p-10 bg-white/95 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl">
-          
+        <div className="p-8 md:p-10 bg-white border border-gray-200 shadow-2xl rounded-3xl relative">
+          {/* Close Button */}
+          <button
+            onClick={handleClose}
+            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">회원가입</h1>
@@ -155,15 +169,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage }) => {
               </button>
             </p>
           </div>
-        </GlassCard>
-
-        {/* Back to Home (Optional) */}
-        <button 
-          onClick={() => setPage(PageView.DASHBOARD)}
-          className="absolute top-[-50px] left-0 text-white/70 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors"
-        >
-          <ArrowLeft size={16} /> 홈으로 돌아가기
-        </button>
+        </div>
       </div>
     </div>
   );
