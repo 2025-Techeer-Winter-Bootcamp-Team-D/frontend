@@ -32,6 +32,7 @@ interface AnalysisProps {
   initialIndustryId?: string;
   starred: Set<string>;
   onToggleStar: (code: string) => void;
+  setCompanyCode?: (code: string) => void;
 }
 
 type IndustryKey =
@@ -618,6 +619,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   initialIndustryId,
   starred,
   onToggleStar,
+  setCompanyCode,
 }) => {
   const [selectedIndustry, setSelectedIndustry] =
     useState<IndustryKey>("finance");
@@ -638,6 +640,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const handleToggleStar = (e: React.MouseEvent, code: string) => {
     e.stopPropagation();
     onToggleStar(code);
+  };
+
+  const handleCompanyClick = (code: string) => {
+    if (setCompanyCode) {
+      setCompanyCode(code);
+      setPage(PageView.COMPANY_DETAIL);
+    }
   };
 
   const trendData = useMemo(() => {
@@ -873,7 +882,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           }
 
           return (
-            <GlassCard key={company.code} className={containerClasses}>
+            <GlassCard
+              key={company.code}
+              className={containerClasses}
+              onClick={() => handleCompanyClick(company.code)}
+            >
               {/* Header */}
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-3">
@@ -936,11 +949,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-gray-400 mb-1">
-                      AI Score
-                    </div>
+                    <div className="text-[10px] text-gray-400 mb-1">ROE</div>
                     <div className="text-sm font-bold text-shinhan-blue">
-                      {company.aiScore}점
+                      {company.roe}%
                     </div>
                   </div>
                 </div>
@@ -975,7 +986,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 {currentData.companies.slice(3).map((company, index) => (
                   <tr
                     key={company.code}
-                    className="hover:bg-blue-50/30 transition-colors group"
+                    className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
+                    onClick={() => handleCompanyClick(company.code)}
                   >
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
@@ -1050,7 +1062,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {currentData.news.length > 0 ? (
-            currentData.news.map((news) => (
+            currentData.news.slice(0, 6).map((news) => (
               <GlassCard
                 key={news.id}
                 className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"
