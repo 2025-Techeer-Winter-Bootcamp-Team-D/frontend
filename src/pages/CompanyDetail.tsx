@@ -39,7 +39,7 @@ import {
   BarChart3,
   HelpCircle,
 } from "lucide-react";
-import { PageView, type DetailedNewsItem } from "../types";
+import { PageView } from "../types";
 
 interface DetailProps {
   setPage: (page: PageView) => void;
@@ -125,9 +125,21 @@ const COMPANY_DATA: Record<string, any> = {
   },
 };
 
-const companyNews: DetailedNewsItem[] = [
+interface NewsItem {
+  id: number;
+  title: string;
+  summary: string;
+  source: string;
+  date: string;
+  author: string;
+  avatar: string;
+  content: string;
+  keywords: string[];
+}
+
+const companyNews: NewsItem[] = [
   {
-    id: "1",
+    id: 1,
     title: "신한금융, 1분기 당기순이익 1조 3천억원 달성... 시장 예상치 상회",
     summary:
       "이자 이익과 비이자 이익의 고른 성장이 실적을 견인했습니다. 특히 글로벌 부문의 성과가 돋보입니다.",
@@ -139,7 +151,7 @@ const companyNews: DetailedNewsItem[] = [
     keywords: ["실적발표", "어닝서프라이즈", "비은행", "글로벌"],
   },
   {
-    id: "2",
+    id: 2,
     title: "진옥동 회장 'AI 신한' 선언... 디지털 전환 가속화",
     summary:
       "전사적 AI 도입을 통해 고객 경험을 혁신하고 업무 효율성을 극대화하겠다는 비전을 제시했습니다.",
@@ -152,7 +164,7 @@ const companyNews: DetailedNewsItem[] = [
     keywords: ["AI전환", "디지털혁신", "진옥동", "초개인화"],
   },
   {
-    id: "3",
+    id: 3,
     title: "주주환원율 40% 목표... 밸류업 프로그램 적극 동참",
     summary:
       "자사주 소각 및 배당 확대를 통해 주주 가치를 제고하고 기업 가치를 높이는 데 주력할 것입니다.",
@@ -165,7 +177,7 @@ const companyNews: DetailedNewsItem[] = [
     keywords: ["밸류업", "주주환원", "자사주소각", "배당확대"],
   },
   {
-    id: "4",
+    id: 4,
     title: "글로벌 ESG 평가 최고 등급 획득",
     summary:
       "지속가능경영 노력을 인정받아 DJSI 월드 지수에 10년 연속 편입되었습니다.",
@@ -266,9 +278,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [isYearOpen, setIsYearOpen] = useState(false);
   const [isQuarterOpen, setIsQuarterOpen] = useState(false);
 
-  const [selectedNews, setSelectedNews] = useState<DetailedNewsItem | null>(
-    null,
-  );
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
   // News Carousel State
   const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
@@ -293,7 +303,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "disclosure", label: "전자공시", ref: disclosureRef },
   ];
 
-  const handleTabClick = (id: string, ref: React.RefObject<HTMLDivElement>) => {
+  const handleTabClick = (
+    id: string,
+    ref: React.RefObject<HTMLDivElement | null>,
+  ) => {
     setActiveTab(id);
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -380,7 +393,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
       </div>
 
-      <div className="h-[160px]">
+      <div className="flex-1 min-h-[160px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             key={`${selectedYear}-${selectedQuarter}-${title}`}
@@ -620,7 +633,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   ))}
                 </div>
               </div>
-              <div className="h-[300px] w-full bg-slate-50/30 rounded-lg border border-slate-100/50 p-2">
+              <div className="flex-1 min-h-[300px] w-full bg-slate-50/30 rounded-lg border border-slate-100/50 p-2">
                 {chartRange === "1D" ? (
                   <CandleChart />
                 ) : (
