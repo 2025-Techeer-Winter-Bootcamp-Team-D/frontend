@@ -522,7 +522,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => setPage(PageView.DASHBOARD)}
-          className="flex items-center text-slate-500 hover:text-[#0046FF] transition-colors"
+          className="flex items-center text-slate-500 hover:text-shinhan-blue transition-colors"
         >
           <ArrowLeft size={16} className="mr-1" />
           대시보드
@@ -547,7 +547,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   onClick={() => setActiveSetId(set.id)}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
                     activeSetId === set.id
-                      ? "bg-[#0046FF] text-white shadow-lg shadow-blue-500/30"
+                      ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
                       : "hover:bg-white text-slate-600"
                   }`}
                 >
@@ -562,7 +562,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
             </div>
             <button
               onClick={handleAddSet}
-              className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-shinhan-blue hover:text-[#0046FF] hover:bg-blue-50 transition-all"
+              className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-shinhan-blue hover:text-shinhan-blue hover:bg-blue-50 transition-all"
             >
               <Plus size={16} />
               세트 추가하기
@@ -588,7 +588,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   />
                   <button
                     onClick={handleSaveName}
-                    className="p-2 text-[#0046FF] hover:bg-blue-50 rounded-full"
+                    className="p-2 text-shinhan-blue hover:bg-blue-50 rounded-full"
                   >
                     <CheckCircle2 size={24} />
                   </button>
@@ -600,7 +600,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   </h2>
                   <button
                     onClick={() => setIsEditingName(true)}
-                    className="p-1.5 text-gray-400 hover:text-[#0046FF] hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                    className="p-1.5 text-gray-400 hover:text-shinhan-blue hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                     title="이름 변경"
                   >
                     <Edit2 size={18} />
@@ -626,7 +626,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               ))}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-[#0046FF] rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group"
+                className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group"
               >
                 <Plus
                   size={16}
@@ -643,7 +643,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
             <GlassCard className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <BarChart3 size={20} className="text-[#0046FF]" />
+                  <BarChart3 size={20} className="text-shinhan-blue" />
                   {currentMetricOption.label} 비교 (단위:{" "}
                   {currentMetricOption.unit})
                 </h3>
@@ -678,7 +678,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                             }}
                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                               selectedMetric === option.id
-                                ? "bg-blue-50 text-[#0046FF] font-bold"
+                                ? "bg-blue-50 text-shinhan-blue font-bold"
                                 : "text-gray-600 hover:bg-gray-50"
                             }`}
                           >
@@ -740,7 +740,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
             <GlassCard className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <TrendingUp size={20} className="text-[#0046FF]" />
+                  <TrendingUp size={20} className="text-shinhan-blue" />
                   주가 추이 (최근 {timeRange})
                 </h3>
                 <div className="flex gap-2">
@@ -750,7 +750,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                       onClick={() => setTimeRange(p)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                         timeRange === p
-                          ? "bg-[#0046FF] text-white shadow-md shadow-blue-300"
+                          ? "bg-shinhan-blue text-white shadow-md shadow-blue-300"
                           : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                       }`}
                     >
@@ -834,7 +834,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                           {info.title}
                         </h3>
                         <div className="relative group">
-                          <div className="text-gray-400 hover:text-[#0046FF] transition-colors cursor-help">
+                          <div className="text-gray-400 hover:text-shinhan-blue transition-colors cursor-help">
                             <HelpCircle size={20} />
                           </div>
 
@@ -850,7 +850,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                               <p className="text-xs text-slate-500 font-bold mb-1">
                                 계산식
                               </p>
-                              <p className="text-sm font-mono text-[#0046FF]">
+                              <p className="text-sm font-mono text-shinhan-blue">
                                 {info.formula}
                               </p>
                             </div>
@@ -929,12 +929,12 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                           }`}
                         >
                           <span
-                            className={`font-bold text-sm ${isActive ? "text-[#0046FF]" : "group-hover:text-slate-700"}`}
+                            className={`font-bold text-sm ${isActive ? "text-shinhan-blue" : "group-hover:text-slate-700"}`}
                           >
                             {info.title}
                           </span>
                           {isActive && (
-                            <div className="bg-[#0046FF] text-white rounded-full p-0.5">
+                            <div className="bg-shinhan-blue text-white rounded-full p-0.5">
                               <Check size={12} strokeWidth={3} />
                             </div>
                           )}
@@ -998,12 +998,12 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     onClick={() => handleAddCompany(company)}
                     className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left"
                   >
-                    <span className="font-bold text-slate-700 group-hover:text-[#0046FF]">
+                    <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
                       {company}
                     </span>
                     <Plus
                       size={18}
-                      className="text-gray-400 group-hover:text-[#0046FF]"
+                      className="text-gray-400 group-hover:text-shinhan-blue"
                     />
                   </button>
                 ))

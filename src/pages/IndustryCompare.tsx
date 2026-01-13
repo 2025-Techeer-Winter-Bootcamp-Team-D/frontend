@@ -686,7 +686,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     <div className="animate-fade-in pb-12 relative">
       <button
         onClick={() => setPage(PageView.DASHBOARD)}
-        className="flex items-center text-slate-500 hover:text-[#0046FF] mb-4 transition-colors"
+        className="flex items-center text-slate-500 hover:text-shinhan-blue mb-4 transition-colors"
       >
         <ArrowLeft size={16} className="mr-1" />
         대시보드로 돌아가기
@@ -698,7 +698,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             산업 분석
             <span className="text-gray-300">|</span>
-            <span className="text-[#0046FF]">
+            <span className="text-shinhan-blue">
               {currentData.name.split(" (")[0]}
             </span>
           </h1>
@@ -711,7 +711,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           <select
             value={selectedIndustry}
             onChange={(e) => setSelectedIndustry(e.target.value as IndustryKey)}
-            className="appearance-none bg-white border border-gray-200 text-slate-700 text-sm rounded-md focus:ring-[#0046FF] focus:border-[#0046FF] block pl-4 pr-10 py-2.5 outline-none shadow-sm cursor-pointer min-w-[200px]"
+            className="appearance-none bg-white border border-gray-200 text-slate-700 text-sm rounded-md focus:ring-shinhan-blue focus:border-shinhan-blue block pl-4 pr-10 py-2.5 outline-none shadow-sm cursor-pointer min-w-[200px]"
           >
             {Object.values(industryDB).map((ind) => (
               <option key={ind.id} value={ind.id}>
@@ -731,7 +731,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-[#0046FF]" />
+                <TrendingUp size={20} className="text-shinhan-blue" />
                 {currentData.indexName} 지수 추이
               </h3>
               <div className="flex items-baseline gap-2 mt-2">
@@ -756,7 +756,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   // Rounded-md
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                     timeRange === p
-                      ? "bg-[#0046FF] text-white shadow-md shadow-blue-500/30"
+                      ? "bg-shinhan-blue text-white shadow-md shadow-blue-500/30"
                       : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                   }`}
                 >
@@ -818,10 +818,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           </div>
         </GlassCard>
 
-        <GlassCard
-          variant="light"
-          className="p-6 bg-[#0046FF] text-white hover:bg-[#0046FF]"
-        >
+        <GlassCard className="p-6" variant="dark">
           <h3 className="text-white font-bold mb-4 flex items-center gap-2">
             <Info size={18} className="text-shinhan-gold" />
             AI 섹터 인사이트
@@ -953,7 +950,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-400 mb-1">ROE</div>
-                    <div className="text-sm font-bold text-[#0046FF]">
+                    <div className="text-sm font-bold text-shinhan-blue">
                       {company.roe}%
                     </div>
                   </div>
@@ -1048,7 +1045,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           산업분야 전망
         </h3>
         <GlassCard className="p-8 bg-white relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#0046FF]"></div>
+          <div className="absolute left-0 top-0 bottom-0 w-2 bg-shinhan-blue"></div>
           <h4 className="font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
             [{currentData.name.split(" (")[0]}]
           </h4>
@@ -1072,7 +1069,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 onClick={() => setSelectedNews(news)}
               >
                 <div className="flex-1">
-                  <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-[#0046FF] transition-colors">
+                  <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors">
                     {news.title}
                   </h4>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
