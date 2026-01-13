@@ -27,7 +27,20 @@ export interface NewsItem {
   title: string;
   source: string;
   time: string;
-  sentiment: "positive" | "negative" | "neutral";
+  content?: string;
+  sentiment?: "positive" | "negative" | "neutral";
+}
+
+export interface DetailedNewsItem {
+  id: string;
+  title: string;
+  source: string;
+  date: string;
+  summary: string;
+  author: string;
+  avatar: string;
+  content: string;
+  keywords: string[];
 }
 
 export enum PageView {

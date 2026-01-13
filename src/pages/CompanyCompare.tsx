@@ -858,7 +858,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                         </div>
                       </div>
 
-                      <div className="flex-1 min-h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-4">
+                      <div className="h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-4">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={info.data}
