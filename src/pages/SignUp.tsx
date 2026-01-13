@@ -1,29 +1,33 @@
 import React, { useState } from "react";
 import { PageView } from "../types";
-import GlassCard from "../components/Layout/GlassCard";
 import { User, Mail, Lock, Eye, EyeOff, Check, X } from "lucide-react";
 
 interface SignUpProps {
   setPage: (page: PageView) => void;
+  previousPage?: PageView;
+  onClose: () => void;
 }
 
-const SignUp: React.FC<SignUpProps> = ({ setPage }) => {
+const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
   const handleClose = () => {
-    setPage(PageView.DASHBOARD);
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
+      {/* Backdrop with blur */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={handleClose}
+      />
 
       {/* Modal */}
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
-        <GlassCard className="p-8 md:p-10 bg-white backdrop-blur-xl border border-gray-200 shadow-2xl rounded-3xl relative">
+        <div className="p-8 md:p-10 bg-white border border-gray-200 shadow-2xl rounded-3xl relative">
           {/* Close Button */}
           <button
             onClick={handleClose}
@@ -210,7 +214,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage }) => {
               </button>
             </p>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

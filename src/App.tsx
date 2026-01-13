@@ -16,9 +16,25 @@ function App() {
     useState<string>("055550");
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [showSignUp, setShowSignUp] = useState(false);
+  const [previousPage, setPreviousPage] = useState<PageView>(
+    PageView.DASHBOARD,
+  );
 
   const isDashboard = page === PageView.DASHBOARD;
-  const isAuthPage = page === PageView.SIGN_UP || page === PageView.LOGIN;
+
+  const handlePageChange = (newPage: PageView) => {
+    if (newPage === PageView.SIGN_UP) {
+      setPreviousPage(page);
+      setShowSignUp(true);
+    } else {
+      setPage(newPage);
+    }
+  };
+
+  const handleCloseSignUp = () => {
+    setShowSignUp(false);
+  };
 
   const handleIndustryClick = (industryId: string) => {
     setSelectedIndustry(industryId);
@@ -47,7 +63,7 @@ function App() {
       case PageView.DASHBOARD:
         return (
           <Dashboard
-            setPage={setPage}
+            setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
           />
@@ -55,7 +71,7 @@ function App() {
       case PageView.COMPANY_SEARCH:
         return (
           <CompanySearch
-            setPage={setPage}
+            setPage={handlePageChange}
             starred={starred}
             onToggleStar={toggleStar}
             setCompanyCode={setSelectedCompanyCode}
@@ -64,7 +80,7 @@ function App() {
       case PageView.COMPANY_DETAIL:
         return (
           <CompanyDetail
-            setPage={setPage}
+            setPage={handlePageChange}
             starred={starred}
             onToggleStar={toggleStar}
             companyCode={selectedCompanyCode}
@@ -74,7 +90,7 @@ function App() {
       case PageView.INDUSTRY_ANALYSIS:
         return (
           <IndustryAnalysis
-            setPage={setPage}
+            setPage={handlePageChange}
             initialIndustryId={selectedIndustry}
             starred={starred}
             onToggleStar={toggleStar}
@@ -82,13 +98,11 @@ function App() {
           />
         );
       case PageView.COMPANY_COMPARE:
-        return <CompanyCompare setPage={setPage} />;
-      case PageView.SIGN_UP:
-        return <SignUp setPage={setPage} />;
+        return <CompanyCompare setPage={handlePageChange} />;
       case PageView.LOGIN:
         return (
           <Dashboard
-            setPage={setPage}
+            setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
           />
@@ -96,7 +110,7 @@ function App() {
       default:
         return (
           <Dashboard
-            setPage={setPage}
+            setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
           />
@@ -104,16 +118,11 @@ function App() {
     }
   };
 
-  // Auth pages have their own layout
-  if (isAuthPage) {
-    return <div className="font-sans text-slate-800">{renderPage()}</div>;
-  }
-
   return (
     <div
       className={`font-sans text-slate-800 transition-all duration-500 ${isDashboard ? "h-screen flex flex-col overflow-hidden bg-[#002C9C]" : "min-h-screen pb-10 bg-white"}`}
     >
-      {/* 
+      {/*
           Navbar Container Logic:
           - Dashboard Mode: Fixed position (overlay), transitions Y-axis to hide/show.
           - Other Modes: Sticky position, always visible.
@@ -127,7 +136,7 @@ function App() {
       >
         <Navbar
           currentPage={page}
-          setPage={setPage}
+          setPage={handlePageChange}
           onSearchSelect={setSelectedCompanyCode}
         />
       </div>
@@ -146,6 +155,15 @@ function App() {
       >
         {renderPage()}
       </main>
+
+      {/* SignUp Modal Overlay */}
+      {showSignUp && (
+        <SignUp
+          setPage={handlePageChange}
+          previousPage={previousPage}
+          onClose={handleCloseSignUp}
+        />
+      )}
 
       {!isDashboard && (
         <footer className="mt-12 border-t border-slate-200 py-8 bg-white">
