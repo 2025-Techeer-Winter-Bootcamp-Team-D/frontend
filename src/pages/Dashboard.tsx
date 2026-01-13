@@ -3,17 +3,8 @@ import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import AIBubbleChart from "../components/Charts/AIBubbleChart";
-import {
-  ArrowRight,
-  Search,
-  ShieldCheck,
-  Zap,
-  TrendingUp,
-  ChevronRight,
-  BarChart3,
-  Newspaper,
-  MousePointer2,
-} from "lucide-react";
+import IndustryRankingCard from "../components/Ranking/IndustryRankingCard";
+import { ArrowRight, Search, ShieldCheck, Zap } from "lucide-react";
 import { PageView } from "../types";
 
 interface DashboardProps {
@@ -139,7 +130,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-[100px] animate-pulse"></div>
 
         <div
-          className={`relative z-10 max-w-4xl mx-auto transition-all duration-1000 ease-out ${
+          className={`relative z-10 max-w-4xl mx-auto transition-all duration-500 ease-out ${
             visibleSections.has("hero")
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-10"
@@ -186,14 +177,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         className="min-h-screen w-full flex items-center py-32 px-6 bg-white relative overflow-hidden snap-start shrink-0"
       >
         <div
-          className={`max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center h-full transition-all duration-1000 ease-out ${
+          className={`max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center h-full transition-all duration-500 ease-out ${
             visibleSections.has("platform-identity")
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-16"
           }`}
         >
           <div
-            className={`space-y-8 transition-all duration-700 delay-200 ${
+            className={`space-y-8 transition-all duration-300 delay-75 ${
               visibleSections.has("platform-identity")
                 ? "opacity-100 translate-x-0"
                 : "opacity-0 -translate-x-10"
@@ -242,7 +233,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div
-            className={`relative transition-all duration-700 delay-500 ${
+            className={`relative transition-all duration-300 delay-75 ${
               visibleSections.has("platform-identity")
                 ? "opacity-100 translate-x-0 scale-100"
                 : "opacity-0 translate-x-10 scale-95"
@@ -290,14 +281,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         className="min-h-screen w-full flex flex-col justify-center py-32 px-6 bg-slate-50 snap-start shrink-0"
       >
         <div
-          className={`max-w-7xl mx-auto w-full transition-all duration-1000 ease-out ${
+          className={`max-w-7xl mx-auto w-full transition-all duration-500 ease-out ${
             visibleSections.has("market-dashboard")
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-16"
           }`}
         >
           <div
-            className={`text-center mb-16 transition-all duration-700 delay-100 ${
+            className={`text-center mb-16 transition-all duration-300 delay-75 ${
               visibleSections.has("market-dashboard")
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
@@ -329,7 +320,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div
-            className={`grid grid-cols-1 lg:grid-cols-12 gap-8 transition-all duration-700 delay-300 ${
+            className={`grid grid-cols-1 lg:grid-cols-12 gap-8 transition-all duration-300 delay-150 ${
               visibleSections.has("market-dashboard")
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-12"
@@ -384,82 +375,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               </GlassCard>
 
               {/* Industry Ranking */}
-              <GlassCard className="p-6 md:col-span-2">
-                <h3 className="font-bold text-slate-800 mb-6">
-                  산업별 기업 순위
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                  {[
-                    {
-                      rank: "01",
-                      name: "삼성전자",
-                      code: "005930",
-                      type: "반도체",
-                      change: "+1.5%",
-                    },
-                    {
-                      rank: "02",
-                      name: "SK하이닉스",
-                      code: "000660",
-                      type: "반도체",
-                      change: "+2.1%",
-                    },
-                    {
-                      rank: "03",
-                      name: "현대차",
-                      code: "005380",
-                      type: "자동차",
-                      change: "-0.5%",
-                    },
-                    {
-                      rank: "04",
-                      name: "LG에너지솔루션",
-                      code: "373220",
-                      type: "2차전지",
-                      change: "-1.2%",
-                    },
-                    {
-                      rank: "05",
-                      name: "삼성바이오",
-                      code: "207940",
-                      type: "바이오",
-                      change: "+0.8%",
-                    },
-                    {
-                      rank: "06",
-                      name: "기아",
-                      code: "000270",
-                      type: "자동차",
-                      change: "+0.3%",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.name}
-                      className="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors border-b border-gray-50 last:border-0 md:border-0 hover:shadow-sm"
-                      onClick={() => handleCompanyClick(item.code)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="text-xl font-bold text-gray-300">
-                          {item.rank}
-                        </span>
-                        <div>
-                          <div className="font-bold text-slate-800">
-                            {item.name}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            {item.code} | {item.type}
-                          </div>
-                        </div>
-                      </div>
-                      <span
-                        className={`text-sm font-bold px-2 py-1 rounded ${item.change.startsWith("+") ? "bg-red-50 text-red-500" : "bg-blue-50 text-blue-500"}`}
-                      >
-                        {item.change}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
+              <div className="md:col-span-2">
+                <IndustryRankingCard onCompanyClick={handleCompanyClick} />
+              </div>
             </div>
 
             {/* Disclosure Stream */}
@@ -524,7 +442,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         className="min-h-screen w-full flex flex-col justify-center py-32 px-6 bg-white overflow-hidden shrink-0"
       >
         <div
-          className={`max-w-7xl mx-auto w-full transition-all duration-1000 ease-out ${
+          className={`max-w-7xl mx-auto w-full transition-all duration-500 ease-out ${
             visibleSections.has("ai-issue")
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-16"
@@ -532,16 +450,16 @@ const Dashboard: React.FC<DashboardProps> = ({
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div
-              className={`transition-all duration-700 delay-200 ${
+              className={`transition-all duration-300 delay-75 ${
                 visibleSections.has("ai-issue")
                   ? "opacity-100 translate-x-0"
                   : "opacity-0 -translate-x-10"
               }`}
             >
-              <h2 className="text-5xl font-bold text-slate-900 mb-6">
+              <h2 className="text-5xl font-bold text-black mb-6">
                 AI 이슈포착
               </h2>
-              <p className="text-lg text-slate-500 mb-12 leading-relaxed">
+              <p className="text-lg text-slate-900 mb-12 leading-relaxed">
                 실시간 뉴스데이터와 검색량을 기반으로
                 <br />
                 시장 주도 섹터의 임계점을 분석합니다.
@@ -557,7 +475,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div
-              className={`bg-shinhan-dark text-white rounded-3xl p-8 lg:p-12 shadow-2xl relative overflow-hidden min-h-[600px] transition-all duration-700 delay-500 ${
+              className={`bg-shinhan-dark text-white rounded-3xl p-8 lg:p-12 shadow-2xl relative overflow-hidden min-h-[600px] transition-all duration-300 delay-75 ${
                 visibleSections.has("ai-issue")
                   ? "opacity-100 translate-x-0 scale-100"
                   : "opacity-0 translate-x-10 scale-95"

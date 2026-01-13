@@ -1041,31 +1041,25 @@ const CompanyDetail: React.FC<DetailProps> = ({
                             />
                           </div>
 
-                          <div className="relative z-10">
+                          <div className="relative z-10 flex flex-col h-full">
                             <h4 className="text-lg font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-shinhan-blue transition-colors">
                               {news.title}
                             </h4>
-                            <p className="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-3">
-                              "{news.summary}"
+                            <p className="text-slate-600 text-sm leading-relaxed flex-1 line-clamp-4">
+                              {news.summary}
                             </p>
 
-                            <div className="flex items-center border-t border-gray-100 pt-4">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center text-shinhan-blue font-bold text-sm mr-3">
-                                {news.avatar}
-                              </div>
-                              <div>
-                                <div className="font-bold text-slate-700 text-sm">
-                                  {news.author}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {news.source} · {news.date}
-                                </div>
-                              </div>
-                              <div className="ml-auto">
-                                <span className="text-[10px] bg-blue-50 text-shinhan-blue px-2 py-1 rounded-full font-bold">
-                                  Read More
+                            <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-4">
+                              <div className="flex items-center gap-2 text-xs text-gray-400">
+                                <span className="font-medium text-slate-500">
+                                  {news.source}
                                 </span>
+                                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                                <span>{news.date}</span>
                               </div>
+                              <span className="text-[10px] bg-blue-50 text-shinhan-blue px-2 py-1 rounded-full font-bold">
+                                Read More
+                              </span>
                             </div>
                           </div>
                         </div>
