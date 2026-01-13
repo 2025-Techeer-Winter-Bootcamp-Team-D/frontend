@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
@@ -266,9 +267,22 @@ const CompanyDetail: React.FC<DetailProps> = ({
   setPage,
   starred,
   onToggleStar,
-  companyCode = "055550",
+  companyCode: propCompanyCode = "055550",
   setCompanyCode,
 }) => {
+  // URL 파라미터에서 id 가져오기
+  const { id } = useParams<{ id: string }>();
+
+  // URL 파라미터가 있으면 우선 사용, 없으면 props 사용
+  const companyCode = id || propCompanyCode;
+
+  // 콘솔에 id 값 로그 출력
+  useEffect(() => {
+    if (id) {
+      console.log("URL 파라미터로 받은 기업 ID:", id);
+    }
+  }, [id]);
+
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
 
@@ -444,6 +458,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
+      {/* URL 파라미터 확인용 알림 */}
+      {id && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          URL 파라미터로 받은 기업 ID: <span className="font-bold">{id}</span>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="mb-6 sticky top-0 z-40 bg-white/80 backdrop-blur-md pt-4 -mx-4 px-4 border-b border-gray-100/50">
         <div className="flex items-center gap-4 mb-4">
