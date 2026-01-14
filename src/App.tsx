@@ -19,6 +19,7 @@ function App() {
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const isDashboard = page === PageView.DASHBOARD;
 
@@ -135,6 +136,8 @@ function App() {
           currentPage={page}
           setPage={handlePageChange}
           onSearchSelect={setSelectedCompanyCode}
+          isLoggedIn={isLoggedIn}
+          onLogout={() => setIsLoggedIn(false)}
         />
       </div>
 
@@ -179,7 +182,11 @@ function App() {
 
       {/* Login Popup */}
       {showLogin && (
-        <Login setPage={handlePageChange} onClose={handleCloseAuth} />
+        <Login
+          setPage={handlePageChange}
+          onClose={handleCloseAuth}
+          onLogin={() => setIsLoggedIn(true)}
+        />
       )}
 
       {/* SignUp Popup */}
