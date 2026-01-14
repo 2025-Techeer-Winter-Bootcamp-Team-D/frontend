@@ -475,7 +475,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div
-              className={`bg-shinhan-dark text-white rounded-3xl p-8 lg:p-12 shadow-2xl relative overflow-hidden min-h-[600px] transition-all duration-300 delay-75 ${
+              className={`bg-shinhan-dark text-white rounded-2xl p-8 lg:p-12 shadow-2xl relative overflow-hidden min-h-[600px] transition-all duration-300 delay-75 ${
                 visibleSections.has("ai-issue")
                   ? "opacity-100 translate-x-0 scale-100"
                   : "opacity-0 translate-x-10 scale-95"

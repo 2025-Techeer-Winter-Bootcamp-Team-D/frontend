@@ -39,6 +39,7 @@ import {
   Tag,
   BarChart3,
   HelpCircle,
+  ArrowDown,
 } from "lucide-react";
 import { PageView } from "../types";
 
@@ -298,6 +299,67 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
 
+  // Scroll state for hiding header info
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Disclosure Tab State
+  const [disclosureTab, setDisclosureTab] = useState("주요공시");
+  const [visibleDisclosureCards, setVisibleDisclosureCards] = useState(1);
+
+  // 공시분석 카드 데이터
+  const disclosureAnalysisData = [
+    {
+      title: "최대주주등 소유주식 변동 공시",
+      subtitle: "타법인 주식 및 출자증권 취득결정",
+      color: "text-red-500",
+      date: "01/08 09:00",
+      disclosureDate: "2025.01.08",
+      details: [
+        {
+          label: "투자내용 및 목적",
+          value: "경영참여(직접 또는 계열사를 통한 이사 선임)",
+          subValue: "투자회사: 신한라이프생명",
+        },
+        { label: "공시일", value: "2025.01.08", isHighlight: true },
+        { label: "투자금액", value: "2,840억원" },
+        { label: "투자기간", value: "2025.01.08 ~ 장기보유" },
+        { label: "이사회결의일", value: "2025.01.07" },
+      ],
+    },
+    {
+      title: "주주총회 소집결의",
+      subtitle: "정기주주총회 소집",
+      color: "text-blue-500",
+      date: "01/05 14:00",
+      disclosureDate: "2025.01.05",
+      details: [
+        {
+          label: "총회목적사항",
+          value: "정기주주총회",
+          subValue: "이사 선임의 건",
+        },
+        { label: "공시일", value: "2025.01.05", isHighlight: true },
+        { label: "총회일시", value: "2025.03.21 09:00" },
+        { label: "장소", value: "본사 대강당" },
+        { label: "기준일", value: "2024.12.31" },
+      ],
+    },
+    {
+      title: "배당 결정 공시",
+      subtitle: "현금ㆍ현물배당결정",
+      color: "text-green-500",
+      date: "01/03 10:00",
+      disclosureDate: "2025.01.03",
+      details: [
+        { label: "배당종류", value: "현금배당", subValue: "결산배당" },
+        { label: "공시일", value: "2025.01.03", isHighlight: true },
+        { label: "주당배당금", value: "2,500원" },
+        { label: "배당기준일", value: "2024.12.31" },
+        { label: "배당지급일", value: "2025.04.15" },
+      ],
+    },
+  ];
+
   // Refs for Scroll-to-Section
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
@@ -306,6 +368,15 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const disclosureRef = useRef<HTMLDivElement>(null);
   const peerRef = useRef<HTMLDivElement>(null);
   const aiRef = useRef<HTMLDivElement>(null);
+
+  // Scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Tab Configuration
   const tabs = [
@@ -466,8 +537,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
       )}
 
       {/* Header Section */}
-      <div className="mb-6 sticky top-0 z-40 bg-white/80 backdrop-blur-md pt-4 -mx-4 px-4 border-b border-gray-100/50">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="mb-6 sticky top-14 z-40 bg-white/95 backdrop-blur-md -mx-4 px-4 border-b border-gray-100/50 shadow-sm">
+        {/* Company Info - Hidden when scrolled */}
+        <div
+          className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
+        >
           <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center">
             <span className="font-bold text-shinhan-blue text-2xl">
               {currentCompany.logo}
@@ -528,7 +602,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
       <div className="space-y-8">
         {/* 1. Corporate Info Grid (Full Width) */}
-        <div ref={infoRef} className="scroll-mt-48">
+        <div ref={infoRef} className="scroll-mt-32">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-gray-100 pb-3">
               기업정보
@@ -796,7 +870,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
 
         {/* 3. Financial Analysis (Full Width Grid) */}
-        <div ref={financialRef} className="scroll-mt-48">
+        <div ref={financialRef} className="scroll-mt-32">
           <GlassCard className="p-6 bg-slate-50">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-slate-800">재무분석</h3>
@@ -930,7 +1004,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   </div>
                 </div>
                 <div className="text-[10px] text-gray-400 mt-4 border-t border-gray-100 pt-2">
-                  매출구성 현황을 바탕으로 상위 우선순위 4개 사업분야만
+                  매출구성 현황을 바탕으로 상위 우선순위 5개 사업분야만
                   노출됩니다.
                   <span className="float-right">
                     {selectedYear}.{getQuarterMonth(selectedQuarter)} 기준
@@ -951,7 +1025,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
 
         {/* 4. AI Outlook (Moved from Bottom) */}
-        <div ref={aiRef} className="scroll-mt-48">
+        <div ref={aiRef} className="scroll-mt-32">
           <GlassCard className="p-8" variant="dark">
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="flex-1">
@@ -992,7 +1066,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
 
         {/* 5. News Section */}
-        <div ref={newsRef} className="scroll-mt-48">
+        <div ref={newsRef} className="scroll-mt-32">
           <div className="flex items-center justify-between mb-4 px-2">
             <h3 className="text-lg font-bold text-slate-800">관련 뉴스</h3>
             <div className="flex gap-2">
@@ -1076,7 +1150,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
 
         {/* 6. Disclosure Table (Moved from Top) */}
-        <div ref={disclosureRef} className="scroll-mt-48">
+        <div ref={disclosureRef} className="scroll-mt-32">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
               <h3 className="font-bold text-slate-800">전자공시</h3>
@@ -1085,70 +1159,176 @@ const CompanyDetail: React.FC<DetailProps> = ({
               </button>
             </div>
             <div className="flex border-b border-gray-100 text-sm">
-              {["전체", "정기공시", "주요사항보고", "지분공시"].map(
-                (tab, i) => (
-                  <button
-                    key={tab}
-                    className={`flex-1 py-3 font-medium transition-colors ${i === 0 ? "bg-white text-shinhan-blue border-b-2 border-shinhan-blue" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
-                  >
-                    {tab}
-                  </button>
-                ),
-              )}
+              {["주요공시", "공시분석", "공시 전체보기"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setDisclosureTab(tab)}
+                  className={`flex-1 py-3 font-medium transition-colors ${disclosureTab === tab ? "bg-white text-shinhan-blue border-b-2 border-shinhan-blue" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                <tr>
-                  <th className="px-6 py-3 font-medium w-24">날짜</th>
-                  <th className="px-6 py-3 font-medium w-32">공시구분</th>
-                  <th className="px-6 py-3 font-medium">제목</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {[
-                  {
-                    date: "2024-03-25",
-                    type: "정기공시",
-                    title: "사업보고서 (2023.12)",
-                  },
-                  {
-                    date: "2024-03-20",
-                    type: "수시공시",
-                    title: "주주총회소집결의",
-                  },
-                  {
-                    date: "2024-02-08",
-                    type: "공정공시",
-                    title: "연결재무제표기준영업(잠정)실적(공정공시)",
-                  },
-                  {
-                    date: "2024-02-08",
-                    type: "기타경영",
-                    title: "현금ㆍ현물배당결정",
-                  },
-                  {
-                    date: "2024-01-15",
-                    type: "수시공시",
-                    title: "풍문또는보도에대한해명(미확정)",
-                  },
-                ].map((item, i) => (
-                  <tr
-                    key={i}
-                    className="hover:bg-blue-50/30 transition-colors cursor-pointer"
-                  >
-                    <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                      {item.date}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 font-medium">
-                      {item.type}
-                    </td>
-                    <td className="px-6 py-4 text-slate-800 font-medium hover:text-shinhan-blue transition-colors">
-                      {item.title}
-                    </td>
+
+            {/* 주요공시 탭 컨텐츠 */}
+            {disclosureTab === "주요공시" && (
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                  <tr>
+                    <th className="px-6 py-3 font-medium w-24">날짜</th>
+                    <th className="px-6 py-3 font-medium w-32">공시구분</th>
+                    <th className="px-6 py-3 font-medium">제목</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {[
+                    {
+                      date: "2024-03-25",
+                      type: "정기공시",
+                      title: "사업보고서 (2023.12)",
+                    },
+                    {
+                      date: "2024-03-20",
+                      type: "수시공시",
+                      title: "주주총회소집결의",
+                    },
+                    {
+                      date: "2024-02-08",
+                      type: "공정공시",
+                      title: "연결재무제표기준영업(잠정)실적(공정공시)",
+                    },
+                    {
+                      date: "2024-02-08",
+                      type: "기타경영",
+                      title: "현금ㆍ현물배당결정",
+                    },
+                    {
+                      date: "2024-01-15",
+                      type: "수시공시",
+                      title: "풍문또는보도에대한해명(미확정)",
+                    },
+                  ].map((item, i) => (
+                    <tr
+                      key={i}
+                      className="hover:bg-blue-50/30 transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4 text-gray-500 font-mono text-xs">
+                        {item.date}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 font-medium">
+                        {item.type}
+                      </td>
+                      <td className="px-6 py-4 text-slate-800 font-medium hover:text-shinhan-blue transition-colors">
+                        {item.title}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* 공시분석 탭 컨텐츠 */}
+            {disclosureTab === "공시분석" && (
+              <div className="p-6">
+                {/* 공시분석 카드들 */}
+                <div className="space-y-4">
+                  {disclosureAnalysisData
+                    .slice(0, visibleDisclosureCards)
+                    .map((card, index) => (
+                      <div
+                        key={index}
+                        className="bg-white rounded-xl border border-gray-200 p-6 relative"
+                      >
+                        <div className="flex flex-col md:flex-row gap-6">
+                          {/* 좌측 영역 */}
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-bold text-slate-800">
+                                  {currentCompany.name}
+                                </span>
+                                <span className="text-gray-400 text-sm">
+                                  {card.subtitle}
+                                </span>
+                              </div>
+                              <h2
+                                className={`text-2xl md:text-3xl font-bold ${card.color} leading-tight`}
+                              >
+                                {card.title.split(" ").slice(0, 2).join(" ")}
+                                <br />
+                                {card.title.split(" ").slice(2).join(" ")}
+                              </h2>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-6">
+                              {card.date} 기준
+                            </p>
+                          </div>
+
+                          {/* 우측 영역 */}
+                          <div className="flex-1">
+                            <div className="flex justify-end mb-4">
+                              <button className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                공시 원본 보기
+                              </button>
+                            </div>
+
+                            {/* 테이블 리스트 */}
+                            <div className="space-y-0">
+                              {card.details.map((detail, detailIndex) => (
+                                <div
+                                  key={detailIndex}
+                                  className="flex py-3 border-b border-gray-100"
+                                >
+                                  <span
+                                    className={`w-28 text-sm ${detail.isHighlight ? "text-red-500" : "text-gray-500"} shrink-0`}
+                                  >
+                                    {detail.label}
+                                  </span>
+                                  {detail.subValue ? (
+                                    <div className="flex-1 text-sm text-slate-700">
+                                      <p>{detail.value}</p>
+                                      <p className="text-gray-500">
+                                        {detail.subValue}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <span className="flex-1 text-sm text-slate-700">
+                                      {detail.value}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {/* 하단 화살표 버튼 */}
+                {visibleDisclosureCards < disclosureAnalysisData.length && (
+                  <div className="flex justify-center mt-6">
+                    <button
+                      onClick={() =>
+                        setVisibleDisclosureCards((prev) =>
+                          Math.min(prev + 2, disclosureAnalysisData.length),
+                        )
+                      }
+                      className="w-10 h-10 rounded-full bg-shinhan-blue text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
+                    >
+                      <ArrowDown size={20} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 공시 전체보기 탭 컨텐츠 */}
+            {disclosureTab === "공시 전체보기" && (
+              <div className="p-6 text-center text-gray-500">
+                <p>전체 공시 목록을 불러오는 중...</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
