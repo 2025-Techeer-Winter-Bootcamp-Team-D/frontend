@@ -227,7 +227,7 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
       });
 
     svg.on("click", () => onStockSelect(null));
-  }, [data]);
+  }, [data, onFilterChange, onStockSelect]);
 
   useEffect(() => {
     if (!svgRef.current) return;
