@@ -3,6 +3,9 @@ import { useParams } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
+import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
+import { ExpenseRanking } from "../components/Ranking/ExpenseRanking";
+import type { SankeyData, ExpenseItem } from "../types";
 import {
   BarChart,
   Bar,
@@ -309,6 +312,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
+  const sankeyRef = useRef<HTMLDivElement>(null);
   const newsRef = useRef<HTMLDivElement>(null);
   const disclosureRef = useRef<HTMLDivElement>(null);
   const peerRef = useRef<HTMLDivElement>(null);
@@ -328,6 +332,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "info", label: "기업정보", ref: infoRef },
     { id: "price", label: "주가", ref: priceRef },
     { id: "financial", label: "재무분석", ref: financialRef },
+    { id: "sankey", label: "손익흐름도", ref: sankeyRef },
     { id: "ai", label: "AI 전망 분석", ref: aiRef },
     { id: "news", label: "뉴스", ref: newsRef },
     { id: "disclosure", label: "전자공시", ref: disclosureRef },
@@ -384,6 +389,131 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const financialData = useMemo(() => {
     return generateFinancialData(selectedYear, selectedQuarter);
   }, [selectedYear, selectedQuarter]);
+
+  // Sankey Chart Data
+  const totalRevenue = 31000000000000; // 31조
+
+  const sankeyData: SankeyData = useMemo(() => {
+    // 매출 원천 (수익이 어디서 들어왔는지)
+    const interestIncome = 17000000000000; // 이자이익 17조 (55%)
+    const feeIncome = 6000000000000; // 수수료이익 6조 (19%)
+    const tradingIncome = 5000000000000; // 유가증권이익 5조 (16%)
+    const otherIncome = 3000000000000; // 기타이익 3조 (10%)
+
+    // 비용 및 이익
+    const profit = 4500000000000; // 4.5조
+    const cogs = 18000000000000; // 18조
+    const opex = 6000000000000; // 6조
+    const interestTax = 2500000000000; // 2.5조
+
+    return {
+      nodes: [
+        // 매출 원천 (왼쪽)
+        {
+          id: "interest_income",
+          name: "이자이익",
+          color: "#3B82F6",
+          category: "Revenue" as const,
+        },
+        {
+          id: "fee_income",
+          name: "수수료이익",
+          color: "#06B6D4",
+          category: "Revenue" as const,
+        },
+        {
+          id: "trading_income",
+          name: "유가증권이익",
+          color: "#8B5CF6",
+          category: "Revenue" as const,
+        },
+        {
+          id: "other_income",
+          name: "기타이익",
+          color: "#94A3B8",
+          category: "Revenue" as const,
+        },
+        // 중앙 Hub
+        {
+          id: "hub",
+          name: "총매출",
+          color: "#0046FF",
+          category: "Hub" as const,
+        },
+        // 비용 및 이익 (오른쪽)
+        {
+          id: "cogs",
+          name: "매출원가",
+          color: "#EF4444",
+          category: "Expense" as const,
+        },
+        {
+          id: "opex",
+          name: "판관비",
+          color: "#F59E0B",
+          category: "Expense" as const,
+        },
+        {
+          id: "interest_expense",
+          name: "이자/세금",
+          color: "#EC4899",
+          category: "Expense" as const,
+        },
+        {
+          id: "profit",
+          name: "순이익",
+          color: "#10B981",
+          category: "Profit" as const,
+        },
+      ],
+      links: [
+        // 매출 원천 → Hub
+        { source: "interest_income", target: "hub", value: interestIncome },
+        { source: "fee_income", target: "hub", value: feeIncome },
+        { source: "trading_income", target: "hub", value: tradingIncome },
+        { source: "other_income", target: "hub", value: otherIncome },
+        // Hub → 비용/이익
+        { source: "hub", target: "cogs", value: cogs },
+        { source: "hub", target: "opex", value: opex },
+        { source: "hub", target: "interest_expense", value: interestTax },
+        { source: "hub", target: "profit", value: profit },
+      ],
+    };
+  }, []);
+
+  // Expense Ranking Data
+  const expenseData: ExpenseItem[] = useMemo(() => {
+    const cogs = 18000000000000; // 18조
+    const opex = 6000000000000; // 6조
+    const interestTax = 2500000000000; // 2.5조
+
+    return [
+      {
+        name: "매출원가",
+        amount: cogs,
+        percentage: (cogs / totalRevenue) * 100,
+        category: "COGS" as const,
+      },
+      {
+        name: "판매비와관리비",
+        amount: opex,
+        percentage: (opex / totalRevenue) * 100,
+        category: "OpEx" as const,
+      },
+      {
+        name: "이자비용",
+        amount: interestTax * 0.6, // 이자비용 60%
+        percentage: ((interestTax * 0.6) / totalRevenue) * 100,
+        category: "Interest/Tax" as const,
+      },
+      {
+        name: "법인세비용",
+        amount: interestTax * 0.4, // 법인세 40%
+        percentage: ((interestTax * 0.4) / totalRevenue) * 100,
+        category: "Interest/Tax" as const,
+      },
+    ];
+  }, []);
 
   // Helper to map quarter string to month string for display (e.g., '1분기' -> '03')
   const getQuarterMonth = (q: string) => {
@@ -969,7 +1099,40 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
-        {/* 4. AI Outlook (Moved from Bottom) */}
+        {/* 4. 손익흐름도 (Sankey Chart) */}
+        <div ref={sankeyRef} className="scroll-mt-32">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-slate-800">손익흐름도</h3>
+              <span className="text-xs text-gray-500">
+                {selectedYear}년 {selectedQuarter} 기준
+              </span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Sankey Chart - 왼쪽 8칸 */}
+              <div className="lg:col-span-8 h-[500px]">
+                <IncomeSankeyChart
+                  data={sankeyData}
+                  totalRevenue={totalRevenue}
+                />
+              </div>
+              {/* Expense Ranking - 오른쪽 4칸 */}
+              <div className="lg:col-span-4">
+                <div className="bg-white rounded-xl p-5 border border-gray-100 h-full">
+                  <h4 className="font-bold text-slate-800 text-lg mb-4">
+                    비용 순위
+                  </h4>
+                  <ExpenseRanking
+                    expenses={expenseData}
+                    totalRevenue={totalRevenue}
+                  />
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* 5. AI Outlook (Moved from Bottom) */}
         <div ref={aiRef} className="scroll-mt-32">
           <GlassCard className="p-8" variant="dark">
             <div className="flex flex-col md:flex-row items-center gap-8">
