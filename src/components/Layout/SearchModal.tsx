@@ -64,9 +64,9 @@ const SearchModal: React.FC<SearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center pt-32 px-4">
+    <div className="fixed inset-0 z-[40] flex items-start justify-center pt-32 px-4">
       <div
-        className="fixed inset-0 bg-white/60 backdrop-blur-sm"
+        className="fixed top-[57px] left-0 right-0 bottom-0 bg-white/60 backdrop-blur-sm"
         onClick={onClose}
       />
 

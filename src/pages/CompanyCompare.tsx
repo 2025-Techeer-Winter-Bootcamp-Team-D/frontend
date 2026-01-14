@@ -482,7 +482,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const handleAddCompany = (companyName: string) => {
     setSets(
       sets.map((s) => {
-        if (s.id === activeSetId && !s.companies.includes(companyName)) {
+        if (
+          s.id === activeSetId &&
+          !s.companies.includes(companyName) &&
+          s.companies.length < 5
+        ) {
           return { ...s, companies: [...s.companies, companyName] };
         }
         return s;
@@ -626,16 +630,20 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   </button>
                 </div>
               ))}
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group"
-              >
-                <Plus
-                  size={16}
-                  className="group-hover:scale-110 transition-transform"
-                />
-                <span className="text-sm font-bold">기업 추가</span>
-              </button>
+              {activeSet.companies.length < 5 ? (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group"
+                >
+                  <Plus
+                    size={16}
+                    className="group-hover:scale-110 transition-transform"
+                  />
+                  <span className="text-sm font-bold">기업 추가</span>
+                </button>
+              ) : (
+                <span className="text-xs text-gray-400 px-2">최대 5개</span>
+              )}
             </div>
           </div>
 
