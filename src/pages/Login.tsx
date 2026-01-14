@@ -5,14 +5,20 @@ import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 interface LoginProps {
   setPage: (page: PageView) => void;
   onClose: () => void;
+  onLogin?: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ setPage, onClose }) => {
+const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-      <div className="w-full max-w-md relative z-10 animate-fade-in-up pointer-events-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Blur Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="w-full max-w-md relative z-10 animate-fade-in-up">
         <div className="p-8 md:p-10 bg-white border border-gray-200 shadow-2xl rounded-3xl relative">
           {/* Close Button */}
           <button
@@ -81,7 +87,11 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose }) => {
             {/* Login Button */}
             <button
               type="submit"
-              onClick={() => setPage(PageView.DASHBOARD)}
+              onClick={() => {
+                onLogin?.();
+                onClose();
+                setPage(PageView.DASHBOARD);
+              }}
               className="w-full py-4 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-6"
             >
               로그인

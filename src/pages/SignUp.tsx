@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { PageView } from "../types";
-import { User, Mail, Lock, Eye, EyeOff, Check, X } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Check, X } from "lucide-react";
 
 interface SignUpProps {
   setPage: (page: PageView) => void;
@@ -13,9 +13,14 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [agreed, setAgreed] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-      <div className="w-full max-w-md relative z-10 animate-fade-in-up pointer-events-auto">
-        <div className="p-8 md:p-10 bg-white border border-gray-200 shadow-2xl rounded-3xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center pt-12 pb-4 px-4 overflow-y-auto">
+      {/* Blur Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="w-full max-w-md relative z-10 animate-fade-in-up">
+        <div className="p-6 md:p-7 bg-white border border-gray-200 shadow-2xl rounded-3xl relative max-h-[80vh] overflow-y-auto">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -32,47 +37,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-            {/* Name Fields Row */}
-            <div className="flex gap-4">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 ml-1">
-                  성
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User
-                      size={18}
-                      className="text-gray-400 group-focus-within:text-shinhan-blue transition-colors"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="홍"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
-              <div className="flex-1 space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 ml-1">
-                  이름
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User
-                      size={18}
-                      className="text-gray-400 group-focus-within:text-shinhan-blue transition-colors"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="길동"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
-            </div>
-
+          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
             {/* Email Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">
@@ -88,7 +53,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 <input
                   type="email"
                   placeholder="example@shinhan.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -108,7 +73,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="영문, 숫자, 특수문자 포함 8자 이상"
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
+                  className="w-full pl-10 pr-12 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
                 />
                 <button
                   type="button"
@@ -135,7 +100,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="비밀번호를 다시 입력해주세요"
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
+                  className="w-full pl-10 pr-12 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
                 />
                 <button
                   type="button"
@@ -184,7 +149,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             <button
               type="submit"
               onClick={() => setPage(PageView.DASHBOARD)}
-              className="w-full py-4 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-4"
+              className="w-full py-2 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-4"
             >
               계정 생성
             </button>
