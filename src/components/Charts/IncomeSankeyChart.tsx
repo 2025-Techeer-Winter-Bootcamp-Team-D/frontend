@@ -225,7 +225,10 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
           <div className="flex justify-between items-center gap-4">
             <span className="text-[#888]">매출 비중</span>
             <span className="font-bold text-[#1a1a1a]">
-              {((links[hoveredLink].value / totalRevenue) * 100).toFixed(1)}%
+              {totalRevenue > 0
+                ? ((links[hoveredLink].value / totalRevenue) * 100).toFixed(1)
+                : 0}
+              %
             </span>
           </div>
         </div>

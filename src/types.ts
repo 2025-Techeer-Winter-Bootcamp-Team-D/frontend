@@ -1,5 +1,5 @@
 //data types 정의
-//핵심 금융 데이터 정의의
+//핵심 금융 데이터 정의
 export interface StockIndex {
   name: string;
   value: number;

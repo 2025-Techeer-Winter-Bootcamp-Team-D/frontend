@@ -1261,7 +1261,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 {/* 하단 화살표 버튼 */}
                 <div className="flex justify-center mt-6">
                   <button
-                    onClick={() => {}}
+                    onClick={() => {
+                      // TODO: 추가 공시 데이터 로드 기능 구현
+                    }}
                     className="w-10 h-10 rounded-full bg-shinhan-blue text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
                   >
                     <ArrowDown size={20} />
