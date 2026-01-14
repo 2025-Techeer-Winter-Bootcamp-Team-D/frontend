@@ -8,6 +8,7 @@ import CompanyCompare from "./pages/CompanyCompare";
 import CompanySearch from "./pages/CompanySearch";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
+import SearchModal from "./components/Layout/SearchModal";
 import { PageView } from "./types";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const isDashboard = page === PageView.DASHBOARD;
 
@@ -135,9 +137,9 @@ function App() {
         <Navbar
           currentPage={page}
           setPage={handlePageChange}
-          onSearchSelect={setSelectedCompanyCode}
           isLoggedIn={isLoggedIn}
           onLogout={() => setIsLoggedIn(false)}
+          onSearchOpen={() => setShowSearch(true)}
         />
       </div>
 
@@ -193,6 +195,14 @@ function App() {
       {showSignUp && (
         <SignUp setPage={handlePageChange} onClose={handleCloseAuth} />
       )}
+
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={showSearch}
+        onClose={() => setShowSearch(false)}
+        setPage={handlePageChange}
+        onSearchSelect={setSelectedCompanyCode}
+      />
     </div>
   );
 }
@@ -233,11 +243,7 @@ function CompanyDetailPage() {
   return (
     <div className="font-sans text-slate-800 min-h-screen pb-10 bg-white">
       <div className="sticky top-0 z-50">
-        <Navbar
-          currentPage={PageView.COMPANY_DETAIL}
-          setPage={setPage}
-          onSearchSelect={() => {}}
-        />
+        <Navbar currentPage={PageView.COMPANY_DETAIL} setPage={setPage} />
       </div>
       <main className="container mx-auto px-4 pt-6 max-w-7xl">
         <CompanyDetail
