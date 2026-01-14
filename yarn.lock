@@ -510,6 +510,11 @@
   resolved "https://registry.npmjs.org/@types/d3-path/-/d3-path-3.1.1.tgz"
   integrity sha512-VMZBYyQvbGmWyWVea0EHs/BwLgxc+MKi1zLDCONksozI4YJMcTt8ZEuIR4Sb1MMTE8MMW49v0IwI5+b7RmfWlg==
 
+"@types/d3-path@^1":
+  version "1.0.11"
+  resolved "https://registry.npmjs.org/@types/d3-path/-/d3-path-1.0.11.tgz"
+  integrity sha512-4pQMp8ldf7UaB/gR8Fvvy69psNHkTpD/pVw3vmEi8iZAB9EPMBruB1JvHO4BIq9QkUUd2lV1F5YXpMNj7JPBpw==
+
 "@types/d3-polygon@*":
   version "3.0.2"
   resolved "https://registry.npmjs.org/@types/d3-polygon/-/d3-polygon-3.0.2.tgz"
@@ -524,6 +529,13 @@
   version "3.0.3"
   resolved "https://registry.npmjs.org/@types/d3-random/-/d3-random-3.0.3.tgz"
   integrity sha512-Imagg1vJ3y76Y2ea0871wpabqp613+8/r0mCLEBfdtqC7xMSfj9idOnmBYyMoULfHePJyxMAw3nWhJxzc+LFwQ==
+
+"@types/d3-sankey@^0.12.5":
+  version "0.12.5"
+  resolved "https://registry.npmjs.org/@types/d3-sankey/-/d3-sankey-0.12.5.tgz"
+  integrity sha512-/3RZSew0cLAtzGQ+C89hq/Rp3H20QJuVRSqFy6RKLe7E0B8kd2iOS1oBsodrgds4PcNVpqWhdUEng/SHvBcJ6Q==
+  dependencies:
+    "@types/d3-shape" "^1"
 
 "@types/d3-scale-chromatic@*":
   version "3.1.0"
@@ -548,6 +560,13 @@
   integrity sha512-lae0iWfcDeR7qt7rA88BNiqdvPS5pFVPpo5OfjElwNaT2yyekbM0C9vK+yqBqEmHr6lDkRnYNoTBYlAgJa7a4w==
   dependencies:
     "@types/d3-path" "*"
+
+"@types/d3-shape@^1":
+  version "1.3.12"
+  resolved "https://registry.npmjs.org/@types/d3-shape/-/d3-shape-1.3.12.tgz"
+  integrity sha512-8oMzcd4+poSLGgV0R1Q1rOlx/xdmozS4Xab7np0eamFFUYq71AU9pOCJEFnkXW2aI/oXdVYJzw6pssbSut7Z9Q==
+  dependencies:
+    "@types/d3-path" "^1"
 
 "@types/d3-time-format@*":
   version "4.0.3"
@@ -1071,6 +1090,13 @@ d3-array@^3.1.6, d3-array@^3.2.0, "d3-array@2 - 3", "d3-array@2.10.0 - 3", "d3-a
   dependencies:
     internmap "1 - 2"
 
+"d3-array@1 - 2":
+  version "2.12.1"
+  resolved "https://registry.npmjs.org/d3-array/-/d3-array-2.12.1.tgz"
+  integrity sha512-B0ErZK/66mHtEsR1TkPEEkwdy+WDesimkM5gpZr5Dsg54BiTA5RXtYW5qTLIAcekaS9xfZrzBLF/OAkB3Qn1YQ==
+  dependencies:
+    internmap "^1.0.0"
+
 d3-axis@3:
   version "3.0.0"
   resolved "https://registry.npmjs.org/d3-axis/-/d3-axis-3.0.0.tgz"
@@ -1185,6 +1211,11 @@ d3-path@^3.1.0, "d3-path@1 - 3", d3-path@3:
   resolved "https://registry.npmjs.org/d3-path/-/d3-path-3.1.0.tgz"
   integrity sha512-p3KP5HCf/bvjBSSKuXid6Zqijx7wIfNW+J/maPs+iwR35at5JCbLUT0LzF1cnjbCHWhqzQTIN2Jpe8pRebIEFQ==
 
+d3-path@1:
+  version "1.0.9"
+  resolved "https://registry.npmjs.org/d3-path/-/d3-path-1.0.9.tgz"
+  integrity sha512-VLaYcn81dtHVTjEHd8B+pbe9yHWpXKZUC87PzoFmsFrJqgFwDe/qxfp5MlfsfM1V5E/iVt0MmEbWQ7FVIXh/bg==
+
 d3-polygon@3:
   version "3.0.1"
   resolved "https://registry.npmjs.org/d3-polygon/-/d3-polygon-3.0.1.tgz"
@@ -1199,6 +1230,14 @@ d3-random@3:
   version "3.0.1"
   resolved "https://registry.npmjs.org/d3-random/-/d3-random-3.0.1.tgz"
   integrity sha512-FXMe9GfxTxqd5D6jFsQ+DJ8BJS4E/fT5mqqdjovykEB2oFbTMDVdg1MGFxfQW+FBOGoB++k8swBrgwSHT1cUXQ==
+
+d3-sankey@^0.12.3:
+  version "0.12.3"
+  resolved "https://registry.npmjs.org/d3-sankey/-/d3-sankey-0.12.3.tgz"
+  integrity sha512-nQhsBRmM19Ax5xEIPLMY9ZmJ/cDvd1BG3UVvt5h3WRxKg5zGRbvnteTyWAbzeSvlh3tW7ZEmq4VwR5mB3tutmQ==
+  dependencies:
+    d3-array "1 - 2"
+    d3-shape "^1.2.0"
 
 d3-scale-chromatic@3:
   version "3.1.0"
@@ -1223,6 +1262,13 @@ d3-scale@^4.0.2, d3-scale@4:
   version "3.0.0"
   resolved "https://registry.npmjs.org/d3-selection/-/d3-selection-3.0.0.tgz"
   integrity sha512-fmTRWbNMmsmWq6xJV8D19U/gw/bwrHfNXxrIN+HfZgnzqTHp9jOmKMhsTUjXOJnZOdZY9Q28y4yebKzqDKlxlQ==
+
+d3-shape@^1.2.0:
+  version "1.3.7"
+  resolved "https://registry.npmjs.org/d3-shape/-/d3-shape-1.3.7.tgz"
+  integrity sha512-EUkvKjqPFUAZyOlhY5gzCxCeI0Aep04LwIRpsZ/mLFelJiUfnK56jo5JMDSE7yyP2kLSb6LtF+S5chMk7uqPqw==
+  dependencies:
+    d3-path "1"
 
 d3-shape@^3.1.0, d3-shape@3:
   version "3.2.0"
@@ -2009,6 +2055,11 @@ internal-slot@^1.1.0:
     es-errors "^1.3.0"
     hasown "^2.0.2"
     side-channel "^1.1.0"
+
+internmap@^1.0.0:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/internmap/-/internmap-1.0.1.tgz"
+  integrity sha512-lDB5YccMydFBtasVtxnZ3MRBHuaoE8GKsppq+EchKL2U4nK/DmEpPHNH8MZe5HkMtpSiTSOZwfN0tzYjO/lJEw==
 
 "internmap@1 - 2":
   version "2.0.3"

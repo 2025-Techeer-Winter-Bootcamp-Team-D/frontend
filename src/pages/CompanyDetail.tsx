@@ -304,61 +304,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   // Disclosure Tab State
   const [disclosureTab, setDisclosureTab] = useState("주요공시");
-  const [visibleDisclosureCards, setVisibleDisclosureCards] = useState(1);
-
-  // 공시분석 카드 데이터
-  const disclosureAnalysisData = [
-    {
-      title: "최대주주등 소유주식 변동 공시",
-      subtitle: "타법인 주식 및 출자증권 취득결정",
-      color: "text-red-500",
-      date: "01/08 09:00",
-      disclosureDate: "2025.01.08",
-      details: [
-        {
-          label: "투자내용 및 목적",
-          value: "경영참여(직접 또는 계열사를 통한 이사 선임)",
-          subValue: "투자회사: 신한라이프생명",
-        },
-        { label: "공시일", value: "2025.01.08", isHighlight: true },
-        { label: "투자금액", value: "2,840억원" },
-        { label: "투자기간", value: "2025.01.08 ~ 장기보유" },
-        { label: "이사회결의일", value: "2025.01.07" },
-      ],
-    },
-    {
-      title: "주주총회 소집결의",
-      subtitle: "정기주주총회 소집",
-      color: "text-blue-500",
-      date: "01/05 14:00",
-      disclosureDate: "2025.01.05",
-      details: [
-        {
-          label: "총회목적사항",
-          value: "정기주주총회",
-          subValue: "이사 선임의 건",
-        },
-        { label: "공시일", value: "2025.01.05", isHighlight: true },
-        { label: "총회일시", value: "2025.03.21 09:00" },
-        { label: "장소", value: "본사 대강당" },
-        { label: "기준일", value: "2024.12.31" },
-      ],
-    },
-    {
-      title: "배당 결정 공시",
-      subtitle: "현금ㆍ현물배당결정",
-      color: "text-green-500",
-      date: "01/03 10:00",
-      disclosureDate: "2025.01.03",
-      details: [
-        { label: "배당종류", value: "현금배당", subValue: "결산배당" },
-        { label: "공시일", value: "2025.01.03", isHighlight: true },
-        { label: "주당배당금", value: "2,500원" },
-        { label: "배당기준일", value: "2024.12.31" },
-        { label: "배당지급일", value: "2025.04.15" },
-      ],
-    },
-  ];
 
   // Refs for Scroll-to-Section
   const infoRef = useRef<HTMLDivElement>(null);
@@ -1230,96 +1175,98 @@ const CompanyDetail: React.FC<DetailProps> = ({
             {/* 공시분석 탭 컨텐츠 */}
             {disclosureTab === "공시분석" && (
               <div className="p-6">
-                {/* 공시분석 카드들 */}
-                <div className="space-y-4">
-                  {disclosureAnalysisData
-                    .slice(0, visibleDisclosureCards)
-                    .map((card, index) => (
-                      <div
-                        key={index}
-                        className="bg-white rounded-xl border border-gray-200 p-6 relative"
-                      >
-                        <div className="flex flex-col md:flex-row gap-6">
-                          {/* 좌측 영역 */}
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-bold text-slate-800">
-                                  {currentCompany.name}
-                                </span>
-                                <span className="text-gray-400 text-sm">
-                                  {card.subtitle}
-                                </span>
-                              </div>
-                              <h2
-                                className={`text-2xl md:text-3xl font-bold ${card.color} leading-tight`}
-                              >
-                                {card.title.split(" ").slice(0, 2).join(" ")}
-                                <br />
-                                {card.title.split(" ").slice(2).join(" ")}
-                              </h2>
-                            </div>
-                            <p className="text-xs text-gray-400 mt-6">
-                              {card.date} 기준
+                {/* 공시분석 카드 */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 relative">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* 좌측 영역 */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-bold text-slate-800">
+                            {currentCompany.name}
+                          </span>
+                          <span className="text-gray-400 text-sm">
+                            타법인 주식 및 출자증권 취득결정
+                          </span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-red-500 leading-tight">
+                          최대주주등
+                          <br />
+                          소유주식 변동 공시
+                        </h2>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-6">
+                        01/08 09:00 기준
+                      </p>
+                    </div>
+
+                    {/* 우측 영역 */}
+                    <div className="flex-1">
+                      <div className="flex justify-end mb-4">
+                        <button className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                          공시 원본 보기
+                        </button>
+                      </div>
+
+                      {/* 테이블 리스트 */}
+                      <div className="space-y-0">
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            투자내용 및 목적
+                          </span>
+                          <div className="flex-1 text-sm text-slate-700">
+                            <p>경영참여(직접 또는 계열사를 통한 이사 선임)</p>
+                            <p className="text-gray-500">
+                              투자회사: 신한라이프생명
                             </p>
                           </div>
-
-                          {/* 우측 영역 */}
-                          <div className="flex-1">
-                            <div className="flex justify-end mb-4">
-                              <button className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                공시 원본 보기
-                              </button>
-                            </div>
-
-                            {/* 테이블 리스트 */}
-                            <div className="space-y-0">
-                              {card.details.map((detail, detailIndex) => (
-                                <div
-                                  key={detailIndex}
-                                  className="flex py-3 border-b border-gray-100"
-                                >
-                                  <span
-                                    className={`w-28 text-sm ${detail.isHighlight ? "text-red-500" : "text-gray-500"} shrink-0`}
-                                  >
-                                    {detail.label}
-                                  </span>
-                                  {detail.subValue ? (
-                                    <div className="flex-1 text-sm text-slate-700">
-                                      <p>{detail.value}</p>
-                                      <p className="text-gray-500">
-                                        {detail.subValue}
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <span className="flex-1 text-sm text-slate-700">
-                                      {detail.value}
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-red-500 shrink-0">
+                            공시일
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2025.01.08
+                          </span>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            투자금액
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2,840억원
+                          </span>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            투자기간
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2025.01.08 ~ 장기보유
+                          </span>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            이사회결의일
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2025.01.07
+                          </span>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* 하단 화살표 버튼 */}
-                {visibleDisclosureCards < disclosureAnalysisData.length && (
-                  <div className="flex justify-center mt-6">
-                    <button
-                      onClick={() =>
-                        setVisibleDisclosureCards((prev) =>
-                          Math.min(prev + 2, disclosureAnalysisData.length),
-                        )
-                      }
-                      className="w-10 h-10 rounded-full bg-shinhan-blue text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
-                    >
-                      <ArrowDown size={20} />
-                    </button>
-                  </div>
-                )}
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={() => {}}
+                    className="w-10 h-10 rounded-full bg-shinhan-blue text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <ArrowDown size={20} />
+                  </button>
+                </div>
               </div>
             )}
 
