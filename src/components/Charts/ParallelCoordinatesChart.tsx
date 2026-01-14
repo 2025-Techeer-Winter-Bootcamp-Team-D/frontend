@@ -6,6 +6,7 @@ import { AXES } from "../../constants";
 interface Props {
   data: Stock[];
   onFilterChange: (filters: Partial<Record<AxisKey, BrushRange>>) => void;
+  filters: Partial<Record<AxisKey, BrushRange>>;
   filteredIds: Set<string>;
   onStockSelect: (stock: Stock | null) => void;
   selectedStockId: string | null;
@@ -14,6 +15,7 @@ interface Props {
 const ParallelCoordinatesChart: React.FC<Props> = ({
   data,
   onFilterChange,
+  filters,
   filteredIds,
   onStockSelect,
   selectedStockId,
@@ -260,6 +262,20 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
       }
     });
   }, [filteredIds, selectedStockId]);
+
+  // 필터가 빈 객체가 되면 브러시를 클리어
+  useEffect(() => {
+    if (Object.keys(filters).length === 0 && svgRef.current) {
+      const svg = d3.select(svgRef.current);
+      svg.selectAll<SVGGElement, AxisInfo>(".brush").each(function () {
+        d3.select<SVGGElement, AxisInfo>(this).call(
+          d3.brushY<AxisInfo>().move,
+          null,
+        );
+      });
+      activeFilters.current = {};
+    }
+  }, [filters]);
 
   return (
     <div
