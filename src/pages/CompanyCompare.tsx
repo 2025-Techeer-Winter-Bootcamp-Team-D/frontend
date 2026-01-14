@@ -584,23 +584,23 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     onBlur={handleSaveName}
                     onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
                     autoFocus
-                    className="text-2xl font-bold text-slate-800 bg-transparent border-b-2 border-shinhan-blue focus:outline-none w-full px-1"
+                    className="text-2xl font-bold text-slate-800 bg-transparent border-b-2 border-[#0046FF] focus:outline-none w-full px-1"
                   />
                   <button
                     onClick={handleSaveName}
-                    className="p-2 text-shinhan-blue hover:bg-blue-50 rounded-full"
+                    className="p-2 text-[#0046FF] hover:bg-blue-50 rounded-full"
                   >
                     <CheckCircle2 size={24} />
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 group">
+                <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-bold text-slate-800">
                     {activeSet.name}
                   </h2>
                   <button
                     onClick={() => setIsEditingName(true)}
-                    className="p-1.5 text-gray-400 hover:text-shinhan-blue hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                    className="p-1.5 text-gray-400 hover:text-[#0046FF] hover:bg-blue-50 rounded-lg transition-colors"
                     title="이름 변경"
                   >
                     <Edit2 size={18} />
@@ -640,7 +640,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
           {/* 2. Charts Section - Separated Rows */}
           <div className="space-y-6">
             {/* Row 1: Financial Metrics Comparison (Bar Chart) */}
-            <GlassCard className="p-6">
+            <GlassCard className="p-6 hover:shadow-none">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
                   <BarChart3 size={20} className="text-shinhan-blue" />
@@ -713,6 +713,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                       tickLine={false}
                     />
                     <Tooltip
+                      cursor={{ fill: "transparent" }}
                       contentStyle={{
                         borderRadius: "12px",
                         border: "none",

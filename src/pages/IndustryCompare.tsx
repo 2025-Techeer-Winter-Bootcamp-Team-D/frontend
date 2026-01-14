@@ -3,17 +3,11 @@ import GlassCard from "../components/Layout/GlassCard";
 import {
   ArrowLeft,
   TrendingUp,
-  BarChart3,
   Info,
   ChevronDown,
   X,
   ChevronRight,
-  Link2,
-  Building,
-  Tag,
-  ExternalLink,
   Trophy,
-  Medal,
 } from "lucide-react";
 import { PageView } from "../types";
 import {
@@ -81,6 +75,7 @@ interface IndustryData {
     roe: number;
     aiScore: number;
     marketCap: string; // Added Market Cap
+    logo?: string; // Optional: Company logo URL (for backend integration)
   }[];
   news: NewsItem[]; // New field for News
 }
@@ -847,6 +842,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       </div>
 
       {/* --- Top 3 Companies (Rankings) --- */}
+      <h3 className="text-lg font-bold text-slate-700 mb-4 px-2">
+        {currentData.name.split(" (")[0]} 산업 기업 순위
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
         {currentData.companies.slice(0, 3).map((company, index) => {
           const isFirst = index === 0;
@@ -856,28 +854,22 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           let containerClasses =
             "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
           let badgeClasses = "";
-          let icon;
           let label = "";
 
           if (isFirst) {
-            // Modified: Match the container style of 2nd/3rd place (min-h, mt-2, bg-white) but keep gold border
             containerClasses +=
               " border-yellow-200 bg-white shadow-sm min-h-[260px] mt-2";
             badgeClasses = "bg-yellow-100 text-yellow-600";
-            // Modified: Changed Trophy to Medal
-            icon = <Medal size={20} />;
             label = "1st Place";
           } else if (isSecond) {
             containerClasses +=
               " border-slate-200 bg-white shadow-sm min-h-[260px] mt-2";
             badgeClasses = "bg-slate-100 text-slate-500";
-            icon = <Medal size={20} />;
             label = "2nd Place";
           } else {
             containerClasses +=
               " border-orange-200 bg-white shadow-sm min-h-[260px] mt-2";
             badgeClasses = "bg-orange-100 text-orange-600";
-            icon = <Medal size={20} />;
             label = "3rd Place";
           }
 
@@ -893,7 +885,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   <div
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center ${badgeClasses}`}
                   >
-                    {icon}
+                    <Trophy size={20} />
                   </div>
                   <div>
                     <div
@@ -961,82 +953,98 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         })}
       </div>
 
-      {/* --- Rank 4+ Companies (List Table) --- */}
+      {/* --- All Companies Ranking Table --- */}
       <div className="mb-10">
-        <GlassCard className="p-0 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-500 bg-gray-50/80 border-b border-gray-100">
+              <thead className="text-xs text-gray-400 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4 font-medium text-center w-20">
+                  <th className="pl-6 pr-2 py-3 font-normal w-12"></th>
+                  <th className="px-2 py-3 font-normal text-center w-10">
                     순위
                   </th>
-                  <th className="px-6 py-4 font-medium w-16"></th>{" "}
-                  {/* Icon Col */}
-                  <th className="px-6 py-4 font-medium">기업명</th>
-                  <th className="px-6 py-4 font-medium text-right">주가</th>
-                  <th className="px-6 py-4 font-medium text-right">변동</th>
-                  <th className="px-6 py-4 font-medium text-center">
+                  <th className="px-6 py-3 font-normal w-16"></th>
+                  <th className="px-6 py-3 font-normal text-center">기업명</th>
+                  <th className="px-6 py-3 font-normal text-center">주가</th>
+                  <th className="px-6 py-3 font-normal text-center">변동</th>
+                  <th className="px-6 py-3 font-normal text-center">
                     미니차트
                   </th>
-                  <th className="px-6 py-4 font-medium text-right">시가총액</th>
+                  <th className="px-6 py-3 font-normal text-center">ROE</th>
+                  <th className="px-6 py-3 font-normal text-center">
+                    시가총액
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {currentData.companies.slice(3).map((company, index) => (
+                {currentData.companies.map((company, index) => (
                   <tr
                     key={company.code}
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
                     onClick={() => handleCompanyClick(company.code)}
                   >
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={(e) => handleToggleStar(e, company.code)}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <StarIcon isActive={starred.has(company.code)} />
-                        </button>
-                        <span className="font-bold text-slate-600 text-lg w-6 text-center">
-                          {index + 4}
-                        </span>
-                      </div>
+                    <td className="pl-6 pr-2 py-4">
+                      <button
+                        onClick={(e) => handleToggleStar(e, company.code)}
+                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <StarIcon isActive={starred.has(company.code)} />
+                      </button>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      {/* Rounded-md */}
-                      <span className="w-8 h-8 rounded-md bg-white border border-gray-200 flex items-center justify-center font-bold text-slate-600 text-xs shadow-sm">
-                        L
+                    <td className="px-2 py-4 text-center">
+                      <span className="font-bold text-slate-600 text-lg">
+                        {index + 1}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-bold text-slate-800 text-base">
+                    <td className="px-6 py-4 text-center">
+                      {company.logo ? (
+                        <img
+                          src={company.logo}
+                          alt={`${company.name} logo`}
+                          className="inline-block w-8 h-8 rounded-md object-cover"
+                        />
+                      ) : (
+                        <span className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center font-bold text-slate-600 text-xs shadow-sm">
+                          {company.name.charAt(0)}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-center font-bold text-slate-800 text-base">
                       {company.name}
                     </td>
-                    <td className="px-6 py-4 text-right font-medium text-slate-700 text-base">
+                    <td className="px-6 py-4 text-center font-medium text-slate-700 text-base">
                       {company.price}
                     </td>
                     <td
-                      className={`px-6 py-4 text-right font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                      className={`px-6 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                     >
                       {company.change}
                     </td>
-                    <td className="px-6 py-4 flex justify-center">
-                      <MiniChart
-                        color={
-                          company.change.startsWith("+") ? "#EF4444" : "#3B82F6"
-                        }
-                      />
+                    <td className="px-6 py-4 text-center">
+                      <div className="inline-block">
+                        <MiniChart
+                          color={
+                            company.change.startsWith("+")
+                              ? "#EF4444"
+                              : "#3B82F6"
+                          }
+                        />
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-right text-slate-600 font-medium">
+                    <td className="px-6 py-4 text-center font-medium text-slate-800">
+                      {company.roe >= 0 ? "+" : ""}
+                      {company.roe}%
+                    </td>
+                    <td className="px-6 py-4 text-center text-slate-600 font-medium">
                       {company.marketCap}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="h-4 bg-gray-50/50"></div>{" "}
-            {/* Bottom spacer instead of button */}
           </div>
-        </GlassCard>
+        </div>
       </div>
 
       {/* --- Industry Outlook Section --- */}
@@ -1104,13 +1112,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           {/* Rounded-lg */}
           <div className="bg-white w-full max-w-2xl sm:rounded-lg rounded-t-lg shadow-2xl z-10 animate-fade-in-up max-h-[85vh] overflow-y-auto flex flex-col relative">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 p-5 flex items-center justify-between z-10 rounded-t-lg">
-              <h3 className="font-bold text-sm text-slate-500">
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-5 relative z-10 rounded-t-lg">
+              <h3 className="font-bold text-sm text-slate-500 text-center">
                 토픽 인사이트
               </h3>
               <button
                 onClick={() => setSelectedNews(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X size={20} className="text-slate-500" />
               </button>
@@ -1128,7 +1136,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 <span>{selectedNews.time}</span>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-6 mb-6">
+              <div className="flex flex-col sm:flex-row-reverse gap-6 mb-6">
                 {/* Rounded-md */}
                 <div className="w-full sm:w-1/3 h-40 bg-gray-200 rounded-md flex-shrink-0"></div>
                 <p className="text-slate-700 leading-loose text-lg flex-1">
@@ -1137,15 +1145,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               </div>
 
               {/* Rounded-md */}
-              <div className="bg-slate-50 p-6 rounded-md space-y-2">
-                <p className="text-sm text-slate-600">
-                  여기에 뉴스 본문이 나타납니다
-                </p>
-                <p className="text-sm text-slate-600">이렇게</p>
-                <p className="text-sm text-slate-600 font-bold">
-                  단락구분을 합니다
-                </p>
-              </div>
             </div>
           </div>
         </div>
