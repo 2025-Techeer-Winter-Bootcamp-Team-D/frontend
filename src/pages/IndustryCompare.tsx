@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import GlassCard from "../components/Layout/GlassCard";
+import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
   ArrowLeft,
   TrendingUp,
@@ -10,6 +11,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { PageView } from "../types";
+import type { Stock, AxisKey, BrushRange } from "../types";
+import { SAMPLE_STOCKS } from "../constants";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -621,6 +624,28 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
+  // Parallel Coordinates Chart State
+  const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
+    {},
+  );
+  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
+
+  const filteredIds = useMemo(() => {
+    const ids = new Set<string>();
+    SAMPLE_STOCKS.forEach((stock) => {
+      let pass = true;
+      for (const key of Object.keys(filters) as AxisKey[]) {
+        const range = filters[key];
+        if (range && (stock[key] < range.min || stock[key] > range.max)) {
+          pass = false;
+          break;
+        }
+      }
+      if (pass) ids.add(stock.id);
+    });
+    return ids;
+  }, [filters]);
+
   // Handle deep linking from dashboard
   useEffect(() => {
     if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
@@ -816,28 +841,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         <GlassCard className="p-6" variant="dark">
           <h3 className="text-white font-bold mb-4 flex items-center gap-2">
             <Info size={18} className="text-shinhan-gold" />
-            AI 섹터 인사이트
+            산업분야 전망
           </h3>
-          <div className="space-y-4">
-            {/* Rounded-md */}
-            <div className="bg-white/10 p-4 rounded-md border border-white/10">
-              <span className="text-shinhan-gold text-xs font-bold mb-1 block">
-                Positive Factor
-              </span>
-              <p className="text-white/90 text-sm leading-relaxed">
-                {currentData.insights.positive}
-              </p>
-            </div>
-            {/* Rounded-md */}
-            <div className="bg-white/10 p-4 rounded-md border border-white/10">
-              <span className="text-blue-200 text-xs font-bold mb-1 block">
-                Key Risk
-              </span>
-              <p className="text-white/90 text-sm leading-relaxed">
-                {currentData.insights.risk}
-              </p>
-            </div>
-          </div>
+          <p className="text-white/90 text-sm leading-relaxed">
+            {currentData.outlook}
+          </p>
         </GlassCard>
       </div>
 
@@ -1047,20 +1055,22 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
-      {/* --- Industry Outlook Section --- */}
+      {/* --- Parallel Coordinates Chart --- */}
       <div className="mb-10">
         <h3 className="text-lg font-bold text-slate-700 mb-4 px-2">
-          산업분야 전망
+          나만의 저평가 우량주 발굴 (Parallel Coordinates)
         </h3>
-        <GlassCard className="p-8 bg-white relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-2 bg-shinhan-blue"></div>
-          <h4 className="font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
-            [{currentData.name.split(" (")[0]}]
-          </h4>
-          <p className="text-slate-600 leading-8 text-base whitespace-pre-line">
-            {currentData.outlook}
-          </p>
-        </GlassCard>
+        <p className="text-slate-500 mb-4 px-2">
+          각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
+        </p>
+        <ParallelCoordinatesChart
+          data={SAMPLE_STOCKS}
+          onFilterChange={setFilters}
+          filters={filters}
+          filteredIds={filteredIds}
+          onStockSelect={setSelectedStock}
+          selectedStockId={selectedStock?.id ?? null}
+        />
       </div>
 
       {/* --- News Section --- */}

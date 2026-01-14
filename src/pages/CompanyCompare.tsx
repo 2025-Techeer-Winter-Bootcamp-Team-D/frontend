@@ -535,39 +535,41 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* -- Left Sidebar for Sets -- */}
-        <div className="lg:w-64 flex-shrink-0 space-y-4">
-          <GlassCard className="p-4 bg-white/60">
-            <h2 className="text-sm font-bold text-slate-500 mb-4 px-2 uppercase tracking-wider">
-              나의 비교 세트
-            </h2>
-            <div className="space-y-2">
-              {sets.map((set) => (
-                <button
-                  key={set.id}
-                  onClick={() => setActiveSetId(set.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                    activeSetId === set.id
-                      ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
-                      : "hover:bg-white text-slate-600"
-                  }`}
-                >
-                  <span className="font-medium text-sm truncate max-w-[150px]">
-                    {set.name}
-                  </span>
-                  {activeSetId === set.id && (
-                    <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={handleAddSet}
-              className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-shinhan-blue hover:text-shinhan-blue hover:bg-blue-50 transition-all"
-            >
-              <Plus size={16} />
-              세트 추가하기
-            </button>
-          </GlassCard>
+        <div className="lg:w-64 flex-shrink-0">
+          <div className="sticky top-24 space-y-4">
+            <GlassCard className="p-4 bg-white/60">
+              <h2 className="text-sm font-bold text-slate-500 mb-4 px-2 uppercase tracking-wider">
+                나의 비교 세트
+              </h2>
+              <div className="space-y-2">
+                {sets.map((set) => (
+                  <button
+                    key={set.id}
+                    onClick={() => setActiveSetId(set.id)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                      activeSetId === set.id
+                        ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
+                        : "hover:bg-white text-slate-600"
+                    }`}
+                  >
+                    <span className="font-medium text-sm truncate max-w-[150px]">
+                      {set.name}
+                    </span>
+                    {activeSetId === set.id && (
+                      <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleAddSet}
+                className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-shinhan-blue hover:text-shinhan-blue hover:bg-blue-50 transition-all"
+              >
+                <Plus size={16} />
+                세트 추가하기
+              </button>
+            </GlassCard>
+          </div>
         </div>
 
         {/* -- Main Content Area -- */}
