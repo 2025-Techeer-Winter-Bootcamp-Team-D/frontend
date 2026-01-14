@@ -235,7 +235,9 @@ const Navbar: React.FC<NavbarProps> = ({
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
               >
                 <Bell size={18} />
-                <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+                )}
               </button>
 
               {/* Notification Dropdown */}
