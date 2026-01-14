@@ -48,3 +48,29 @@ export interface AITrend {
   y: number;
   size: number;
 }
+
+export interface Stock {
+  id: string;
+  name: string;
+  sector: string;
+  per: number; // Price to Earnings Ratio
+  pbr: number; // Price to Book Ratio
+  roe: number; // Return on Equity (%)
+  debtRatio: number; // Debt Ratio (%)
+  divYield: number; // Dividend Yield (%)
+}
+
+export type AxisKey = keyof Omit<Stock, "id" | "name" | "sector">;
+
+export interface AxisInfo {
+  key: AxisKey;
+  label: string;
+  description: string;
+  domain: [number, number];
+  inverted: boolean; // if true, higher is better (e.g., ROE)
+}
+
+export interface BrushRange {
+  min: number;
+  max: number;
+}
