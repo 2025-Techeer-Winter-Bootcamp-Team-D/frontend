@@ -7,6 +7,7 @@ import IndustryAnalysis from "./pages/IndustryCompare";
 import CompanyCompare from "./pages/CompanyCompare";
 import CompanySearch from "./pages/CompanySearch";
 import SignUp from "./pages/SignUp";
+import Login from "./pages/Login";
 import { PageView } from "./types";
 
 function App() {
@@ -16,23 +17,27 @@ function App() {
     useState<string>("055550");
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
-  const [previousPage, setPreviousPage] = useState<PageView>(
-    PageView.DASHBOARD,
-  );
 
   const isDashboard = page === PageView.DASHBOARD;
 
   const handlePageChange = (newPage: PageView) => {
-    if (newPage === PageView.SIGN_UP) {
-      setPreviousPage(page);
+    if (newPage === PageView.LOGIN) {
+      setShowLogin(true);
+      setShowSignUp(false);
+    } else if (newPage === PageView.SIGN_UP) {
       setShowSignUp(true);
+      setShowLogin(false);
     } else {
+      setShowLogin(false);
+      setShowSignUp(false);
       setPage(newPage);
     }
   };
 
-  const handleCloseSignUp = () => {
+  const handleCloseAuth = () => {
+    setShowLogin(false);
     setShowSignUp(false);
   };
 
@@ -99,14 +104,6 @@ function App() {
         );
       case PageView.COMPANY_COMPARE:
         return <CompanyCompare setPage={handlePageChange} />;
-      case PageView.LOGIN:
-        return (
-          <Dashboard
-            setPage={handlePageChange}
-            onIndustryClick={handleIndustryClick}
-            onShowNavbar={setIsNavbarVisible}
-          />
-        );
       default:
         return (
           <Dashboard
@@ -141,7 +138,7 @@ function App() {
         />
       </div>
 
-      {/* 
+      {/*
           Main Content:
           - Dashboard: Full screen height (h-screen), handled internally by its scroll container.
           - Others: Standard container layout.
@@ -155,15 +152,6 @@ function App() {
       >
         {renderPage()}
       </main>
-
-      {/* SignUp Modal Overlay */}
-      {showSignUp && (
-        <SignUp
-          setPage={handlePageChange}
-          previousPage={previousPage}
-          onClose={handleCloseSignUp}
-        />
-      )}
 
       {!isDashboard && (
         <footer className="mt-12 border-t border-slate-200 py-8 bg-white">
@@ -187,6 +175,16 @@ function App() {
             </p>
           </div>
         </footer>
+      )}
+
+      {/* Login Popup */}
+      {showLogin && (
+        <Login setPage={handlePageChange} onClose={handleCloseAuth} />
+      )}
+
+      {/* SignUp Popup */}
+      {showSignUp && (
+        <SignUp setPage={handlePageChange} onClose={handleCloseAuth} />
       )}
     </div>
   );
