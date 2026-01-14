@@ -268,7 +268,7 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     >
       <div className="mb-4">
         <h2 className="text-xl font-bold text-[#0046FF]">
-          나만의 저평가 우량주 발굴기 (Parallel Coordinates)
+          나만의 저평가 우량주 발굴 (Parallel Coordinates)
         </h2>
         <p className="text-sm text-slate-500">
           선을 클릭하면 해당 기업이 강조됩니다.

@@ -3,6 +3,9 @@ import { useParams } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
+import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
+import { ExpenseRanking } from "../components/Ranking/ExpenseRanking";
+import type { SankeyData, ExpenseItem } from "../types";
 import {
   BarChart,
   Bar,
@@ -304,66 +307,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   // Disclosure Tab State
   const [disclosureTab, setDisclosureTab] = useState("주요공시");
-  const [visibleDisclosureCards, setVisibleDisclosureCards] = useState(1);
-
-  // 공시분석 카드 데이터
-  const disclosureAnalysisData = [
-    {
-      title: "최대주주등 소유주식 변동 공시",
-      subtitle: "타법인 주식 및 출자증권 취득결정",
-      color: "text-red-500",
-      date: "01/08 09:00",
-      disclosureDate: "2025.01.08",
-      details: [
-        {
-          label: "투자내용 및 목적",
-          value: "경영참여(직접 또는 계열사를 통한 이사 선임)",
-          subValue: "투자회사: 신한라이프생명",
-        },
-        { label: "공시일", value: "2025.01.08", isHighlight: true },
-        { label: "투자금액", value: "2,840억원" },
-        { label: "투자기간", value: "2025.01.08 ~ 장기보유" },
-        { label: "이사회결의일", value: "2025.01.07" },
-      ],
-    },
-    {
-      title: "주주총회 소집결의",
-      subtitle: "정기주주총회 소집",
-      color: "text-blue-500",
-      date: "01/05 14:00",
-      disclosureDate: "2025.01.05",
-      details: [
-        {
-          label: "총회목적사항",
-          value: "정기주주총회",
-          subValue: "이사 선임의 건",
-        },
-        { label: "공시일", value: "2025.01.05", isHighlight: true },
-        { label: "총회일시", value: "2025.03.21 09:00" },
-        { label: "장소", value: "본사 대강당" },
-        { label: "기준일", value: "2024.12.31" },
-      ],
-    },
-    {
-      title: "배당 결정 공시",
-      subtitle: "현금ㆍ현물배당결정",
-      color: "text-green-500",
-      date: "01/03 10:00",
-      disclosureDate: "2025.01.03",
-      details: [
-        { label: "배당종류", value: "현금배당", subValue: "결산배당" },
-        { label: "공시일", value: "2025.01.03", isHighlight: true },
-        { label: "주당배당금", value: "2,500원" },
-        { label: "배당기준일", value: "2024.12.31" },
-        { label: "배당지급일", value: "2025.04.15" },
-      ],
-    },
-  ];
 
   // Refs for Scroll-to-Section
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
+  const sankeyRef = useRef<HTMLDivElement>(null);
   const newsRef = useRef<HTMLDivElement>(null);
   const disclosureRef = useRef<HTMLDivElement>(null);
   const peerRef = useRef<HTMLDivElement>(null);
@@ -383,6 +332,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "info", label: "기업정보", ref: infoRef },
     { id: "price", label: "주가", ref: priceRef },
     { id: "financial", label: "재무분석", ref: financialRef },
+    { id: "sankey", label: "손익흐름도", ref: sankeyRef },
     { id: "ai", label: "AI 전망 분석", ref: aiRef },
     { id: "news", label: "뉴스", ref: newsRef },
     { id: "disclosure", label: "전자공시", ref: disclosureRef },
@@ -439,6 +389,131 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const financialData = useMemo(() => {
     return generateFinancialData(selectedYear, selectedQuarter);
   }, [selectedYear, selectedQuarter]);
+
+  // Sankey Chart Data
+  const totalRevenue = 31000000000000; // 31조
+
+  const sankeyData: SankeyData = useMemo(() => {
+    // 매출 원천 (수익이 어디서 들어왔는지)
+    const interestIncome = 17000000000000; // 이자이익 17조 (55%)
+    const feeIncome = 6000000000000; // 수수료이익 6조 (19%)
+    const tradingIncome = 5000000000000; // 유가증권이익 5조 (16%)
+    const otherIncome = 3000000000000; // 기타이익 3조 (10%)
+
+    // 비용 및 이익
+    const profit = 4500000000000; // 4.5조
+    const cogs = 18000000000000; // 18조
+    const opex = 6000000000000; // 6조
+    const interestTax = 2500000000000; // 2.5조
+
+    return {
+      nodes: [
+        // 매출 원천 (왼쪽)
+        {
+          id: "interest_income",
+          name: "이자이익",
+          color: "#3B82F6",
+          category: "Revenue" as const,
+        },
+        {
+          id: "fee_income",
+          name: "수수료이익",
+          color: "#06B6D4",
+          category: "Revenue" as const,
+        },
+        {
+          id: "trading_income",
+          name: "유가증권이익",
+          color: "#8B5CF6",
+          category: "Revenue" as const,
+        },
+        {
+          id: "other_income",
+          name: "기타이익",
+          color: "#94A3B8",
+          category: "Revenue" as const,
+        },
+        // 중앙 Hub
+        {
+          id: "hub",
+          name: "총매출",
+          color: "#0046FF",
+          category: "Hub" as const,
+        },
+        // 비용 및 이익 (오른쪽)
+        {
+          id: "cogs",
+          name: "매출원가",
+          color: "#EF4444",
+          category: "Expense" as const,
+        },
+        {
+          id: "opex",
+          name: "판관비",
+          color: "#F59E0B",
+          category: "Expense" as const,
+        },
+        {
+          id: "interest_expense",
+          name: "이자/세금",
+          color: "#EC4899",
+          category: "Expense" as const,
+        },
+        {
+          id: "profit",
+          name: "순이익",
+          color: "#10B981",
+          category: "Profit" as const,
+        },
+      ],
+      links: [
+        // 매출 원천 → Hub
+        { source: "interest_income", target: "hub", value: interestIncome },
+        { source: "fee_income", target: "hub", value: feeIncome },
+        { source: "trading_income", target: "hub", value: tradingIncome },
+        { source: "other_income", target: "hub", value: otherIncome },
+        // Hub → 비용/이익
+        { source: "hub", target: "cogs", value: cogs },
+        { source: "hub", target: "opex", value: opex },
+        { source: "hub", target: "interest_expense", value: interestTax },
+        { source: "hub", target: "profit", value: profit },
+      ],
+    };
+  }, []);
+
+  // Expense Ranking Data
+  const expenseData: ExpenseItem[] = useMemo(() => {
+    const cogs = 18000000000000; // 18조
+    const opex = 6000000000000; // 6조
+    const interestTax = 2500000000000; // 2.5조
+
+    return [
+      {
+        name: "매출원가",
+        amount: cogs,
+        percentage: (cogs / totalRevenue) * 100,
+        category: "COGS" as const,
+      },
+      {
+        name: "판매비와관리비",
+        amount: opex,
+        percentage: (opex / totalRevenue) * 100,
+        category: "OpEx" as const,
+      },
+      {
+        name: "이자비용",
+        amount: interestTax * 0.6, // 이자비용 60%
+        percentage: ((interestTax * 0.6) / totalRevenue) * 100,
+        category: "Interest/Tax" as const,
+      },
+      {
+        name: "법인세비용",
+        amount: interestTax * 0.4, // 법인세 40%
+        percentage: ((interestTax * 0.4) / totalRevenue) * 100,
+        category: "Interest/Tax" as const,
+      },
+    ];
+  }, []);
 
   // Helper to map quarter string to month string for display (e.g., '1분기' -> '03')
   const getQuarterMonth = (q: string) => {
@@ -1024,7 +1099,40 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
-        {/* 4. AI Outlook (Moved from Bottom) */}
+        {/* 4. 손익흐름도 (Sankey Chart) */}
+        <div ref={sankeyRef} className="scroll-mt-32">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-slate-800">손익흐름도</h3>
+              <span className="text-xs text-gray-500">
+                {selectedYear}년 {selectedQuarter} 기준
+              </span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Sankey Chart - 왼쪽 8칸 */}
+              <div className="lg:col-span-8 h-[500px]">
+                <IncomeSankeyChart
+                  data={sankeyData}
+                  totalRevenue={totalRevenue}
+                />
+              </div>
+              {/* Expense Ranking - 오른쪽 4칸 */}
+              <div className="lg:col-span-4">
+                <div className="bg-white rounded-xl p-5 border border-gray-100 h-full">
+                  <h4 className="font-bold text-slate-800 text-lg mb-4">
+                    비용 순위
+                  </h4>
+                  <ExpenseRanking
+                    expenses={expenseData}
+                    totalRevenue={totalRevenue}
+                  />
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* 5. AI Outlook (Moved from Bottom) */}
         <div ref={aiRef} className="scroll-mt-32">
           <GlassCard className="p-8" variant="dark">
             <div className="flex flex-col md:flex-row items-center gap-8">
@@ -1230,96 +1338,100 @@ const CompanyDetail: React.FC<DetailProps> = ({
             {/* 공시분석 탭 컨텐츠 */}
             {disclosureTab === "공시분석" && (
               <div className="p-6">
-                {/* 공시분석 카드들 */}
-                <div className="space-y-4">
-                  {disclosureAnalysisData
-                    .slice(0, visibleDisclosureCards)
-                    .map((card, index) => (
-                      <div
-                        key={index}
-                        className="bg-white rounded-xl border border-gray-200 p-6 relative"
-                      >
-                        <div className="flex flex-col md:flex-row gap-6">
-                          {/* 좌측 영역 */}
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-bold text-slate-800">
-                                  {currentCompany.name}
-                                </span>
-                                <span className="text-gray-400 text-sm">
-                                  {card.subtitle}
-                                </span>
-                              </div>
-                              <h2
-                                className={`text-2xl md:text-3xl font-bold ${card.color} leading-tight`}
-                              >
-                                {card.title.split(" ").slice(0, 2).join(" ")}
-                                <br />
-                                {card.title.split(" ").slice(2).join(" ")}
-                              </h2>
-                            </div>
-                            <p className="text-xs text-gray-400 mt-6">
-                              {card.date} 기준
+                {/* 공시분석 카드 */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 relative">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* 좌측 영역 */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-bold text-slate-800">
+                            {currentCompany.name}
+                          </span>
+                          <span className="text-gray-400 text-sm">
+                            타법인 주식 및 출자증권 취득결정
+                          </span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-red-500 leading-tight">
+                          최대주주등
+                          <br />
+                          소유주식 변동 공시
+                        </h2>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-6">
+                        01/08 09:00 기준
+                      </p>
+                    </div>
+
+                    {/* 우측 영역 */}
+                    <div className="flex-1">
+                      <div className="flex justify-end mb-4">
+                        <button className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                          공시 원본 보기
+                        </button>
+                      </div>
+
+                      {/* 테이블 리스트 */}
+                      <div className="space-y-0">
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            투자내용 및 목적
+                          </span>
+                          <div className="flex-1 text-sm text-slate-700">
+                            <p>경영참여(직접 또는 계열사를 통한 이사 선임)</p>
+                            <p className="text-gray-500">
+                              투자회사: 신한라이프생명
                             </p>
                           </div>
-
-                          {/* 우측 영역 */}
-                          <div className="flex-1">
-                            <div className="flex justify-end mb-4">
-                              <button className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                공시 원본 보기
-                              </button>
-                            </div>
-
-                            {/* 테이블 리스트 */}
-                            <div className="space-y-0">
-                              {card.details.map((detail, detailIndex) => (
-                                <div
-                                  key={detailIndex}
-                                  className="flex py-3 border-b border-gray-100"
-                                >
-                                  <span
-                                    className={`w-28 text-sm ${detail.isHighlight ? "text-red-500" : "text-gray-500"} shrink-0`}
-                                  >
-                                    {detail.label}
-                                  </span>
-                                  {detail.subValue ? (
-                                    <div className="flex-1 text-sm text-slate-700">
-                                      <p>{detail.value}</p>
-                                      <p className="text-gray-500">
-                                        {detail.subValue}
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <span className="flex-1 text-sm text-slate-700">
-                                      {detail.value}
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-red-500 shrink-0">
+                            공시일
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2025.01.08
+                          </span>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            투자금액
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2,840억원
+                          </span>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            투자기간
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2025.01.08 ~ 장기보유
+                          </span>
+                        </div>
+                        <div className="flex py-3 border-b border-gray-100">
+                          <span className="w-28 text-sm text-gray-500 shrink-0">
+                            이사회결의일
+                          </span>
+                          <span className="flex-1 text-sm text-slate-700">
+                            2025.01.07
+                          </span>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* 하단 화살표 버튼 */}
-                {visibleDisclosureCards < disclosureAnalysisData.length && (
-                  <div className="flex justify-center mt-6">
-                    <button
-                      onClick={() =>
-                        setVisibleDisclosureCards((prev) =>
-                          Math.min(prev + 2, disclosureAnalysisData.length),
-                        )
-                      }
-                      className="w-10 h-10 rounded-full bg-shinhan-blue text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
-                    >
-                      <ArrowDown size={20} />
-                    </button>
-                  </div>
-                )}
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={() => {
+                      // TODO: 추가 공시 데이터 로드 기능 구현
+                    }}
+                    className="w-10 h-10 rounded-full bg-shinhan-blue text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <ArrowDown size={20} />
+                  </button>
+                </div>
               </div>
             )}
 
