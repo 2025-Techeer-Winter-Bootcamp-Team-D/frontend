@@ -1,3 +1,5 @@
+//data types 정의
+//핵심 금융 데이터 정의
 export interface StockIndex {
   name: string;
   value: number;
@@ -22,6 +24,7 @@ export interface Company {
   profit: number; // in billions
 }
 
+//분석 및 트랜드 기능
 export interface NewsItem {
   id: string;
   title: string;
@@ -60,6 +63,7 @@ export interface Stock {
   divYield: number; // Dividend Yield (%)
 }
 
+//차트 및 인터랙션 설정
 export type AxisKey = keyof Omit<Stock, "id" | "name" | "sector">;
 
 export interface AxisInfo {
@@ -73,4 +77,27 @@ export interface AxisInfo {
 export interface BrushRange {
   min: number;
   max: number;
+}
+export interface SankeyNode {
+  id: string;
+  name: string;
+  color: string;
+  category: "Revenue" | "Profit" | "Expense" | "Hub";
+}
+
+export interface SankeyLink {
+  source: string;
+  target: string;
+  value: number;
+}
+
+export interface SankeyData {
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+}
+export interface ExpenseItem {
+  name: string;
+  amount: number;
+  percentage: number;
+  category: "COGS" | "OpEx" | "Interest/Tax";
 }

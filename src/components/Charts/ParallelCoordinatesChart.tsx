@@ -6,6 +6,7 @@ import { AXES } from "../../constants";
 interface Props {
   data: Stock[];
   onFilterChange: (filters: Partial<Record<AxisKey, BrushRange>>) => void;
+  filters: Partial<Record<AxisKey, BrushRange>>;
   filteredIds: Set<string>;
   onStockSelect: (stock: Stock | null) => void;
   selectedStockId: string | null;
@@ -14,6 +15,7 @@ interface Props {
 const ParallelCoordinatesChart: React.FC<Props> = ({
   data,
   onFilterChange,
+  filters,
   filteredIds,
   onStockSelect,
   selectedStockId,
@@ -261,6 +263,20 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     });
   }, [filteredIds, selectedStockId]);
 
+  // 필터가 빈 객체가 되면 브러시를 클리어
+  useEffect(() => {
+    if (Object.keys(filters).length === 0 && svgRef.current) {
+      const svg = d3.select(svgRef.current);
+      svg.selectAll<SVGGElement, AxisInfo>(".brush").each(function () {
+        d3.select<SVGGElement, AxisInfo>(this).call(
+          d3.brushY<AxisInfo>().move,
+          null,
+        );
+      });
+      activeFilters.current = {};
+    }
+  }, [filters]);
+
   return (
     <div
       ref={containerRef}
@@ -268,7 +284,7 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     >
       <div className="mb-4">
         <h2 className="text-xl font-bold text-[#0046FF]">
-          나만의 저평가 우량주 발굴기 (Parallel Coordinates)
+          나만의 저평가 우량주 발굴 (Parallel Coordinates)
         </h2>
         <p className="text-sm text-slate-500">
           선을 클릭하면 해당 기업이 강조됩니다.

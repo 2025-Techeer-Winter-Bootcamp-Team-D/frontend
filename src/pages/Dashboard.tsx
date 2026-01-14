@@ -217,6 +217,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <ParallelCoordinatesChart
             data={SAMPLE_STOCKS}
             onFilterChange={setFilters}
+            filters={filters}
             filteredIds={filteredIds}
             onStockSelect={setSelectedStock}
             selectedStockId={selectedStock?.id ?? null}
