@@ -403,54 +403,67 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Disclosure Stream */}
             <div className="lg:col-span-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Disclosure Stream
-                </h3>
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-800"></div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {[
-                  {
-                    title: "Annual Performance Review 2024: Financial Sector",
-                    time: "24m ago",
-                  },
-                  {
-                    title: "Strategic Investment Disclosure: AI Infrastructure",
-                    time: "45m ago",
-                  },
-                  {
-                    title: "Dividend Distribution Policy Update",
-                    time: "1h ago",
-                  },
-                  {
-                    title: "New Governance Structure Announcement",
-                    time: "2h ago",
-                  },
-                  {
-                    title: "Q1 2024 Earnings Release Schedule",
-                    time: "3h ago",
-                  },
-                ].map((news, i) => (
-                  <div
-                    key={i}
-                    className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <h4 className="font-bold text-slate-800 text-sm mb-2 group-hover:text-shinhan-blue transition-colors line-clamp-1">
-                      {news.title}
-                    </h4>
-                    <div className="flex justify-between items-center text-xs text-gray-400">
-                      <span>{news.time}</span>
-                      <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                        READ <ArrowRight size={10} />
-                      </span>
-                    </div>
+              <div className="bg-white rounded-2xl p-6 h-full border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-shinhan-blue animate-pulse"></div>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      자본시장 공시
+                    </h3>
                   </div>
-                ))}
+                  <span className="text-xs text-slate-400 font-medium">
+                    LIVE
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    {
+                      title: "삼성전자, 10조원 규모 자사주 매입 결정",
+                      time: "24분 전",
+                      tag: "자사주",
+                    },
+                    {
+                      title: "카카오, 1,500억원 규모 전환사채(CB) 발행 공고",
+                      time: "45분 전",
+                      tag: "CB발행",
+                    },
+                    {
+                      title: "현대차, 1:5 무상증자 결정... 주주가치 제고",
+                      time: "1시간 전",
+                      tag: "무상증자",
+                    },
+                    {
+                      title: "LG에너지솔루션, 자사주 300만주 소각 공시",
+                      time: "2시간 전",
+                      tag: "소각",
+                    },
+                    {
+                      title: "네이버, 액면분할(1:10) 주주총회 의결",
+                      time: "3시간 전",
+                      tag: "액면분할",
+                    },
+                  ].map((news, i) => (
+                    <div
+                      key={i}
+                      className="bg-slate-50 p-4 rounded-xl border border-slate-100 hover:bg-slate-100 hover:border-slate-200 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-[#0046FF] text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                          {news.tag}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {news.time}
+                        </span>
+                      </div>
+                      <h4 className="font-medium text-slate-700 text-sm leading-snug group-hover:text-slate-900 transition-colors line-clamp-2">
+                        {news.title}
+                      </h4>
+                    </div>
+                  ))}
+                </div>
+                <button className="w-full mt-4 py-3 text-sm font-medium text-slate-500 hover:text-shinhan-blue border border-slate-200 rounded-xl hover:border-shinhan-blue transition-all flex items-center justify-center gap-2">
+                  전체 공시 보기 <ArrowRight size={14} />
+                </button>
               </div>
             </div>
           </div>
