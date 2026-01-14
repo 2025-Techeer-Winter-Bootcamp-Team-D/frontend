@@ -1,11 +1,14 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import AIBubbleChart from "../components/Charts/AIBubbleChart";
+import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import IndustryRankingCard from "../components/Ranking/IndustryRankingCard";
-import { ArrowRight, Search, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { PageView } from "../types";
+import type { Stock, AxisKey, BrushRange } from "../types";
+import { SAMPLE_STOCKS } from "../constants";
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
@@ -24,6 +27,28 @@ const Dashboard: React.FC<DashboardProps> = ({
     new Set(["hero"]),
   );
   const navigate = useNavigate();
+
+  // Parallel Coordinates Chart State
+  const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
+    {},
+  );
+  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
+
+  const filteredIds = useMemo(() => {
+    const ids = new Set<string>();
+    SAMPLE_STOCKS.forEach((stock) => {
+      let pass = true;
+      for (const key of Object.keys(filters) as AxisKey[]) {
+        const range = filters[key];
+        if (range && (stock[key] < range.min || stock[key] > range.max)) {
+          pass = false;
+          break;
+        }
+      }
+      if (pass) ids.add(stock.id);
+    });
+    return ids;
+  }, [filters]);
 
   const handleCompanyClick = (companyCode: string) => {
     navigate(`/company/${companyCode}`);
@@ -77,7 +102,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     const sectionIds = [
       "hero",
-      "platform-identity",
+      "parallel-coordinates",
       "market-dashboard",
       "ai-issue",
     ];
@@ -151,14 +176,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => scrollToSection("platform-identity")}
-              className="px-8 py-4 bg-white text-shinhan-blue font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
-            >
-              서비스 소개
-            </button>
-            <button
               onClick={() => scrollToSection("market-dashboard")}
-              className="px-8 py-4 bg-transparent border border-white/30 text-white font-bold rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+              className="px-8 py-4 bg-white text-shinhan-blue font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
             >
               대시보드 시작 <ArrowRight size={18} />
             </button>
@@ -171,106 +190,107 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </section>
 
-      {/* 2. IDENTITY SECTION - Snap Start */}
+      {/* 2. PARALLEL COORDINATES SECTION - Snap Start */}
       <section
-        id="platform-identity"
-        className="min-h-screen w-full flex items-center py-32 px-6 bg-white relative overflow-hidden snap-start shrink-0"
+        id="parallel-coordinates"
+        className="min-h-screen w-full flex flex-col justify-center py-32 px-6 bg-white snap-start shrink-0"
       >
         <div
-          className={`max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center h-full transition-all duration-500 ease-out ${
-            visibleSections.has("platform-identity")
+          className={`max-w-7xl mx-auto w-full transition-all duration-500 ease-out ${
+            visibleSections.has("parallel-coordinates")
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-16"
           }`}
         >
-          <div
-            className={`space-y-8 transition-all duration-300 delay-75 ${
-              visibleSections.has("platform-identity")
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 -translate-x-10"
-            }`}
-          >
+          <div className="text-center mb-12">
             <span className="text-shinhan-blue font-bold tracking-widest text-sm uppercase">
-              Platform Identity
+              Quant Analysis
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
-              데이터로 완성하는
-              <br />
-              신뢰의 투자 판단
+            <h2 className="text-4xl font-bold text-slate-900 mt-2">
+              나만의 저평가 우량주 발굴
             </h2>
-            <p className="text-slate-500 text-lg leading-relaxed">
-              복잡한 텍스트 공시와 나열된 방대한 숫자들을
-              <br />
-              투자자가 직관적으로 이해할 수 있는
-              <br />
-              <span className="text-slate-800 font-bold">
-                비주얼 데이터 언어
-              </span>
-              로 재해석합니다.
+            <p className="text-slate-500 mt-4">
+              각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
             </p>
-
-            <div className="grid grid-cols-2 gap-6 mt-12">
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-blue-100 transition-colors">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-shinhan-blue mb-4">
-                  <ShieldCheck size={24} />
-                </div>
-                <h4 className="font-bold text-slate-800 mb-2">01. 신뢰감</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  금융감독원 DART 정식 API 연동으로 왜곡 없는 고순도 데이터 제공
-                </p>
-              </div>
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-blue-100 transition-colors">
-                <div className="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center text-yellow-600 mb-4">
-                  <Zap size={24} />
-                </div>
-                <h4 className="font-bold text-slate-800 mb-2">02. 직관성</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  재무제표 핵심 지표를 트렌드 차트로 시각화하여 빠른 의사결정
-                  지원
-                </p>
-              </div>
-            </div>
           </div>
 
-          <div
-            className={`relative transition-all duration-300 delay-75 ${
-              visibleSections.has("platform-identity")
-                ? "opacity-100 translate-x-0 scale-100"
-                : "opacity-0 translate-x-10 scale-95"
-            }`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-tr from-blue-50 to-white rounded-3xl transform rotate-3 scale-105"></div>
-            <GlassCard className="relative p-8 shadow-2xl shadow-blue-100/50 border-white/80 bg-white/80 backdrop-blur-xl">
-              <div className="flex justify-between items-center mb-8 opacity-50">
-                <div className="w-20 h-4 bg-gray-200 rounded-full"></div>
-                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+          <ParallelCoordinatesChart
+            data={SAMPLE_STOCKS}
+            onFilterChange={setFilters}
+            filteredIds={filteredIds}
+            onStockSelect={setSelectedStock}
+            selectedStockId={selectedStock?.id ?? null}
+          />
+
+          {/* Selected Stock Info */}
+          {selectedStock && (
+            <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900">
+                    {selectedStock.name}
+                  </h3>
+                  <span className="text-sm text-slate-500">
+                    {selectedStock.sector}
+                  </span>
+                </div>
+                <button
+                  onClick={() => navigate(`/company/${selectedStock.id}`)}
+                  className="px-6 py-3 bg-shinhan-blue text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  상세 분석 <ArrowRight size={18} />
+                </button>
               </div>
-              <div className="space-y-4 mb-8">
-                <div className="w-full h-8 bg-gray-100 rounded-lg"></div>
-                <div className="w-3/4 h-8 bg-gray-100 rounded-lg"></div>
-              </div>
-              <div className="h-48 flex items-end justify-between gap-4 mb-8 px-4">
-                <div className="w-full bg-indigo-500/20 h-[40%] rounded-t-lg"></div>
-                <div className="w-full bg-indigo-500/40 h-[60%] rounded-t-lg"></div>
-                <div className="w-full bg-indigo-500/60 h-[50%] rounded-t-lg"></div>
-                <div className="w-full bg-indigo-500 h-[80%] rounded-t-lg shadow-lg shadow-indigo-500/30 relative group">
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    Data
+              <div className="grid grid-cols-5 gap-4 mt-6">
+                <div className="text-center p-4 bg-white rounded-xl">
+                  <div className="text-xs text-slate-500 mb-1">PER</div>
+                  <div className="text-xl font-bold text-slate-900">
+                    {selectedStock.per.toFixed(1)}
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-xl">
+                  <div className="text-xs text-slate-500 mb-1">PBR</div>
+                  <div className="text-xl font-bold text-slate-900">
+                    {selectedStock.pbr.toFixed(2)}
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-xl">
+                  <div className="text-xs text-slate-500 mb-1">ROE</div>
+                  <div className="text-xl font-bold text-slate-900">
+                    {selectedStock.roe.toFixed(1)}%
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-xl">
+                  <div className="text-xs text-slate-500 mb-1">부채비율</div>
+                  <div className="text-xl font-bold text-slate-900">
+                    {selectedStock.debtRatio}%
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-xl">
+                  <div className="text-xs text-slate-500 mb-1">배당수익률</div>
+                  <div className="text-xl font-bold text-slate-900">
+                    {selectedStock.divYield.toFixed(1)}%
                   </div>
                 </div>
               </div>
-              <div className="flex justify-between items-end border-t border-gray-100 pt-6">
-                <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">
-                  Current Momentum
-                </span>
-                <div className="text-right">
-                  <div className="text-4xl font-bold text-slate-800">98.2</div>
-                  <div className="text-xs font-bold text-shinhan-blue tracking-wider">
-                    STRONG BUY
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
+            </div>
+          )}
+
+          {/* Filter Summary */}
+          <div className="mt-6 flex items-center justify-between text-sm text-slate-500">
+            <span>
+              필터링 결과:{" "}
+              <strong className="text-shinhan-blue">{filteredIds.size}</strong>
+              개 종목
+            </span>
+            {Object.keys(filters).length > 0 && (
+              <button
+                onClick={() => setFilters({})}
+                className="text-red-500 hover:text-red-700 font-medium"
+              >
+                필터 초기화
+              </button>
+            )}
           </div>
         </div>
       </section>
