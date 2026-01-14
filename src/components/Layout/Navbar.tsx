@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   TrendingDown,
   Newspaper,
+  FileText,
+  PieChart,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -310,14 +312,14 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div className="h-6 w-px bg-gray-200 mx-2"></div>
             <button
-              onClick={() => setPage(PageView.SIGN_UP)}
+              onClick={() => setPage(PageView.LOGIN)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
             >
               <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center">
                 <User size={14} className="text-slate-500" />
               </div>
               <span className="text-sm font-medium hidden lg:block text-slate-700">
-                김신한
+                로그인
               </span>
             </button>
           </div>
