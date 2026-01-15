@@ -23,7 +23,7 @@ export const getComparisons = () => {
 
 /**
  * 기업 비교 조회
- * @param CompanyId 산업아이디
+ * @param comparison_id 비교 아이디
  * */
 
 export const getComparison = (comparison_id: number) => {
@@ -50,6 +50,6 @@ export const addCompany = (
 
 export const removeCompany = (comparison_id: number, stock_code: number) => {
   return api
-    .delete(`/api/comparisons/${comparison_id}/${stock_code}/`)
+    .delete(`/comparisons/${comparison_id}/${stock_code}/`)
     .then((res) => res.data);
 };

@@ -162,7 +162,7 @@ export interface Comparison {
 
 // POST /comparisons - Request
 export interface CreateComparisonRequest {
-  name: string[];
+  name: string;
   companies: number[];
 }
 
@@ -186,7 +186,7 @@ export type ComparisonDetailResponse = Comparison;
 
 // POST /comparisons/{comparison_id} - Request
 export interface AddCompanyToComparisonRequest {
-  stockCode: string;
+  company: string;
 }
 
 // DELETE /comparisons/{comparison_id} - Response

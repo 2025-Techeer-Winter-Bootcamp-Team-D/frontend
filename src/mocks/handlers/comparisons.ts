@@ -47,7 +47,7 @@ export const comparisonHandlers = [
     const id = nextId++;
     const comparison: Comparison = {
       id,
-      title: body?.name?.join(", ") ?? `비교 ${id}`,
+      title: body?.name ?? `비교 ${id}`,
       companies: stockCodes.map(makeCompany),
       createdAt: new Date().toISOString(),
     };
@@ -102,11 +102,10 @@ export const comparisonHandlers = [
       );
     }
 
-    const body = (await request.json().catch(() => ({}))) as Partial<
-      AddCompanyToComparisonRequest & { ticker?: string; companyId?: string }
-    >;
-    const stockCode: string =
-      body?.stockCode ?? body?.ticker ?? body?.companyId ?? "035420";
+    const body = (await request
+      .json()
+      .catch(() => ({}))) as Partial<AddCompanyToComparisonRequest>;
+    const stockCode: string = body?.company ?? "035420";
 
     // 중복 방지
     if (!found.companies.some((c) => c.stockCode === stockCode)) {
