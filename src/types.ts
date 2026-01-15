@@ -101,36 +101,95 @@ export interface ExpenseItem {
   percentage: number;
   category: "COGS" | "OpEx" | "Interest/Tax";
 }
-export interface ApiResponse<T> {
-  status: number;
-  data: T;
-  message?: string;
+
+// ============================================
+// Industry API Types
+// ============================================
+
+// GET /industries/{industry_id}/news
+export interface IndustryNewsItem {
+  title: string;
+  url: string;
+  publishedAt: string;
 }
 
-// OHLCV 주가 데이터
-export interface OhlcvData {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  amount: number;
+export interface IndustryNewsResponse {
+  industryId: string;
+  items: IndustryNewsItem[];
 }
 
-// Auth 관련 타입
-export interface LoginRequest {
-  email: string;
-  password: string;
+// GET /industries/{industry_id}/companies
+export interface IndustryCompany {
+  stockCode: string;
+  name: string;
+  rank: number;
+  marketCap: number;
+  revenue: number;
 }
 
-export interface SignupResponse {
-  status: number;
-  message: string;
-  userId: number;
+export interface IndustryCompaniesResponse {
+  industryId: string;
+  companies: IndustryCompany[];
 }
 
-export interface LoginResponse {
-  status: number;
-  accessToken: string;
+// GET /industries/{industry_id}/analysis
+export interface IndustryAnalysisResponse {
+  industryId: string;
+  summary: string;
+  keywords: string[];
+  sentiment: "positive" | "negative" | "neutral";
+}
+
+// ============================================
+// Comparison API Types
+// ============================================
+
+export interface CompareCompany {
+  stockCode: string;
+  name: string;
+  revenue: number;
+  operatingProfit: number;
+  roe: number;
+  per: number;
+}
+
+export interface Comparison {
+  id: number;
+  title: string;
+  companies: CompareCompany[];
+  createdAt: string;
+}
+
+// POST /comparisons - Request
+export interface CreateComparisonRequest {
+  name: string;
+  companies: number[];
+}
+
+// POST /comparisons - Response
+export type CreateComparisonResponse = Comparison;
+
+// GET /comparisons - Response
+export interface ComparisonListItem {
+  id: number;
+  title: string;
+  companyCount: number;
+  createdAt: string;
+}
+
+export interface ComparisonListResponse {
+  items: ComparisonListItem[];
+}
+
+// GET /comparisons/{comparison_id} - Response
+export type ComparisonDetailResponse = Comparison;
+
+// POST /comparisons/{comparison_id} - Request
+export interface AddCompanyToComparisonRequest {
+  company: string;
+}
+
+// DELETE /comparisons/{comparison_id} - Response
+export interface DeleteComparisonResponse {
+  ok: boolean;
 }

@@ -1,21 +1,12 @@
-// src/mocks/handlers/comparison.ts
 import { http, HttpResponse, delay } from "msw";
-
-type CompareCompany = {
-  stockCode: string;
-  name: string;
-  revenue: number;
-  operatingProfit: number;
-  roe: number;
-  per: number;
-};
-
-type Comparison = {
-  id: number;
-  title: string;
-  companies: CompareCompany[];
-  createdAt: string;
-};
+import type {
+  CompareCompany,
+  Comparison,
+  ComparisonListResponse,
+  DeleteComparisonResponse,
+  CreateComparisonRequest,
+  AddCompanyToComparisonRequest,
+} from "../../types";
 
 let nextId = 1;
 const comparisons = new Map<number, Comparison>();
@@ -45,16 +36,18 @@ export const comparisonHandlers = [
   http.post("/comparisons", async ({ request }) => {
     await delay(300);
 
-    // 프론트가 body로 뭘 보내는지 확실치 않으니 최대한 유연하게 받음
-    const body = (await request.json().catch(() => ({}))) as any;
-    const stockCodes: string[] = body?.stockCodes ??
-      body?.tickers ??
-      body?.companies?.map((c: any) => c.stockCode) ?? ["005930", "000660"];
+    const body = (await request
+      .json()
+      .catch(() => ({}))) as Partial<CreateComparisonRequest>;
+
+    // companies는 number[] (회사 ID), stockCode로 변환
+    const companyIds: number[] = body?.companies ?? [5930, 660];
+    const stockCodes = companyIds.map((id) => String(id).padStart(6, "0"));
 
     const id = nextId++;
     const comparison: Comparison = {
       id,
-      title: body?.title ?? `비교 ${id}`,
+      title: body?.name ?? `비교 ${id}`,
       companies: stockCodes.map(makeCompany),
       createdAt: new Date().toISOString(),
     };
@@ -67,14 +60,17 @@ export const comparisonHandlers = [
   // 기업 비교 목록 조회 (GET /comparisons)
   http.get("/comparisons", async () => {
     await delay(200);
-    return HttpResponse.json({
+
+    const response: ComparisonListResponse = {
       items: Array.from(comparisons.values()).map((c) => ({
         id: c.id,
         title: c.title,
         companyCount: c.companies.length,
         createdAt: c.createdAt,
       })),
-    });
+    };
+
+    return HttpResponse.json(response);
   }),
 
   // 기업 비교 조회 (GET /comparisons/{comparison_id})
@@ -106,9 +102,11 @@ export const comparisonHandlers = [
       );
     }
 
-    const body = (await request.json().catch(() => ({}))) as any;
-    const stockCode: string =
-      body?.stockCode ?? body?.ticker ?? body?.companyId ?? "035420";
+    const body = (await request
+      .json()
+      .catch(() => ({}))) as Partial<AddCompanyToComparisonRequest>;
+    const rawCode = body?.company ?? "035420";
+    const stockCode = rawCode.padStart(6, "0");
 
     // 중복 방지
     if (!found.companies.some((c) => c.stockCode === stockCode)) {
@@ -124,17 +122,18 @@ export const comparisonHandlers = [
     await delay(200);
     const id = Number(params.comparison_id);
     comparisons.delete(id);
-    return HttpResponse.json({ ok: true });
+
+    const response: DeleteComparisonResponse = { ok: true };
+    return HttpResponse.json(response);
   }),
 
   // 비교 매치업 내 기업 삭제 (DELETE /api/comparisons/{comparison_id}/{stock_code}/)
-  // 명세서에 /api 접두사가 붙어있어서 둘 다 잡아준다.
   http.delete(
     "/api/comparisons/:comparison_id/:stock_code/",
     async ({ params }) => {
       await delay(200);
       const id = Number(params.comparison_id);
-      const stockCode = String(params.stock_code);
+      const stockCode = String(params.stock_code).padStart(6, "0");
       const found = comparisons.get(id);
 
       if (!found) {
@@ -152,22 +151,27 @@ export const comparisonHandlers = [
     },
   ),
 
-  // 혹시 프론트가 /comparisons/{id}/{stockCode}로 호출하는 경우도 대비
-  http.delete("/comparisons/:comparison_id/:stock_code", async ({ params }) => {
-    await delay(200);
-    const id = Number(params.comparison_id);
-    const stockCode = String(params.stock_code);
-    const found = comparisons.get(id);
+  // /comparisons/{id}/{stockCode}/ 경로 (trailing slash)
+  http.delete(
+    "/comparisons/:comparison_id/:stock_code/",
+    async ({ params }) => {
+      await delay(200);
+      const id = Number(params.comparison_id);
+      const stockCode = String(params.stock_code).padStart(6, "0");
+      const found = comparisons.get(id);
 
-    if (!found) {
-      return HttpResponse.json(
-        { message: "comparison not found" },
-        { status: 404 },
+      if (!found) {
+        return HttpResponse.json(
+          { message: "comparison not found" },
+          { status: 404 },
+        );
+      }
+
+      found.companies = found.companies.filter(
+        (c) => c.stockCode !== stockCode,
       );
-    }
-
-    found.companies = found.companies.filter((c) => c.stockCode !== stockCode);
-    comparisons.set(id, found);
-    return HttpResponse.json(found);
-  }),
+      comparisons.set(id, found);
+      return HttpResponse.json(found);
+    },
+  ),
 ];
