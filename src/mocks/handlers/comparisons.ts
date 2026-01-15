@@ -105,7 +105,8 @@ export const comparisonHandlers = [
     const body = (await request
       .json()
       .catch(() => ({}))) as Partial<AddCompanyToComparisonRequest>;
-    const stockCode: string = body?.company ?? "035420";
+    const rawCode = body?.company ?? "035420";
+    const stockCode = rawCode.padStart(6, "0");
 
     // 중복 방지
     if (!found.companies.some((c) => c.stockCode === stockCode)) {
@@ -132,7 +133,7 @@ export const comparisonHandlers = [
     async ({ params }) => {
       await delay(200);
       const id = Number(params.comparison_id);
-      const stockCode = String(params.stock_code);
+      const stockCode = String(params.stock_code).padStart(6, "0");
       const found = comparisons.get(id);
 
       if (!found) {
@@ -150,22 +151,27 @@ export const comparisonHandlers = [
     },
   ),
 
-  // /comparisons/{id}/{stockCode} 경로도 대비
-  http.delete("/comparisons/:comparison_id/:stock_code", async ({ params }) => {
-    await delay(200);
-    const id = Number(params.comparison_id);
-    const stockCode = String(params.stock_code);
-    const found = comparisons.get(id);
+  // /comparisons/{id}/{stockCode}/ 경로 (trailing slash)
+  http.delete(
+    "/comparisons/:comparison_id/:stock_code/",
+    async ({ params }) => {
+      await delay(200);
+      const id = Number(params.comparison_id);
+      const stockCode = String(params.stock_code).padStart(6, "0");
+      const found = comparisons.get(id);
 
-    if (!found) {
-      return HttpResponse.json(
-        { message: "comparison not found" },
-        { status: 404 },
+      if (!found) {
+        return HttpResponse.json(
+          { message: "comparison not found" },
+          { status: 404 },
+        );
+      }
+
+      found.companies = found.companies.filter(
+        (c) => c.stockCode !== stockCode,
       );
-    }
-
-    found.companies = found.companies.filter((c) => c.stockCode !== stockCode);
-    comparisons.set(id, found);
-    return HttpResponse.json(found);
-  }),
+      comparisons.set(id, found);
+      return HttpResponse.json(found);
+    },
+  ),
 ];
