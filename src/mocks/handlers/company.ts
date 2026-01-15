@@ -40,8 +40,8 @@ export const companyHandlers = [
       .filter(([, company]) =>
         company.company_name.toLowerCase().includes(keyword.toLowerCase()),
       )
-      .map(([, company], index) => ({
-        companyId: index + 1,
+      .map(([key, company]) => ({
+        companyId: key,
         name: company.company_name,
         logo: company.logo_url,
       }));
@@ -85,10 +85,8 @@ export const companyHandlers = [
     }
 
     // 404 에러: 해당 기업이 없는 경우
-    const companyExists = Object.keys(mockCompanies).some(
-      (key) => key === company_id,
-    );
-    if (!companyExists) {
+    const companyId = company_id as string;
+    if (!mockCompanies[companyId]) {
       return HttpResponse.json(
         {
           status: 404,
