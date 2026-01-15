@@ -101,3 +101,36 @@ export interface ExpenseItem {
   percentage: number;
   category: "COGS" | "OpEx" | "Interest/Tax";
 }
+export interface ApiResponse<T> {
+  status: number;
+  data: T;
+  message?: string;
+}
+
+// OHLCV 주가 데이터
+export interface OhlcvData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  amount: number;
+}
+
+// Auth 관련 타입
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface SignupResponse {
+  status: number;
+  message: string;
+  userId: number;
+}
+
+export interface LoginResponse {
+  status: number;
+  accessToken: string;
+}
