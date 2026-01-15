@@ -3,12 +3,14 @@ import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
   ArrowLeft,
+  ArrowRight,
   TrendingUp,
   Info,
   ChevronDown,
   X,
   ChevronRight,
   Trophy,
+  RotateCcw,
 } from "lucide-react";
 import { PageView } from "../types";
 import type { Stock, AxisKey, BrushRange } from "../types";
@@ -1057,12 +1059,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Parallel Coordinates Chart --- */}
       <div className="mb-10">
-        <h3 className="text-lg font-bold text-slate-700 mb-4 px-2">
-          나만의 저평가 우량주 발굴 (Parallel Coordinates)
-        </h3>
-        <p className="text-slate-500 mb-4 px-2">
-          각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
-        </p>
+        <div className="mb-4 px-2">
+          <h3 className="text-lg font-bold text-slate-700">
+            나만의 저평가 우량주 발굴 (Parallel Coordinates)
+          </h3>
+          <p className="text-slate-500 text-sm mt-1">
+            각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
+          </p>
+        </div>
+
         <ParallelCoordinatesChart
           data={SAMPLE_STOCKS}
           onFilterChange={setFilters}
@@ -1071,6 +1076,177 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           onStockSelect={setSelectedStock}
           selectedStockId={selectedStock?.id ?? null}
         />
+
+        {/* Filter Summary */}
+        <div className="mt-4 px-2 flex items-center justify-between text-sm text-slate-500">
+          <span>
+            필터링 결과:{" "}
+            <strong className="text-shinhan-blue">{filteredIds.size}</strong>개
+            종목
+          </span>
+          {Object.keys(filters).length > 0 && (
+            <button
+              onClick={() => {
+                setFilters({});
+                setSelectedStock(null);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
+            >
+              <RotateCcw size={16} />
+              필터 초기화
+            </button>
+          )}
+        </div>
+
+        {/* Selected Stock Info */}
+        {selectedStock && (
+          <div className="mt-6 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  {selectedStock.name}
+                </h3>
+                <span className="text-sm text-slate-500">
+                  {selectedStock.sector}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  if (setCompanyCode) {
+                    setCompanyCode(selectedStock.id);
+                    setPage(PageView.COMPANY_DETAIL);
+                  }
+                }}
+                className="px-6 py-3 bg-shinhan-blue text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                상세 분석 <ArrowRight size={18} />
+              </button>
+            </div>
+            <div className="grid grid-cols-5 gap-4 mt-6">
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">PER</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.per.toFixed(1)}
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">PBR</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.pbr.toFixed(2)}
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">ROE</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.roe.toFixed(1)}%
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">부채비율</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.debtRatio}%
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">배당수익률</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.divYield.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filtered Stocks List & Filter Panel - 2 Column Layout */}
+        {Object.keys(filters).length > 0 &&
+          filteredIds.size > 0 &&
+          !selectedStock && (
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left: Stocks List */}
+              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 bg-[#0046FF] text-white border-b border-[#0036CC]">
+                  <h4 className="font-semibold">
+                    필터링된 기업 목록 ({filteredIds.size}개)
+                  </h4>
+                </div>
+                <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                  {SAMPLE_STOCKS.filter((stock) =>
+                    filteredIds.has(stock.id),
+                  ).map((stock) => (
+                    <div
+                      key={stock.id}
+                      className="px-6 py-4 flex items-center justify-between hover:bg-blue-50/30 cursor-pointer transition-colors"
+                      onClick={() => setSelectedStock(stock)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="inline-flex w-10 h-10 rounded-lg bg-slate-100 items-center justify-center font-bold text-slate-600 text-sm">
+                          {stock.name.charAt(0)}
+                        </span>
+                        <div>
+                          <div className="font-bold text-slate-800">
+                            {stock.name}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {stock.sector}
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowRight size={16} className="text-slate-400" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Filter Panel */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden h-fit">
+                <div className="px-6 py-4 bg-[#0046FF] border-b border-[#0036CC]">
+                  <h4 className="font-semibold text-white">적용된 필터</h4>
+                </div>
+                <div className="p-4 space-y-3">
+                  {(Object.keys(filters) as AxisKey[]).map((key) => {
+                    const range = filters[key];
+                    if (!range) return null;
+                    const labels: Record<AxisKey, string> = {
+                      per: "PER",
+                      pbr: "PBR",
+                      roe: "ROE",
+                      debtRatio: "부채비율",
+                      divYield: "배당수익률",
+                    };
+                    return (
+                      <div
+                        key={key}
+                        className="group flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-900">
+                            {labels[key]}
+                          </div>
+                          <div className="text-xs text-slate-600 mt-0.5">
+                            {range.min.toFixed(1)} ~ {range.max.toFixed(1)}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`${labels[key]} 필터제거`}
+                          onClick={() => {
+                            const newFilters = { ...filters };
+                            delete newFilters[key];
+                            setFilters(newFilters);
+                          }}
+                          className="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition
+                                  hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200
+                                  opacity-70 group-hover:opacity-100"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
       </div>
 
       {/* --- News Section --- */}
