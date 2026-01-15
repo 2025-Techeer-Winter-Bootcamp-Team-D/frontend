@@ -253,6 +253,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   // API 호출
   useEffect(() => {
     let cancelled = false;
+    setLoading(ture);
+    setError(null);
 
     Promise.all([
       getIndustryNews(industryId),
@@ -602,7 +604,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         시가총액
                       </div>
                       <div className="text-sm font-bold text-slate-600">
-                        {company.marketCap}
+                        {company.marketCap.toLocaleString()}
                       </div>
                     </div>
                     <div>
@@ -810,9 +812,14 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 <p className="text-slate-700 leading-loose text-lg flex-1">
                   {selectedNews.summary}
                 </p>
-                <p className="text-slate-700 leading-loose text-lg flex-1">
-                  {selectedNews.url}
-                </p>
+                <a
+                  href={selectedNews.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#0046FF] hover:underline text-sm"
+                >
+                  원문보기 →
+                </a>
               </div>
 
               {/* Rounded-md */}
