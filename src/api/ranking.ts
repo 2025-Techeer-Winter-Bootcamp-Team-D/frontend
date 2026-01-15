@@ -1,4 +1,4 @@
-import { api } from "./apiClient";
+import { api } from "./client";
 
 /*기업 순위 조회 */
 

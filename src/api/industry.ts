@@ -1,4 +1,4 @@
-import { api } from "./apiClient";
+import { api } from "./client";
 
 /**
  * 산업 뉴스 목록 조회
