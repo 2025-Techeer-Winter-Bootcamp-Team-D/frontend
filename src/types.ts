@@ -108,14 +108,17 @@ export interface ExpenseItem {
 
 // GET /industries/{industry_id}/news
 export interface IndustryNewsItem {
+  newId: number;
   title: string;
+  summary: string;
   url: string;
-  publishedAt: string;
+  publishedAt: string; // "20260116"
 }
 
 export interface IndustryNewsResponse {
-  industryId: string;
-  items: IndustryNewsItem[];
+  status: number;
+  message: string;
+  data: IndustryNewsItem[];
 }
 
 // GET /industries/{industry_id}/companies
@@ -125,6 +128,13 @@ export interface IndustryCompany {
   rank: number;
   marketCap: number;
   revenue: number;
+  price?: string;
+  change?: string;
+  per?: number;
+  pbr?: number;
+  roe?: number;
+  aiScore?: number;
+  logo?: string;
 }
 
 export interface IndustryCompaniesResponse {
@@ -136,8 +146,13 @@ export interface IndustryCompaniesResponse {
 export interface IndustryAnalysisResponse {
   industryId: string;
   summary: string;
+  outlook?: string;
   keywords: string[];
   sentiment: "positive" | "negative" | "neutral";
+  insights?: {
+    positive: string;
+    risk: string;
+  };
 }
 
 // ============================================

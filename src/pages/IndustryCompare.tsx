@@ -11,7 +11,14 @@ import {
   Trophy,
 } from "lucide-react";
 import { PageView } from "../types";
-import type { Stock, AxisKey, BrushRange } from "../types";
+import type {
+  Stock,
+  AxisKey,
+  BrushRange,
+  IndustryNewsItem,
+  IndustryCompany,
+  IndustryAnalysisResponse,
+} from "../types";
 import { SAMPLE_STOCKS } from "../constants";
 import {
   ResponsiveContainer,
@@ -67,42 +74,6 @@ const INDUSTRY_ID_BY_KEY: Record<IndustryKey, number> = {
   retail: 11,
   telecom: 12,
 };
-
-// API 응답 타입 정의
-interface IndustryNewsItem {
-  newId: number;
-  title: string;
-  summary: string;
-  url: string;
-  publishedAt: string; //"20260116"
-}
-
-interface IndustryNewsResponse {
-  status: number;
-  message: string;
-  data: IndustryNewsItem[];
-}
-
-interface IndustryAnalysis {
-  outlook: string;
-  insights: {
-    positive: string;
-    risk: string;
-  };
-}
-
-interface IndustryCompany {
-  name: string;
-  code: string;
-  price: string;
-  change: string;
-  per: number;
-  pbr: number;
-  roe: number;
-  aiScore: number;
-  marketCap: string;
-  logo?: string;
-}
 
 interface IndustryData {
   id: IndustryKey;
@@ -247,8 +218,16 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   onToggleStar,
   setCompanyCode,
 }) => {
+  // 초기값으로 initialIndustryId 사용
+  const getInitialIndustry = (): IndustryKey => {
+    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
+      return initialIndustryId as IndustryKey;
+    }
+    return "finance";
+  };
+
   const [selectedIndustry, setSelectedIndustry] =
-    useState<IndustryKey>("finance");
+    useState<IndustryKey>(getInitialIndustry);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
 
   // API state
@@ -256,9 +235,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
-  const [analysis, setAnalysis] = useState<IndustryAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<IndustryAnalysisResponse | null>(
+    null,
+  );
   const [companies, setCompanies] = useState<IndustryCompany[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Parallel Coordinates Chart State
@@ -271,8 +252,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   // API 호출
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    let cancelled = false;
 
     Promise.all([
       getIndustryNews(industryId),
@@ -280,17 +260,27 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       getIndustryCompanies(industryId),
     ])
       .then(([newsRes, analysisRes, companiesRes]) => {
-        setNewsItems(newsRes.data ?? []);
-        setAnalysis(analysisRes);
-        setCompanies(companiesRes.items ?? []);
+        if (!cancelled) {
+          setNewsItems(newsRes.data ?? []);
+          setAnalysis(analysisRes);
+          setCompanies(companiesRes.companies ?? []);
+          setError(null);
+          setLoading(false);
+        }
       })
       .catch((e) => {
-        setError(e?.message ?? "산업 데이터 로딩 실패");
-        setNewsItems([]);
-        setAnalysis(null);
-        setCompanies([]);
-      })
-      .finally(() => setLoading(false));
+        if (!cancelled) {
+          setError((e as Error)?.message ?? "산업 데이터 로딩 실패");
+          setNewsItems([]);
+          setAnalysis(null);
+          setCompanies([]);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [industryId]);
 
   const filteredIds = useMemo(() => {
@@ -308,13 +298,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     });
     return ids;
   }, [filters]);
-
-  // Handle deep linking from dashboard
-  useEffect(() => {
-    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
-      setSelectedIndustry(initialIndustryId as IndustryKey);
-    }
-  }, [initialIndustryId]);
 
   // Use the selected industry data directly.
   // Since we populated all keys in industryDB, we don't need a fallback.
@@ -349,21 +332,25 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         break;
     }
 
+    // 결정적 값 생성 (industryId와 timeRange 기반)
+    const seed = industryId * 100 + labels.length;
+    const variations = [0.02, -0.015, 0.025, -0.01, 0.018, -0.022];
+
     const result = [];
     let current = currentData.indexValue;
-    const volatility = currentData.indexValue * 0.05;
 
     for (let i = labels.length - 1; i >= 0; i--) {
       if (i === labels.length - 1) {
         result.unshift({ time: labels[i], value: current });
       } else {
-        const change = (Math.random() - 0.45) * volatility;
+        const variationIndex = (seed + i) % variations.length;
+        const change = currentData.indexValue * variations[variationIndex];
         current -= change;
         result.unshift({ time: labels[i], value: Math.round(current) });
       }
     }
     return result;
-  }, [selectedIndustry, timeRange, currentData.indexValue]);
+  }, [timeRange, currentData.indexValue, industryId]);
 
   return (
     <div className="animate-fade-in pb-12 relative">
@@ -553,9 +540,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
             return (
               <GlassCard
-                key={company.code}
+                key={company.stockCode}
                 className={containerClasses}
-                onClick={() => handleCompanyClick(company.code)}
+                onClick={() => handleCompanyClick(company.stockCode)}
               >
                 {/* Header */}
                 <div className="flex justify-between items-start mb-6">
@@ -572,15 +559,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         {label}
                       </div>
                       <div className="text-xs text-gray-400 font-mono">
-                        {company.code}
+                        {company.stockCode}
                       </div>
                     </div>
                   </div>
                   <button
-                    onClick={(e) => handleToggleStar(e, company.code)}
+                    onClick={(e) => handleToggleStar(e, company.stockCode)}
                     className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                   >
-                    <StarIcon isActive={starred.has(company.code)} />
+                    <StarIcon isActive={starred.has(company.stockCode)} />
                   </button>
                 </div>
 
@@ -598,7 +585,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       {company.price}
                     </span>
                     <span
-                      className={`text-sm font-bold px-2 py-0.5 rounded ${company.change.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
+                      className={`text-sm font-bold px-2 py-0.5 rounded ${company.change?.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
                     >
                       {company.change}
                     </span>
@@ -621,7 +608,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     <div>
                       <div className="text-[10px] text-gray-400 mb-1">ROE</div>
                       <div className="text-sm font-bold text-shinhan-blue">
-                        {company.roe}%
+                        {company.roe != null ? `${company.roe}%` : "-"}
                       </div>
                     </div>
                   </div>
@@ -658,16 +645,16 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               <tbody className="divide-y divide-gray-50">
                 {companies.map((company: IndustryCompany, index: number) => (
                   <tr
-                    key={company.code}
+                    key={company.stockCode}
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
-                    onClick={() => handleCompanyClick(company.code)}
+                    onClick={() => handleCompanyClick(company.stockCode)}
                   >
                     <td className="pl-6 pr-2 py-4">
                       <button
-                        onClick={(e) => handleToggleStar(e, company.code)}
+                        onClick={(e) => handleToggleStar(e, company.stockCode)}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                       >
-                        <StarIcon isActive={starred.has(company.code)} />
+                        <StarIcon isActive={starred.has(company.stockCode)} />
                       </button>
                     </td>
                     <td className="px-2 py-4 text-center">
@@ -695,7 +682,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       {company.price}
                     </td>
                     <td
-                      className={`px-6 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                      className={`px-6 py-4 text-center font-medium ${company.change?.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                     >
                       {company.change}
                     </td>
@@ -703,7 +690,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       <div className="inline-block">
                         <MiniChart
                           color={
-                            company.change.startsWith("+")
+                            company.change?.startsWith("+")
                               ? "#EF4444"
                               : "#3B82F6"
                           }
@@ -711,8 +698,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center font-medium text-slate-800">
-                      {company.roe >= 0 ? "+" : ""}
-                      {company.roe}%
+                      {company.roe != null
+                        ? `${company.roe >= 0 ? "+" : ""}${company.roe}%`
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 text-center text-slate-600 font-medium">
                       {company.marketCap}
