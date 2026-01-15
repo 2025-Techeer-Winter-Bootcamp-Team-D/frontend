@@ -1,10 +1,17 @@
 import { http, HttpResponse, delay } from "msw";
+import type {
+  IndustryNewsResponse,
+  IndustryCompaniesResponse,
+  IndustryAnalysisResponse,
+} from "../../types";
 
 export const industryHandlers = [
+  // 산업 뉴스 조회 (GET /industries/{industry_id}/news)
   http.get("/industries/:industry_id/news", async ({ params }) => {
     await delay(200);
     const industryId = String(params.industry_id);
-    return HttpResponse.json({
+
+    const response: IndustryNewsResponse = {
       industryId,
       items: [
         {
@@ -18,13 +25,17 @@ export const industryHandlers = [
           publishedAt: "2026-01-11",
         },
       ],
-    });
+    };
+
+    return HttpResponse.json(response);
   }),
 
+  // 산업 내 기업 순위 조회 (GET /industries/{industry_id}/companies)
   http.get("/industries/:industry_id/companies", async ({ params }) => {
     await delay(200);
     const industryId = String(params.industry_id);
-    return HttpResponse.json({
+
+    const response: IndustryCompaniesResponse = {
       industryId,
       companies: [
         {
@@ -49,17 +60,23 @@ export const industryHandlers = [
           revenue: 400,
         },
       ],
-    });
+    };
+
+    return HttpResponse.json(response);
   }),
 
+  // 산업 전망 분석 조회 (GET /industries/{industry_id}/analysis)
   http.get("/industries/:industry_id/analysis", async ({ params }) => {
     await delay(400);
     const industryId = String(params.industry_id);
-    return HttpResponse.json({
+
+    const response: IndustryAnalysisResponse = {
       industryId,
       summary: `산업(${industryId}) 전망 요약 (mock)`,
       keywords: ["성장", "수요", "리스크"],
       sentiment: "positive",
-    });
+    };
+
+    return HttpResponse.json(response);
   }),
 ];
