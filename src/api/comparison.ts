@@ -1,4 +1,4 @@
-import { api } from "./apiClient";
+import { api } from "./client";
 
 /*기업 비교 생성*/
 
