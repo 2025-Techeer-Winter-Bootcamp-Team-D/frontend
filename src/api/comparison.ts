@@ -11,6 +11,10 @@ export const createComparison = (payload: {
 
 /*기업 비교 삭제 */
 
+export const deleteComparison = (comparison_id: number) => {
+  return api.delete(`/comparisons/${comparison_id}`).then((res) => res.data);
+};
+
 /*기업 비교 목록 조회*/
 
 export const getComparisons = () => {
@@ -22,7 +26,7 @@ export const getComparisons = () => {
  * @param CompanyId 산업아이디
  * */
 
-export const getComparison = (CompanyId: number) => {
+export const getComparison = (comparison_id: number) => {
   return api.get(`/comparisons/${comparison_id}`).then((res) => res.data);
 };
 
@@ -31,6 +35,21 @@ export const getComparison = (CompanyId: number) => {
  *
  */
 
+export const addCompany = (
+  comparison_id: number,
+  payload: { company: string },
+) => {
+  return api
+    .post(`/comparisons/${comparison_id}`, payload)
+    .then((res) => res.data);
+};
+
 /**
  * 비교할 기업 삭제
  */
+
+export const removeCompany = (comparison_id: number, stock_code: number) => {
+  return api
+    .delete(`/api/comparisons/${comparison_id}/${stock_code}/`)
+    .then((res) => res.data);
+};
