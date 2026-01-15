@@ -1,0 +1,14 @@
+{
+  "005930": {
+    "stock_code": "005930",
+    "corp_code": "00126380",
+    "company_name": "삼성전자",
+    "industry": { "industry_id": 1, "name": "반도체" },
+    "description": "전자부품, 컴퓨터, 통신기기 제조업",
+    "logo_url": "https://example.com/samsung-logo.png",
+    "market_amount": 350000000000000,
+    "ceo_name": "한종희",
+    "establishment_date": "1969-01-13",
+    "homepage_url": "https://www.samsung.com/sec/"
+  }
+}
