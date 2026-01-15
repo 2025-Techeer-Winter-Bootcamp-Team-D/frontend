@@ -36,21 +36,18 @@ export const comparisonHandlers = [
   http.post("/comparisons", async ({ request }) => {
     await delay(300);
 
-    const body = (await request.json().catch(() => ({}))) as Partial<
-      CreateComparisonRequest & {
-        tickers?: string[];
-        companies?: { stockCode: string }[];
-      }
-    >;
+    const body = (await request
+      .json()
+      .catch(() => ({}))) as Partial<CreateComparisonRequest>;
 
-    const stockCodes: string[] = body?.stockCodes ??
-      body?.tickers ??
-      body?.companies?.map((c) => c.stockCode) ?? ["005930", "000660"];
+    // companies는 number[] (회사 ID), stockCode로 변환
+    const companyIds: number[] = body?.companies ?? [5930, 660];
+    const stockCodes = companyIds.map((id) => String(id).padStart(6, "0"));
 
     const id = nextId++;
     const comparison: Comparison = {
       id,
-      title: body?.title ?? `비교 ${id}`,
+      title: body?.name?.join(", ") ?? `비교 ${id}`,
       companies: stockCodes.map(makeCompany),
       createdAt: new Date().toISOString(),
     };

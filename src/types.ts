@@ -162,8 +162,8 @@ export interface Comparison {
 
 // POST /comparisons - Request
 export interface CreateComparisonRequest {
-  title?: string;
-  stockCodes: string[];
+  name: string[];
+  companies: number[];
 }
 
 // POST /comparisons - Response
