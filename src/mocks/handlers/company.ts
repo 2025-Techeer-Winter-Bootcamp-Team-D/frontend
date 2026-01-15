@@ -125,27 +125,30 @@ export const companyHandlers = [
   }),
 
   // 기업 정보 조회
-  http.get("/companies/:ticker_symbol", ({ params }) => {
-    const { ticker_symbol } = params;
-    const company = mockCompanies[ticker_symbol as string];
+  http.get<{ ticker_symbol: string }>(
+    "/companies/:ticker_symbol",
+    ({ params }) => {
+      const { ticker_symbol } = params;
+      const company = mockCompanies[ticker_symbol];
 
-    if (!company) {
+      if (!company) {
+        return HttpResponse.json(
+          {
+            status: 404,
+            message: "해당 기업을 찾을 수 없습니다.",
+          },
+          { status: 404 },
+        );
+      }
+
       return HttpResponse.json(
         {
-          status: 404,
-          message: "해당 기업을 찾을 수 없습니다.",
+          status: 200,
+          message: "기업 정보 조회 성공",
+          data: company,
         },
-        { status: 404 },
+        { status: 200 },
       );
-    }
-
-    return HttpResponse.json(
-      {
-        status: 200,
-        message: "기업 정보 조회 성공",
-        data: company,
-      },
-      { status: 200 },
-    );
-  }),
+    },
+  ),
 ];
