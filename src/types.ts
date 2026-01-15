@@ -193,3 +193,56 @@ export interface AddCompanyToComparisonRequest {
 export interface DeleteComparisonResponse {
   ok: boolean;
 }
+
+// ============================================
+// User API Types
+// ============================================
+
+// POST /users/signup, /users/login - Request
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+// POST /users/signup - Response
+export interface SignupResponse {
+  id: number;
+  email: string;
+  createdAt: string;
+}
+
+// POST /users/login - Response
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken?: string;
+  user: {
+    id: number;
+    email: string;
+  };
+}
+
+// POST /users/logout - Response
+export interface LogoutResponse {
+  ok: boolean;
+}
+
+// ============================================
+// Company API Types
+// ============================================
+
+// Generic API Response wrapper
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
+}
+
+// GET /companies/{companyId}/ohlcv - OHLCV Data
+export interface OhlcvData {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
