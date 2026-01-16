@@ -15,6 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { PageView } from "../types";
+import type { TimeRange } from "../types";
 import {
   BarChart,
   Bar,
@@ -34,7 +35,6 @@ interface CompareProps {
 }
 
 type MetricType = "revenue" | "operating" | "net" | "marketCap";
-type TimeRange = "1M" | "3M" | "6M" | "1Y";
 type DetailMetricKey =
   | "eps"
   | "operatingMargin"

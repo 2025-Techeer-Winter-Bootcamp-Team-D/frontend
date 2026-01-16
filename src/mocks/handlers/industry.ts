@@ -4,6 +4,7 @@ import type {
   IndustryCompaniesResponse,
   IndustryAnalysisResponse,
   IndustryNewsItem,
+  IndustryCompany,
 } from "../../types";
 
 // 산업 정보 타입
@@ -15,16 +16,6 @@ type IndustryInfo = {
   changePercent: number;
   outlook: string;
 };
-
-// 산업 내 기업 정보 타입
-type IndustryCompany = {
-  stockCode: string;
-  name: string;
-  rank: number;
-  marketCap: number;
-  revenue: number;
-};
-
 // 산업 분석 타입
 type IndustryAnalysis = {
   summary: string;
@@ -173,9 +164,9 @@ export const industryHandlers = [
       const industryId = String(params.industry_id);
       const body = (await request.json()) as Partial<IndustryCompany>;
 
-      if (!body.stockCode || !body.name) {
+      if (!body.companyId || !body.name) {
         return HttpResponse.json(
-          { status: 400, message: "stockCode와 name은 필수입니다." },
+          { status: 400, message: "companyId와 name은 필수입니다." },
           { status: 400 },
         );
       }
@@ -183,11 +174,11 @@ export const industryHandlers = [
       const existingCompanies = industryCompanies.get(industryId) ?? [];
 
       const newCompany: IndustryCompany = {
-        stockCode: body.stockCode,
+        companyId: body.companyId,
         name: body.name,
         rank: body.rank ?? existingCompanies.length + 1,
         marketCap: body.marketCap ?? 0,
-        revenue: body.revenue ?? 0,
+        logoUrl: body.logoUrl ?? "",
       };
 
       industryCompanies.set(industryId, [...existingCompanies, newCompany]);
