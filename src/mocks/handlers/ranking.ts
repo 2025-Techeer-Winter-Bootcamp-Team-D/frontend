@@ -1,31 +1,5 @@
 import { http, HttpResponse, delay } from "msw";
-
-// 기업 순위 타입
-type CompanyRank = {
-  rank: number;
-  name: string;
-  code: string;
-  sector: string;
-  price: string;
-  change: string;
-  changeVal: number;
-  marketCap: string;
-};
-
-// 산업 순위 타입
-type IndustryRank = {
-  rank: number;
-  name: string;
-  change: string;
-  marketCap: string;
-};
-
-// 키워드 순위 타입
-type KeywordRank = {
-  rank: number;
-  keyword: string;
-  count: number;
-};
+import type { CompanyRank, IndustryRank, KeywordRank } from "../../types";
 
 // In-Memory 기업 순위 데이터 저장소 (빈 상태로 시작)
 const companyRankings = new Map<string, CompanyRank>();
