@@ -120,7 +120,17 @@ export interface ExpenseItem {
 // ============================================
 
 // GET /industries/{industry_id}/news
-export interface IndustryNewsItem extends NewsItem {}
+export interface IndustryNewsItem {
+  newId: number;
+  title: string;
+  summary: string;
+  source: string;
+  publishedAt: string;
+  author?: string;
+  content?: string;
+  keywords?: string[];
+  url?: string;
+}
 
 export interface IndustryNewsResponse {
   status: number;
@@ -130,10 +140,10 @@ export interface IndustryNewsResponse {
 
 // GET /industries/{industry_id}/companies
 export interface IndustryCompany {
-  stockCode: string;
+  companyId: number;
   name: string;
   rank: number;
-  marketCap: number;
+  marketAmount: number;
   revenue: number;
   price?: string;
   change?: string;
@@ -145,8 +155,9 @@ export interface IndustryCompany {
 }
 
 export interface IndustryCompaniesResponse {
-  industryId: string;
-  companies: IndustryCompany[];
+  status: number;
+  message: string;
+  data: IndustryCompany[];
 }
 
 // GET /industries/{industry_id}/analysis
@@ -167,8 +178,8 @@ export interface IndustryAnalysisResponse {
 // ============================================
 
 export interface CompareCompany {
-  stockCode: string;
-  name: string;
+  stock_code: string;
+  companyName: string;
   revenue: number;
   operatingProfit: number;
   roe: number;
@@ -177,7 +188,7 @@ export interface CompareCompany {
 
 export interface Comparison {
   id: number;
-  title: string;
+  name: string;
   companies: CompareCompany[];
   createdAt: string;
 }
@@ -194,13 +205,17 @@ export type CreateComparisonResponse = Comparison;
 // GET /comparisons - Response
 export interface ComparisonListItem {
   id: number;
-  title: string;
+  name: string;
   companyCount: number;
   createdAt: string;
 }
 
 export interface ComparisonListResponse {
-  items: ComparisonListItem[];
+  status: number;
+  message: string;
+  data: {
+    comparisons: ComparisonListItem[];
+  };
 }
 
 // GET /comparisons/{comparison_id} - Response

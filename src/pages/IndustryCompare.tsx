@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -23,7 +23,6 @@ import type {
   IndustryKey,
 } from "../types";
 import { SAMPLE_STOCKS } from "../constants";
-import { getIndustryNews } from "../api/industry";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -39,6 +38,23 @@ import {
   getIndustryAnalysis,
   getIndustryCompanies,
 } from "../api/industry";
+import type { IndustryCompany } from "../types";
+
+// 산업 ID 매핑
+const INDUSTRY_ID_BY_KEY: Record<IndustryKey, number> = {
+  finance: 1,
+  semicon: 2,
+  auto: 3,
+  bio: 4,
+  battery: 5,
+  internet: 6,
+  ent: 7,
+  steel: 8,
+  ship: 9,
+  const: 10,
+  retail: 11,
+  telecom: 12,
+};
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -210,7 +226,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
         aiScore: 70,
         marketCap: "2조 100억",
       },
-      ...createMockCompanies("반도체", 25000, 3),
     ],
     news: [],
   },
@@ -338,30 +353,17 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     null,
   );
 
+  // API 데이터 state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<IndustryCompany[]>([]);
+  const [analysis, setAnalysis] = useState<{
+    outlook?: string;
+    insights?: { positive: string; risk: string };
+  } | null>(null);
+
   // 뉴스 데이터 state
   const [industryNews, setIndustryNews] = useState<IndustryNewsItem[]>([]);
-  const [isNewsLoading, setIsNewsLoading] = useState(false);
-
-  // 뉴스 데이터 API 호출
-  const fetchIndustryNews = useCallback(async () => {
-    try {
-      setIsNewsLoading(true);
-      const response = await getIndustryNews(selectedIndustry);
-      if (response?.items) {
-        setIndustryNews(response.items);
-      }
-    } catch (error) {
-      console.error("산업 뉴스 조회 실패:", error);
-      setIndustryNews([]);
-    } finally {
-      setIsNewsLoading(false);
-    }
-  }, [selectedIndustry]);
-
-  // 산업 변경 시 뉴스 데이터 로드
-  useEffect(() => {
-    fetchIndustryNews();
-  }, [fetchIndustryNews]);
 
   // Parallel Coordinates Chart State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -374,32 +376,37 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   // API 호출
   useEffect(() => {
     let cancelled = false;
-    setLoading(ture);
-    setError(null);
 
-    Promise.all([
-      getIndustryNews(industryId),
-      getIndustryAnalysis(industryId),
-      getIndustryCompanies(industryId),
-    ])
-      .then(([newsRes, analysisRes, companiesRes]) => {
+    (async () => {
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+      }
+
+      try {
+        const [newsRes, analysisRes, companiesRes] = await Promise.all([
+          getIndustryNews(industryId),
+          getIndustryAnalysis(industryId),
+          getIndustryCompanies(industryId),
+        ]);
+
         if (!cancelled) {
-          setNewsItems(newsRes.data ?? []);
+          setIndustryNews(newsRes.data ?? []);
           setAnalysis(analysisRes);
-          setCompanies(companiesRes.companies ?? []);
+          setCompanies(companiesRes.data ?? []);
           setError(null);
           setLoading(false);
         }
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!cancelled) {
           setError((e as Error)?.message ?? "산업 데이터 로딩 실패");
-          setNewsItems([]);
+          setIndustryNews([]);
           setAnalysis(null);
           setCompanies([]);
           setLoading(false);
         }
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -663,9 +670,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
             return (
               <GlassCard
-                key={company.stockCode}
+                key={company.companyId}
                 className={containerClasses}
-                onClick={() => handleCompanyClick(company.stockCode)}
+                onClick={() => handleCompanyClick(String(company.companyId))}
               >
                 {/* Header */}
                 <div className="flex justify-between items-start mb-6">
@@ -682,15 +689,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         {label}
                       </div>
                       <div className="text-xs text-gray-400 font-mono">
-                        {company.stockCode}
+                        {company.companyId}
                       </div>
                     </div>
                   </div>
                   <button
-                    onClick={(e) => handleToggleStar(e, company.stockCode)}
+                    onClick={(e) =>
+                      handleToggleStar(e, String(company.companyId))
+                    }
                     className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                   >
-                    <StarIcon isActive={starred.has(company.stockCode)} />
+                    <StarIcon
+                      isActive={starred.has(String(company.companyId))}
+                    />
                   </button>
                 </div>
 
@@ -725,7 +736,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         시가총액
                       </div>
                       <div className="text-sm font-bold text-slate-600">
-                        {company.marketCap.toLocaleString()}
+                        {company.marketAmount.toLocaleString()}
                       </div>
                     </div>
                     <div>
@@ -768,16 +779,22 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               <tbody className="divide-y divide-gray-50">
                 {companies.map((company: IndustryCompany, index: number) => (
                   <tr
-                    key={company.stockCode}
+                    key={company.companyId}
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
-                    onClick={() => handleCompanyClick(company.stockCode)}
+                    onClick={() =>
+                      handleCompanyClick(String(company.companyId))
+                    }
                   >
                     <td className="pl-6 pr-2 py-4">
                       <button
-                        onClick={(e) => handleToggleStar(e, company.stockCode)}
+                        onClick={(e) =>
+                          handleToggleStar(e, String(company.companyId))
+                        }
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                       >
-                        <StarIcon isActive={starred.has(company.stockCode)} />
+                        <StarIcon
+                          isActive={starred.has(String(company.companyId))}
+                        />
                       </button>
                     </td>
                     <td className="px-2 py-4 text-center">
@@ -826,7 +843,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         : "-"}
                     </td>
                     <td className="px-6 py-4 text-center text-slate-600 font-medium">
-                      {company.marketCap}
+                      {company.marketAmount}
                     </td>
                   </tr>
                 ))}
@@ -1046,7 +1063,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     {news.title}
                   </h4>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>{news.summary}</span>
+                    <span>{news.source}</span>
                     <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                     <span>{news.publishedAt}</span>
                   </div>
@@ -1096,7 +1113,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               </h2>
               <div className="flex items-center gap-3 text-sm text-gray-500 mb-8 border-b border-gray-100 pb-4">
                 <span className="font-medium text-slate-700">
-                  {selectedNews.summary}
+                  {selectedNews.source}
                 </span>
                 <span>{selectedNews.publishedAt}</span>
               </div>
