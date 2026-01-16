@@ -111,7 +111,17 @@ export interface ExpenseItem {
 // ============================================
 
 // GET /industries/{industry_id}/news
-export interface IndustryNewsItem extends NewsItem {}
+export interface IndustryNewsItem {
+  id: number;
+  title: string;
+  summary?: string;
+  source: string;
+  time: string;
+  author?: string;
+  content?: string;
+  keywords?: string[];
+  url?: string;
+}
 
 export interface IndustryNewsResponse {
   industryId: string;
@@ -137,8 +147,9 @@ export type IndustryCompany = {
 };
 
 export interface IndustryCompaniesResponse {
-  industryId: string;
-  companies: IndustryCompany[];
+  status: number;
+  message: string;
+  data: IndustryCompany[];
 }
 
 // GET /industries/{industry_id}/analysis
@@ -155,17 +166,24 @@ export interface IndustryAnalysisResponse {
 // ============================================
 
 export interface CompareCompany {
-  stockCode: string;
-  name: string;
+  stock_code: string;
+  companyName: string;
   revenue: number;
   operatingProfit: number;
+  netIncome: number;
+  marketCap: number;
   roe: number;
   per: number;
+  pbr?: number;
+  eps?: number;
+  yoy?: number;
+  qoq?: number;
+  operatingMargin?: number;
 }
 
 export interface Comparison {
   id: number;
-  title: string;
+  name: string;
   companies: CompareCompany[];
   createdAt: string;
 }
@@ -182,13 +200,17 @@ export type CreateComparisonResponse = Comparison;
 // GET /comparisons - Response
 export interface ComparisonListItem {
   id: number;
-  title: string;
+  name: string;
   companyCount: number;
   createdAt: string;
 }
 
 export interface ComparisonListResponse {
-  items: ComparisonListItem[];
+  status: number;
+  message: string;
+  data: {
+    comparisons: ComparisonListItem[];
+  };
 }
 
 // GET /comparisons/{comparison_id} - Response
@@ -270,6 +292,7 @@ export interface OhlcvItem {
   low: number;
   close: number;
   volume: number;
+  amount: number;
 }
 // 동종업계 순위 아이템
 export interface PeerCompanyItem {

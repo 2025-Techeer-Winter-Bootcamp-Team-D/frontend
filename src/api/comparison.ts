@@ -48,8 +48,20 @@ export const addCompany = (
  * 비교할 기업 삭제
  */
 
-export const removeCompany = (comparison_id: number, stock_code: number) => {
+export const removeCompany = (comparison_id: number, stock_code: string) => {
   return api
     .delete(`/comparisons/${comparison_id}/${stock_code}/`)
+    .then((res) => res.data);
+};
+
+/**
+ * 기업 비교 매치업 이름 수정
+ * @param comparison_id 비교 아이디
+ * @param name 새로운 매치업 이름
+ */
+
+export const updateComparisonName = (comparison_id: number, name: string) => {
+  return api
+    .patch(`/comparisons/${comparison_id}`, { name })
     .then((res) => res.data);
 };
