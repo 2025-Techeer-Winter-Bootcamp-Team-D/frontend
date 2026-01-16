@@ -1,177 +1,295 @@
 import { http, HttpResponse, delay } from "msw";
-import type {
-  CompareCompany,
-  Comparison,
-  ComparisonListResponse,
-  DeleteComparisonResponse,
-  CreateComparisonRequest,
-  AddCompanyToComparisonRequest,
-} from "../../types";
 
-let nextId = 1;
+type ComparisonCompany = {
+  stock_code: string;
+  companyName: string;
+  logo?: string;
+  price?: string;
+  change?: string;
+  per?: number;
+  pbr?: number;
+  roe?: number;
+  eps?: number;
+  yoy?: number;
+  qoq?: number;
+  operatingMargin?: number;
+  revenue?: number;
+  operatingProfit?: number;
+  netIncome?: number;
+  marketCap?: number;
+};
+
+type Comparison = {
+  id: number;
+  name: string;
+  companies: ComparisonCompany[];
+};
+
+// In-Memory 비교 세트 저장소
 const comparisons = new Map<number, Comparison>();
+let nextComparisonId = 1;
 
-function makeCompany(stockCode: string): CompareCompany {
-  const name =
-    stockCode === "005930"
-      ? "삼성전자"
-      : stockCode === "000660"
-        ? "SK하이닉스"
-        : stockCode === "035420"
-          ? "NAVER"
-          : "비교회사";
-
-  return {
-    stockCode,
-    name,
-    revenue: Math.floor(Math.random() * 1000),
-    operatingProfit: Math.floor(Math.random() * 300),
-    roe: +(Math.random() * 20 + 1).toFixed(1),
-    per: +(Math.random() * 15 + 1).toFixed(1),
-  };
-}
+// 초기 샘플 데이터
+comparisons.set(nextComparisonId, {
+  id: nextComparisonId++,
+  name: "관심 종목 비교",
+  companies: [
+    {
+      stock_code: "005930",
+      companyName: "삼성전자",
+      price: "73,400",
+      change: "+0.96%",
+      per: 15.2,
+      pbr: 1.45,
+      roe: 8.5,
+      eps: 4521,
+      yoy: 12.5,
+      qoq: 3.2,
+      operatingMargin: 15.8,
+      revenue: 302,
+      operatingProfit: 47.8,
+      netIncome: 35.2,
+      marketCap: 430,
+    },
+    {
+      stock_code: "000660",
+      companyName: "SK하이닉스",
+      price: "164,500",
+      change: "+2.10%",
+      per: 25.4,
+      pbr: 2.1,
+      roe: 12.2,
+      eps: 6480,
+      yoy: 45.2,
+      qoq: 8.5,
+      operatingMargin: 22.1,
+      revenue: 66,
+      operatingProfit: 14.6,
+      netIncome: 10.2,
+      marketCap: 119,
+    },
+  ],
+});
 
 export const comparisonHandlers = [
-  // 기업 비교 생성 (POST /comparisons)
+  // 비교 세트 생성 (POST /comparisons)
   http.post("/comparisons", async ({ request }) => {
-    await delay(300);
-
-    const body = (await request
-      .json()
-      .catch(() => ({}))) as Partial<CreateComparisonRequest>;
-
-    // companies는 number[] (회사 ID), stockCode로 변환
-    const companyIds: number[] = body?.companies ?? [5930, 660];
-    const stockCodes = companyIds.map((id) => String(id).padStart(6, "0"));
-
-    const id = nextId++;
-    const comparison: Comparison = {
-      id,
-      title: body?.name ?? `비교 ${id}`,
-      companies: stockCodes.map(makeCompany),
-      createdAt: new Date().toISOString(),
+    await delay(200);
+    const body = (await request.json()) as {
+      name: string;
+      companies: number[];
     };
 
-    comparisons.set(id, comparison);
+    if (!body.name) {
+      return HttpResponse.json(
+        { status: 400, message: "비교 세트 이름은 필수입니다." },
+        { status: 400 },
+      );
+    }
 
-    return HttpResponse.json(comparison, { status: 201 });
-  }),
-
-  // 기업 비교 목록 조회 (GET /comparisons)
-  http.get("/comparisons", async () => {
-    await delay(200);
-
-    const response: ComparisonListResponse = {
-      items: Array.from(comparisons.values()).map((c) => ({
-        id: c.id,
-        title: c.title,
-        companyCount: c.companies.length,
-        createdAt: c.createdAt,
+    const newComparison: Comparison = {
+      id: nextComparisonId++,
+      name: body.name,
+      companies: (body.companies ?? []).map((id) => ({
+        stock_code: String(id),
+        companyName: `기업 ${id}`,
       })),
     };
 
-    return HttpResponse.json(response);
+    comparisons.set(newComparison.id, newComparison);
+
+    return HttpResponse.json(
+      {
+        status: 201,
+        message: "비교 세트가 생성되었습니다.",
+        data: newComparison,
+      },
+      { status: 201 },
+    );
   }),
 
-  // 기업 비교 조회 (GET /comparisons/{comparison_id})
-  http.get("/comparisons/:comparison_id", async ({ params }) => {
+  // 비교 세트 목록 조회 (GET /comparisons)
+  http.get("/comparisons", async () => {
     await delay(200);
-    const id = Number(params.comparison_id);
-    const found = comparisons.get(id);
 
-    if (!found) {
-      return HttpResponse.json(
-        { message: "comparison not found" },
-        { status: 404 },
-      );
-    }
+    const list = Array.from(comparisons.values()).map((c) => ({
+      id: c.id,
+      name: c.name,
+      companyCount: c.companies.length,
+    }));
 
-    return HttpResponse.json(found);
+    return HttpResponse.json({
+      status: 200,
+      message: "비교 세트 목록 조회 성공",
+      data: {
+        comparisons: list,
+      },
+    });
   }),
 
-  // 비교할 기업 추가 (POST /comparisons/{comparison_id})
-  http.post("/comparisons/:comparison_id", async ({ params, request }) => {
-    await delay(200);
-    const id = Number(params.comparison_id);
-    const found = comparisons.get(id);
-
-    if (!found) {
-      return HttpResponse.json(
-        { message: "comparison not found" },
-        { status: 404 },
-      );
-    }
-
-    const body = (await request
-      .json()
-      .catch(() => ({}))) as Partial<AddCompanyToComparisonRequest>;
-    const rawCode = body?.company ?? "035420";
-    const stockCode = rawCode.padStart(6, "0");
-
-    // 중복 방지
-    if (!found.companies.some((c) => c.stockCode === stockCode)) {
-      found.companies.push(makeCompany(stockCode));
-    }
-
-    comparisons.set(id, found);
-    return HttpResponse.json(found);
-  }),
-
-  // 기업 비교 삭제 (DELETE /comparisons/{comparison_id})
-  http.delete("/comparisons/:comparison_id", async ({ params }) => {
-    await delay(200);
-    const id = Number(params.comparison_id);
-    comparisons.delete(id);
-
-    const response: DeleteComparisonResponse = { ok: true };
-    return HttpResponse.json(response);
-  }),
-
-  // 비교 매치업 내 기업 삭제 (DELETE /api/comparisons/{comparison_id}/{stock_code}/)
-  http.delete(
-    "/api/comparisons/:comparison_id/:stock_code/",
+  // 비교 세트 상세 조회 (GET /comparisons/:comparison_id)
+  http.get<{ comparison_id: string }>(
+    "/comparisons/:comparison_id",
     async ({ params }) => {
-      await delay(200);
+      await delay(150);
       const id = Number(params.comparison_id);
-      const stockCode = String(params.stock_code).padStart(6, "0");
-      const found = comparisons.get(id);
+      const comparison = comparisons.get(id);
 
-      if (!found) {
+      if (!comparison) {
         return HttpResponse.json(
-          { message: "comparison not found" },
+          { status: 404, message: "비교 세트를 찾을 수 없습니다." },
           { status: 404 },
         );
       }
 
-      found.companies = found.companies.filter(
-        (c) => c.stockCode !== stockCode,
-      );
-      comparisons.set(id, found);
-      return HttpResponse.json(found);
+      return HttpResponse.json(comparison);
     },
   ),
 
-  // /comparisons/{id}/{stockCode}/ 경로 (trailing slash)
-  http.delete(
-    "/comparisons/:comparison_id/:stock_code/",
-    async ({ params }) => {
-      await delay(200);
+  // 비교 세트 이름 변경 (PATCH /comparisons/:comparison_id)
+  http.patch<{ comparison_id: string }>(
+    "/comparisons/:comparison_id",
+    async ({ params, request }) => {
+      await delay(150);
       const id = Number(params.comparison_id);
-      const stockCode = String(params.stock_code).padStart(6, "0");
-      const found = comparisons.get(id);
+      const body = (await request.json()) as { name?: string };
+      const comparison = comparisons.get(id);
 
-      if (!found) {
+      if (!comparison) {
         return HttpResponse.json(
-          { message: "comparison not found" },
+          { status: 404, message: "비교 세트를 찾을 수 없습니다." },
           { status: 404 },
         );
       }
 
-      found.companies = found.companies.filter(
-        (c) => c.stockCode !== stockCode,
+      if (body.name) {
+        comparison.name = body.name;
+      }
+
+      comparisons.set(id, comparison);
+
+      return HttpResponse.json({
+        status: 200,
+        message: "비교 세트가 수정되었습니다.",
+        data: comparison,
+      });
+    },
+  ),
+
+  // 비교 세트 삭제 (DELETE /comparisons/:comparison_id)
+  http.delete<{ comparison_id: string }>(
+    "/comparisons/:comparison_id",
+    async ({ params }) => {
+      await delay(150);
+      const id = Number(params.comparison_id);
+
+      if (!comparisons.has(id)) {
+        return HttpResponse.json(
+          { status: 404, message: "비교 세트를 찾을 수 없습니다." },
+          { status: 404 },
+        );
+      }
+
+      comparisons.delete(id);
+
+      return HttpResponse.json({
+        status: 200,
+        message: "비교 세트가 삭제되었습니다.",
+      });
+    },
+  ),
+
+  // 비교 세트에 기업 추가 (POST /comparisons/:comparison_id)
+  http.post<{ comparison_id: string }>(
+    "/comparisons/:comparison_id",
+    async ({ params, request }) => {
+      await delay(150);
+      const id = Number(params.comparison_id);
+      const body = (await request.json()) as { company: string };
+      const comparison = comparisons.get(id);
+
+      if (!comparison) {
+        return HttpResponse.json(
+          { status: 404, message: "비교 세트를 찾을 수 없습니다." },
+          { status: 404 },
+        );
+      }
+
+      const stockCode = body.company;
+      const exists = comparison.companies.some(
+        (c) => c.stock_code === stockCode,
       );
-      comparisons.set(id, found);
-      return HttpResponse.json(found);
+
+      if (exists) {
+        return HttpResponse.json(
+          { status: 400, message: "이미 추가된 기업입니다." },
+          { status: 400 },
+        );
+      }
+
+      comparison.companies.push({
+        stock_code: stockCode,
+        companyName: `기업 ${stockCode}`,
+        price: "50,000",
+        change: "+1.00%",
+        per: 10,
+        pbr: 1.0,
+        roe: 5,
+        eps: 2000,
+        yoy: 5.0,
+        qoq: 2.0,
+        operatingMargin: 10.0,
+        revenue: 50,
+        operatingProfit: 5,
+        netIncome: 3,
+        marketCap: 10,
+      });
+
+      comparisons.set(id, comparison);
+
+      return HttpResponse.json({
+        status: 200,
+        message: "기업이 추가되었습니다.",
+        data: comparison,
+      });
+    },
+  ),
+
+  // 비교 세트에서 기업 삭제 (DELETE /comparisons/:comparison_id/:stock_code)
+  http.delete<{ comparison_id: string; stock_code: string }>(
+    "/comparisons/:comparison_id/:stock_code/",
+    async ({ params }) => {
+      await delay(150);
+      const id = Number(params.comparison_id);
+      const stockCode = params.stock_code;
+      const comparison = comparisons.get(id);
+
+      if (!comparison) {
+        return HttpResponse.json(
+          { status: 404, message: "비교 세트를 찾을 수 없습니다." },
+          { status: 404 },
+        );
+      }
+
+      const initialLength = comparison.companies.length;
+      comparison.companies = comparison.companies.filter(
+        (c) => c.stock_code !== stockCode,
+      );
+
+      if (comparison.companies.length === initialLength) {
+        return HttpResponse.json(
+          { status: 404, message: "해당 기업을 찾을 수 없습니다." },
+          { status: 404 },
+        );
+      }
+
+      comparisons.set(id, comparison);
+
+      return HttpResponse.json({
+        status: 200,
+        message: "기업이 삭제되었습니다.",
+        data: comparison,
+      });
     },
   ),
 ];

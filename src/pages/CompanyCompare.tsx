@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import {
   ArrowLeft,
   Plus,
   X,
   Search,
-  Info,
   TrendingUp,
   BarChart3,
   HelpCircle,
@@ -15,7 +14,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { PageView } from "../types";
-import type { TimeRange } from "../types";
+import type { Comparison, CompareCompany, ComparisonListItem } from "../types";
 import {
   BarChart,
   Bar,
@@ -29,6 +28,16 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import {
+  getComparisons,
+  getComparison,
+  createComparison,
+  addCompany,
+  removeCompany,
+  updateComparisonName,
+} from "../api/comparison";
+import { searchCompanies, getStockOhlcv } from "../api/company";
+import type { Company, OhlcvItem } from "../types";
 
 interface CompareProps {
   setPage: (page: PageView) => void;
@@ -67,260 +76,6 @@ const CHART_COLORS = [
   "#F59E0B",
   "#6366F1",
 ];
-
-// -- Dynamic Mock Data Database --
-// Expanded to include diverse industries
-const allCompanies = [
-  "신한지주",
-  "KB금융",
-  "하나금융",
-  "우리금융",
-  "카카오뱅크",
-  "삼성생명",
-  "현대해상",
-  "메리츠금융",
-  "삼성전자",
-  "현대차",
-];
-
-interface CompanyData {
-  financials: Record<MetricType, number[]>; // [2023, 2024(E)]
-  trends: Record<TimeRange, number[]>; // Array of prices corresponding to time points
-  ratios: Record<DetailMetricKey, number>;
-}
-
-const mockCompanyDB: Record<string, CompanyData> = {
-  신한지주: {
-    financials: {
-      revenue: [310, 350],
-      operating: [85, 92],
-      net: [45, 48],
-      marketCap: [38, 42],
-    },
-    trends: {
-      "1M": [76000, 77500, 75800, 78200],
-      "3M": [72000, 75000, 78200],
-      "6M": [42000, 44000, 48000, 52000, 65000, 78200],
-      "1Y": [38000, 41000, 48000, 78200],
-    },
-    ratios: {
-      eps: 8500,
-      operatingMargin: 24.5,
-      roe: 10.2,
-      yoy: 12.5,
-      qoq: 2.1,
-      pbr: 0.45,
-      per: 4.82,
-    },
-  },
-  KB금융: {
-    financials: {
-      revenue: [305, 340],
-      operating: [82, 90],
-      net: [46, 49],
-      marketCap: [36, 40],
-    },
-    trends: {
-      "1M": [70000, 71200, 69800, 72100],
-      "3M": [68000, 71000, 72100],
-      "6M": [58000, 62000, 65000, 68000, 72000, 72100],
-      "1Y": [52000, 55000, 65000, 72100],
-    },
-    ratios: {
-      eps: 8200,
-      operatingMargin: 23.8,
-      roe: 9.8,
-      yoy: 8.4,
-      qoq: -1.5,
-      pbr: 0.48,
-      per: 5.1,
-    },
-  },
-  하나금융: {
-    financials: {
-      revenue: [280, 310],
-      operating: [75, 82],
-      net: [38, 41],
-      marketCap: [28, 32],
-    },
-    trends: {
-      "1M": [56000, 57000, 55500, 58400],
-      "3M": [54000, 56000, 58400],
-      "6M": [45000, 48000, 52000, 51000, 55000, 58400],
-      "1Y": [41000, 43000, 52000, 58400],
-    },
-    ratios: {
-      eps: 7800,
-      operatingMargin: 22.1,
-      roe: 9.5,
-      yoy: 15.2,
-      qoq: 3.8,
-      pbr: 0.38,
-      per: 4.2,
-    },
-  },
-  우리금융: {
-    financials: {
-      revenue: [230, 260],
-      operating: [60, 68],
-      net: [28, 32],
-      marketCap: [18, 22],
-    },
-    trends: {
-      "1M": [14000, 14200, 14500, 14800],
-      "3M": [13500, 14000, 14800],
-      "6M": [12000, 12500, 13000, 13500, 14200, 14800],
-      "1Y": [11000, 11500, 13000, 14800],
-    },
-    ratios: {
-      eps: 3200,
-      operatingMargin: 20.5,
-      roe: 9.1,
-      yoy: 5.5,
-      qoq: 1.2,
-      pbr: 0.35,
-      per: 3.95,
-    },
-  },
-  카카오뱅크: {
-    financials: {
-      revenue: [150, 180],
-      operating: [40, 55],
-      net: [20, 30],
-      marketCap: [12, 15],
-    },
-    trends: {
-      "1M": [24000, 24500, 25000, 25300],
-      "3M": [23000, 24000, 25300],
-      "6M": [20000, 21000, 22000, 23000, 24500, 25300],
-      "1Y": [18000, 19000, 22000, 25300],
-    },
-    ratios: {
-      eps: 950,
-      operatingMargin: 15.2,
-      roe: 5.4,
-      yoy: 25.0,
-      qoq: 10.5,
-      pbr: 2.1,
-      per: 35.2,
-    },
-  },
-  삼성생명: {
-    financials: {
-      revenue: [200, 220],
-      operating: [50, 55],
-      net: [25, 28],
-      marketCap: [15, 16],
-    },
-    trends: {
-      "1M": [70000, 71000, 70500, 71500],
-      "3M": [68000, 69000, 71500],
-      "6M": [65000, 66000, 68000, 69000, 70000, 71500],
-      "1Y": [60000, 62000, 68000, 71500],
-    },
-    ratios: {
-      eps: 4500,
-      operatingMargin: 8.5,
-      roe: 7.2,
-      yoy: 3.5,
-      qoq: 0.5,
-      pbr: 0.65,
-      per: 8.5,
-    },
-  },
-  현대해상: {
-    financials: {
-      revenue: [180, 190],
-      operating: [45, 48],
-      net: [22, 24],
-      marketCap: [10, 11],
-    },
-    trends: {
-      "1M": [32000, 32500, 32200, 33000],
-      "3M": [31000, 31500, 33000],
-      "6M": [30000, 30500, 31000, 31500, 32000, 33000],
-      "1Y": [28000, 29000, 31000, 33000],
-    },
-    ratios: {
-      eps: 3800,
-      operatingMargin: 7.8,
-      roe: 8.5,
-      yoy: 4.2,
-      qoq: 1.1,
-      pbr: 0.55,
-      per: 6.2,
-    },
-  },
-  메리츠금융: {
-    financials: {
-      revenue: [160, 210],
-      operating: [65, 85],
-      net: [35, 45],
-      marketCap: [25, 30],
-    },
-    trends: {
-      "1M": [55000, 58000, 62000, 65000],
-      "3M": [48000, 55000, 65000],
-      "6M": [40000, 45000, 50000, 55000, 60000, 65000],
-      "1Y": [35000, 40000, 50000, 65000],
-    },
-    ratios: {
-      eps: 6500,
-      operatingMargin: 28.5,
-      roe: 15.2,
-      yoy: 30.5,
-      qoq: 8.2,
-      pbr: 1.2,
-      per: 7.5,
-    },
-  },
-  삼성전자: {
-    financials: {
-      revenue: [258, 302],
-      operating: [6, 35],
-      net: [15, 28],
-      marketCap: [400, 480],
-    },
-    trends: {
-      "1M": [72000, 73500, 71000, 74000],
-      "3M": [69000, 72000, 74000],
-      "6M": [68000, 70000, 72000, 71000, 73000, 74000],
-      "1Y": [65000, 68000, 72000, 74000],
-    },
-    ratios: {
-      eps: 4200,
-      operatingMargin: 11.5,
-      roe: 8.2,
-      yoy: 18.5,
-      qoq: 12.2,
-      pbr: 1.4,
-      per: 15.5,
-    },
-  },
-  현대차: {
-    financials: {
-      revenue: [162, 175],
-      operating: [15, 18],
-      net: [12, 14],
-      marketCap: [50, 60],
-    },
-    trends: {
-      "1M": [230000, 235000, 240000, 245000],
-      "3M": [220000, 230000, 245000],
-      "6M": [190000, 200000, 210000, 220000, 230000, 245000],
-      "1Y": [180000, 190000, 210000, 245000],
-    },
-    ratios: {
-      eps: 25000,
-      operatingMargin: 9.8,
-      roe: 12.5,
-      yoy: 8.5,
-      qoq: 3.2,
-      pbr: 0.7,
-      per: 5.5,
-    },
-  },
-};
 
 const detailedMetricsInfo: Record<
   DetailMetricKey,
@@ -366,14 +121,21 @@ const detailedMetricsInfo: Record<
 // -- Main Page Component --
 
 const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
-  // State for Sets
-  const [sets, setSets] = useState([
-    { id: 1, name: "비교 세트 1", companies: ["신한지주", "삼성전자"] },
-    { id: 2, name: "인터넷 뱅크", companies: ["카카오뱅크", "토스뱅크"] },
-  ]);
-  const [activeSetId, setActiveSetId] = useState(1);
+  // API State
+  const [comparisonList, setComparisonList] = useState<ComparisonListItem[]>(
+    [],
+  );
+  const [activeComparison, setActiveComparison] = useState<Comparison | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [activeSetId, setActiveSetId] = useState<number | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Company[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // State for Metrics (Top Charts)
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("revenue");
@@ -382,130 +144,287 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
   // State for Detailed Metrics (Bottom Section)
   const [activeMetrics, setActiveMetrics] = useState<DetailMetricKey[]>([
-    "eps",
+    "roe",
   ]);
 
   // State for Renaming
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempSetName, setTempSetName] = useState("");
 
-  const activeSet = sets.find((s) => s.id === activeSetId) || sets[0];
+  // State for OHLCV data (주가 추이)
+  const [ohlcvData, setOhlcvData] = useState<Record<string, OhlcvItem[]>>({});
+  const [ohlcvLoading, setOhlcvLoading] = useState(false);
+
   const currentMetricOption =
     metricOptions.find((o) => o.id === selectedMetric) || metricOptions[0];
 
-  // Initialize temp name when active set changes
+  // 비교 세트 목록 조회
+  const fetchComparisonList = useCallback(async () => {
+    try {
+      const response = await getComparisons();
+      const comparisons = response.data?.comparisons ?? [];
+      setComparisonList(comparisons);
+      if (comparisons.length > 0 && !activeSetId) {
+        setActiveSetId(comparisons[0].id);
+      }
+    } catch (e) {
+      console.error("비교 목록 조회 실패:", e);
+    }
+  }, [activeSetId]);
+
+  // 선택된 비교 세트 상세 조회
+  const fetchComparisonDetail = useCallback(async (id: number) => {
+    try {
+      setLoading(true);
+      const response = await getComparison(id);
+      setActiveComparison(response);
+      setTempSetName(response.name);
+      setError(null);
+    } catch (e) {
+      setError((e as Error)?.message ?? "비교 데이터 로딩 실패");
+      setActiveComparison(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 초기 데이터 로드
   useEffect(() => {
-    setTempSetName(activeSet.name);
-    setIsEditingName(false);
-  }, [activeSetId, activeSet.name]);
+    fetchComparisonList();
+  }, [fetchComparisonList]);
 
-  // Helper to ensure we have data for the company (fallback for unknown companies)
-  const getCompanyData = (name: string) =>
-    mockCompanyDB[name] || mockCompanyDB["신한지주"];
+  // 선택된 세트가 변경되면 상세 조회
+  useEffect(() => {
+    if (activeSetId) {
+      fetchComparisonDetail(activeSetId);
+      setIsEditingName(false);
+    }
+  }, [activeSetId, fetchComparisonDetail]);
 
-  // -- Dynamic Data Generation based on activeSet --
+  // 기업 검색
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
 
-  // 1. Top Bar Chart Data (Revenue, etc.)
-  const financialChartData = useMemo(() => {
-    const years = ["2023", "2024(E)"];
-    return years.map((year, yearIndex) => {
-      const dataPoint: any = { year };
-      activeSet.companies.forEach((company) => {
-        const data = getCompanyData(company);
-        dataPoint[company] = data.financials[selectedMetric][yearIndex];
-      });
-      return dataPoint;
-    });
-  }, [activeSet.companies, selectedMetric]);
+    const debounceTimer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await searchCompanies(searchQuery);
+        setSearchResults(response.data?.data ?? []);
+      } catch (e) {
+        console.error("기업 검색 실패:", e);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
 
-  // 2. Trend Line Chart Data
-  const trendChartData = useMemo(() => {
-    const labelsMap: Record<TimeRange, string[]> = {
-      "1M": ["1주", "2주", "3주", "4주"],
-      "3M": ["M-2", "M-1", "Current"],
-      "6M": ["1월", "2월", "3월", "4월", "5월", "6월"],
-      "1Y": ["23.Q3", "23.Q4", "24.Q1", "24.Q2"],
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
+  // OHLCV 데이터 조회 (주가 추이용)
+  const fetchOhlcvData = useCallback(async () => {
+    if (!activeComparison?.companies?.length) {
+      setOhlcvData({});
+      return;
+    }
+
+    const intervalMap: Record<TimeRange, string> = {
+      "1M": "1d",
+      "3M": "1d",
+      "6M": "1d",
+      "1Y": "1d",
     };
-    const labels = labelsMap[timeRange];
 
-    return labels.map((label, index) => {
-      const dataPoint: any = { date: label };
-      activeSet.companies.forEach((company) => {
-        const data = getCompanyData(company);
-        // Safety check for index
-        const val =
-          data.trends[timeRange][index] !== undefined
-            ? data.trends[timeRange][index]
-            : data.trends[timeRange][data.trends[timeRange].length - 1];
-        dataPoint[company] = val;
+    setOhlcvLoading(true);
+    setOhlcvData({}); // 조회 시작 시 이전 데이터 초기화
+    try {
+      const results: Record<string, OhlcvItem[]> = {};
+      await Promise.all(
+        activeComparison.companies.map(async (company) => {
+          const response = await getStockOhlcv(
+            company.stock_code,
+            intervalMap[timeRange],
+          );
+          results[company.companyName] = response.data?.data ?? [];
+        }),
+      );
+      setOhlcvData(results);
+    } catch (e) {
+      console.error("OHLCV 데이터 조회 실패:", e);
+      setOhlcvData({}); // 실패 시에도 초기화하여 이전 데이터가 남지 않도록 함
+    } finally {
+      setOhlcvLoading(false);
+    }
+  }, [activeComparison?.companies, timeRange]);
+
+  // timeRange 또는 companies가 변경되면 OHLCV 데이터 다시 조회
+  useEffect(() => {
+    fetchOhlcvData();
+  }, [fetchOhlcvData]);
+
+  // 차트 데이터 생성 (API 데이터 기반)
+  const financialChartData = useMemo(() => {
+    if (!activeComparison?.companies?.length) return [];
+
+    const metricMap: Record<MetricType, keyof CompareCompany> = {
+      revenue: "revenue",
+      operating: "operatingProfit",
+      net: "netIncome",
+      marketCap: "marketCap",
+    };
+
+    return [{ year: "현재" }].map((item) => {
+      const dataPoint: Record<string, string | number> = { ...item };
+      activeComparison.companies.forEach((company) => {
+        dataPoint[company.companyName] =
+          company[metricMap[selectedMetric]] ?? 0;
       });
       return dataPoint;
     });
-  }, [activeSet.companies, timeRange]);
+  }, [activeComparison?.companies, selectedMetric]);
 
-  // 3. Detailed Metrics Data Generation
-  // This constructs the `detailedMetricsConfig` dynamically
+  // 투자지표 차트 데이터
   const dynamicDetails = useMemo(() => {
+    if (!activeComparison?.companies?.length) return {};
+
     const result: Record<string, any> = {};
     activeMetrics.forEach((key) => {
       const info = detailedMetricsInfo[key];
-      const chartData = activeSet.companies.map((company) => ({
-        name: company,
-        value: getCompanyData(company).ratios[key],
+      const metricKeyMap: Partial<
+        Record<DetailMetricKey, keyof CompareCompany>
+      > = {
+        roe: "roe",
+        per: "per",
+        pbr: "pbr",
+        eps: "eps",
+        yoy: "yoy",
+        qoq: "qoq",
+        operatingMargin: "operatingMargin",
+      };
+      const apiKey = metricKeyMap[key];
+
+      const chartData = activeComparison.companies.map((company) => ({
+        name: company.companyName,
+        value: apiKey ? (company[apiKey] ?? 0) : 0,
       }));
       result[key] = { ...info, data: chartData };
     });
     return result;
-  }, [activeSet.companies, activeMetrics]);
+  }, [activeComparison?.companies, activeMetrics]);
 
-  const handleAddSet = () => {
-    const newId = sets.length + 1;
-    const newSet = { id: newId, name: `비교 세트 ${newId}`, companies: [] };
-    setSets([...sets, newSet]);
-    setActiveSetId(newId);
+  // 주가 추이 차트 데이터 (OHLCV API 기반)
+  const trendChartData = useMemo(() => {
+    if (!activeComparison?.companies?.length) return [];
+
+    // 데이터 포인트 수 결정
+    const dataPointsMap: Record<TimeRange, number> = {
+      "1M": 22, // 약 1개월 영업일
+      "3M": 65, // 약 3개월 영업일
+      "6M": 130, // 약 6개월 영업일
+      "1Y": 250, // 약 1년 영업일
+    };
+    const maxPoints = dataPointsMap[timeRange];
+
+    // OHLCV 데이터가 있으면 실제 데이터 사용
+    const hasOhlcvData = Object.keys(ohlcvData).length > 0;
+
+    if (hasOhlcvData) {
+      // 모든 기업의 데이터 길이 중 최소값 찾기
+      const minLength = Math.min(
+        ...activeComparison.companies.map(
+          (c) => ohlcvData[c.companyName]?.length ?? 0,
+        ),
+      );
+      const actualPoints = Math.min(minLength, maxPoints);
+
+      if (actualPoints === 0) return [];
+
+      const data: Record<string, string | number>[] = [];
+      for (let i = 0; i < actualPoints; i++) {
+        const point: Record<string, string | number> = {};
+        activeComparison.companies.forEach((company) => {
+          const companyOhlcv = ohlcvData[company.companyName];
+          if (companyOhlcv && companyOhlcv[i]) {
+            // 첫 번째 항목에서만 날짜 설정
+            if (!point.date) {
+              const timestamp = companyOhlcv[i].time;
+              const dateObj = new Date(timestamp * 1000);
+              point.date = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+            }
+            point[company.companyName] = companyOhlcv[i].close;
+          }
+        });
+        if (point.date) data.push(point);
+      }
+      return data;
+    }
+
+    // OHLCV 데이터가 없으면 빈 배열 반환 (로딩 중이거나 에러)
+    return [];
+  }, [activeComparison?.companies, timeRange, ohlcvData]);
+
+  // 새 비교 세트 생성
+  const handleAddSet = async () => {
+    try {
+      const newSetName = `비교 세트 ${comparisonList.length + 1}`;
+      const response = await createComparison({
+        name: newSetName,
+        companies: [],
+      });
+      await fetchComparisonList();
+      setActiveSetId(response.id);
+    } catch (e) {
+      console.error("비교 세트 생성 실패:", e);
+    }
   };
 
-  const handleRemoveCompany = (companyName: string) => {
-    setSets(
-      sets.map((s) => {
-        if (s.id === activeSetId) {
-          return {
-            ...s,
-            companies: s.companies.filter((c) => c !== companyName),
-          };
-        }
-        return s;
-      }),
-    );
+  // 기업 제거
+  const handleRemoveCompany = async (stock_code: string) => {
+    if (!activeSetId) return;
+    try {
+      await removeCompany(activeSetId, stock_code);
+      await fetchComparisonDetail(activeSetId);
+    } catch (e) {
+      console.error("기업 제거 실패:", e);
+    }
   };
 
-  const handleAddCompany = (companyName: string) => {
-    setSets(
-      sets.map((s) => {
-        if (
-          s.id === activeSetId &&
-          !s.companies.includes(companyName) &&
-          s.companies.length < 5
-        ) {
-          return { ...s, companies: [...s.companies, companyName] };
-        }
-        return s;
-      }),
-    );
-    setIsSearchOpen(false);
-    setSearchQuery("");
+  // 기업 추가
+  const handleAddCompany = async (stockCode: string) => {
+    if (!activeSetId) return;
+    try {
+      await addCompany(activeSetId, { company: stockCode });
+      await fetchComparisonDetail(activeSetId);
+      setIsSearchOpen(false);
+      setSearchQuery("");
+    } catch (e) {
+      console.error("기업 추가 실패:", e);
+    }
   };
 
-  const handleSaveName = () => {
-    if (!tempSetName.trim()) {
-      setTempSetName(activeSet.name);
+  const handleSaveName = async () => {
+    if (!activeSetId || !tempSetName.trim()) {
       setIsEditingName(false);
       return;
     }
-    setSets(
-      sets.map((s) => (s.id === activeSetId ? { ...s, name: tempSetName } : s)),
-    );
-    setIsEditingName(false);
+
+    try {
+      await updateComparisonName(activeSetId, tempSetName.trim());
+      // 목록과 상세 데이터 갱신
+      await fetchComparisonList();
+      if (activeComparison) {
+        setActiveComparison({ ...activeComparison, name: tempSetName.trim() });
+      }
+    } catch (e) {
+      console.error("이름 변경 실패:", e);
+      // 실패 시 원래 이름으로 복원
+      setTempSetName(activeComparison?.name ?? "");
+    } finally {
+      setIsEditingName(false);
+    }
   };
 
   const toggleMetric = (key: DetailMetricKey) => {
@@ -515,10 +434,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       setActiveMetrics([...activeMetrics, key]);
     }
   };
-
-  const filteredCompanies = allCompanies.filter(
-    (c) => c.includes(searchQuery) && !activeSet.companies.includes(c),
-  );
 
   return (
     <div className="animate-fade-in pb-12 relative">
@@ -546,20 +461,20 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                 나의 비교 세트
               </h2>
               <div className="space-y-2">
-                {sets.map((set) => (
+                {comparisonList.map((item) => (
                   <button
-                    key={set.id}
-                    onClick={() => setActiveSetId(set.id)}
+                    key={item.id}
+                    onClick={() => setActiveSetId(item.id)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                      activeSetId === set.id
+                      activeSetId === item.id
                         ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
                         : "hover:bg-white text-slate-600"
                     }`}
                   >
                     <span className="font-medium text-sm truncate max-w-[150px]">
-                      {set.name}
+                      {item.name}
                     </span>
-                    {activeSetId === set.id && (
+                    {activeSetId === item.id && (
                       <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
                     )}
                   </button>
@@ -602,7 +517,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               ) : (
                 <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-bold text-slate-800">
-                    {activeSet.name}
+                    {activeComparison?.name ?? "비교 세트 선택"}
                   </h2>
                   <button
                     onClick={() => setIsEditingName(true)}
@@ -616,21 +531,23 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              {activeSet.companies.map((company) => (
+              {activeComparison?.companies?.map((company) => (
                 <div
-                  key={company}
+                  key={company.stock_code}
                   className="flex items-center gap-2 pl-4 pr-2 py-2 bg-white rounded-full border border-gray-200 shadow-sm text-slate-700"
                 >
-                  <span className="font-bold text-sm">{company}</span>
+                  <span className="font-bold text-sm">
+                    {company.companyName}
+                  </span>
                   <button
-                    onClick={() => handleRemoveCompany(company)}
+                    onClick={() => handleRemoveCompany(company.stock_code)}
                     className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
                   >
                     <X size={14} />
                   </button>
                 </div>
               ))}
-              {activeSet.companies.length < 5 ? (
+              {(activeComparison?.companies?.length ?? 0) < 5 ? (
                 <button
                   onClick={() => setIsSearchOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group"
@@ -732,11 +649,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     />
                     <Legend wrapperStyle={{ paddingTop: "20px" }} />
                     {/* Dynamically render bars for each company in the set */}
-                    {activeSet.companies.map((company, index) => (
+                    {activeComparison?.companies?.map((company, index) => (
                       <Bar
-                        key={company}
-                        dataKey={company}
-                        name={company}
+                        key={company.stock_code}
+                        dataKey={company.companyName}
+                        name={company.companyName}
                         fill={CHART_COLORS[index % CHART_COLORS.length]}
                         radius={[4, 4, 0, 0]}
                         barSize={40}
@@ -802,12 +719,12 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     />
                     <Legend wrapperStyle={{ paddingTop: "20px" }} />
                     {/* Dynamically render lines for each company */}
-                    {activeSet.companies.map((company, index) => (
+                    {activeComparison?.companies?.map((company, index) => (
                       <Line
-                        key={company}
+                        key={company.stock_code}
                         type="monotone"
-                        dataKey={company}
-                        name={company}
+                        dataKey={company.companyName}
+                        name={company.companyName}
                         stroke={CHART_COLORS[index % CHART_COLORS.length]}
                         strokeWidth={3}
                         dot={{ r: 4 }}
@@ -835,6 +752,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               >
                 {activeMetrics.map((key) => {
                   const info = dynamicDetails[key];
+                  if (!info) return null;
                   return (
                     <GlassCard
                       key={key}
@@ -1002,16 +920,25 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   <Search size={32} className="mx-auto mb-2 opacity-50" />
                   검색어를 입력하여 기업을 찾아보세요
                 </div>
-              ) : filteredCompanies.length > 0 ? (
-                filteredCompanies.map((company) => (
+              ) : isSearching ? (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  검색 중...
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((company) => (
                   <button
-                    key={company}
-                    onClick={() => handleAddCompany(company)}
+                    key={company.code}
+                    onClick={() => handleAddCompany(company.code)}
                     className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left"
                   >
-                    <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
-                      {company}
-                    </span>
+                    <div>
+                      <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
+                        {company.name}
+                      </span>
+                      <span className="ml-2 text-xs text-gray-400">
+                        {company.code}
+                      </span>
+                    </div>
                     <Plus
                       size={18}
                       className="text-gray-400 group-hover:text-shinhan-blue"

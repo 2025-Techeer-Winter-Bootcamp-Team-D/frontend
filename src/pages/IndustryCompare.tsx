@@ -252,7 +252,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
         aiScore: 70,
         marketCap: "2조 100억",
       },
-      ...createMockCompanies("반도체", 25000, 3),
     ],
     news: [
       {
@@ -591,7 +590,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   const filteredIds = useMemo(() => {
     const ids = new Set<string>();
-    SAMPLE_STOCKS.forEach((stock) => {
+    stocksFromApi.forEach((stock) => {
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
@@ -863,6 +862,16 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     <div className="text-xs text-gray-400 font-mono">
                       {company.code}
                     </div>
+                    <button
+                      onClick={(e) =>
+                        handleToggleStar(e, String(company.companyId))
+                      }
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <StarIcon
+                        isActive={starred.has(String(company.companyId))}
+                      />
+                    </button>
                   </div>
                 </div>
                 <button
@@ -1004,7 +1013,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       {company.roe}%
                     </td>
                     <td className="px-6 py-4 text-center text-slate-600 font-medium">
-                      {company.marketCap}
+                      {company.marketAmount}
                     </td>
                   </tr>
                 ))}
@@ -1023,7 +1032,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
         </p>
         <ParallelCoordinatesChart
-          data={SAMPLE_STOCKS}
+          data={stocksFromApi}
           onFilterChange={setFilters}
           filters={filters}
           filteredIds={filteredIds}
