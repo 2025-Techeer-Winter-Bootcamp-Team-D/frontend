@@ -175,6 +175,7 @@ export const industryHandlers = [
 
       const newCompany: IndustryCompany = {
         companyId: body.companyId,
+        stockCode: body.stockCode ?? "",
         name: body.name,
         rank: body.rank ?? existingCompanies.length + 1,
         marketCap: body.marketCap ?? 0,

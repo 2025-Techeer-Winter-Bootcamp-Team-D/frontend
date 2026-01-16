@@ -122,10 +122,18 @@ export interface IndustryNewsResponse {
 // 산업 내 기업 정보 타입
 export type IndustryCompany = {
   companyId: number | string;
+  stockCode: string;
   name: string;
   rank: number;
   marketCap: number | string;
   logoUrl: string;
+  logo?: string;
+  price?: string;
+  change?: string;
+  roe?: number;
+  per?: number;
+  pbr?: number;
+  aiScore?: number;
 };
 
 export interface IndustryCompaniesResponse {
@@ -137,6 +145,7 @@ export interface IndustryCompaniesResponse {
 export interface IndustryAnalysisResponse {
   industryId: string;
   summary: string;
+  outlook?: string;
   keywords: string[];
   sentiment: "positive" | "negative" | "neutral";
 }

@@ -807,7 +807,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   </p>
                 </div>
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                  {["1D", "1W", "3M", "6M", "1Y", "All"].map((p) => (
+                  {["1D", "1W", "3M", "1Y", "All"].map((p) => (
                     <button
                       key={p}
                       onClick={() => setChartRange(p)}
@@ -854,30 +854,33 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 <>
                   {/* Compact Medal Graphic */}
                   <div className="flex justify-center mb-6 gap-4 items-end shrink-0">
+                    {/* 2등 - 은메달 */}
                     <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold border-4 border-white shadow-sm mb-1 relative top-2">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-300 via-gray-100 to-slate-400 flex items-center justify-center text-slate-700 font-bold border-2 border-white/60 shadow-lg mb-1 relative top-2 backdrop-blur-sm ring-2 ring-slate-300/50">
                         2
                       </div>
-                      <div className="h-12 w-10 bg-gray-100 rounded-t-lg"></div>
-                      <span className="text-[10px] font-bold mt-1 text-slate-600">
+                      <div className="h-12 w-10 bg-gradient-to-b from-slate-300/80 to-slate-200/40 rounded-t-lg backdrop-blur-sm border border-white/30"></div>
+                      <span className="text-[10px] font-bold mt-1 text-slate-700">
                         {peerCompanies[1]?.name || "-"}
                       </span>
                     </div>
+                    {/* 1등 - 금메달 */}
                     <div className="flex flex-col items-center z-10">
-                      <div className="w-14 h-14 rounded-full bg-shinhan-gold flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-md mb-1">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 flex items-center justify-center text-white text-lg font-bold border-2 border-white/60 shadow-xl mb-1 backdrop-blur-sm ring-2 ring-yellow-400/50">
                         1
                       </div>
-                      <div className="h-20 w-14 bg-gradient-to-b from-shinhan-gold to-yellow-600/20 rounded-t-lg"></div>
-                      <span className="text-[10px] font-bold mt-1 text-shinhan-blue">
+                      <div className="h-20 w-14 bg-gradient-to-b from-yellow-400/80 via-amber-400/60 to-yellow-200/30 rounded-t-lg backdrop-blur-sm border border-white/30"></div>
+                      <span className="text-[10px] font-bold mt-1 text-amber-600">
                         {peerCompanies[0]?.name || "-"}
                       </span>
                     </div>
+                    {/* 3등 - 동메달 */}
                     <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-bold border-4 border-white shadow-sm mb-1 relative top-4">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-300 via-amber-400 to-orange-500 flex items-center justify-center text-white font-bold border-2 border-white/60 shadow-lg mb-1 relative top-4 backdrop-blur-sm ring-2 ring-orange-400/50">
                         3
                       </div>
-                      <div className="h-8 w-10 bg-orange-50 rounded-t-lg"></div>
-                      <span className="text-[10px] font-bold mt-1 text-slate-600">
+                      <div className="h-8 w-10 bg-gradient-to-b from-orange-400/80 to-orange-200/40 rounded-t-lg backdrop-blur-sm border border-white/30"></div>
+                      <span className="text-[10px] font-bold mt-1 text-orange-700">
                         {peerCompanies[2]?.name || "-"}
                       </span>
                     </div>
