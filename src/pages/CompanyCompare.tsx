@@ -34,6 +34,7 @@ import {
   createComparison,
   addCompany,
   removeCompany,
+  updateComparisonName,
 } from "../api/comparison";
 import { searchCompanies, getStockOhlcv } from "../api/company";
 import type { Company, OhlcvItem } from "../types";
@@ -226,7 +227,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
   // OHLCV 데이터 조회 (주가 추이용)
   const fetchOhlcvData = useCallback(async () => {
-    if (!activeComparison?.companies?.length) return;
+    if (!activeComparison?.companies?.length) {
+      setOhlcvData({});
+      return;
+    }
 
     const intervalMap: Record<TimeRange, string> = {
       "1M": "1d",
@@ -236,6 +240,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     };
 
     setOhlcvLoading(true);
+    setOhlcvData({}); // 조회 시작 시 이전 데이터 초기화
     try {
       const results: Record<string, OhlcvItem[]> = {};
       await Promise.all(
@@ -250,6 +255,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       setOhlcvData(results);
     } catch (e) {
       console.error("OHLCV 데이터 조회 실패:", e);
+      setOhlcvData({}); // 실패 시에도 초기화하여 이전 데이터가 남지 않도록 함
     } finally {
       setOhlcvLoading(false);
     }
@@ -380,7 +386,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const handleRemoveCompany = async (stock_code: string) => {
     if (!activeSetId) return;
     try {
-      await removeCompany(activeSetId, parseInt(stock_code));
+      await removeCompany(activeSetId, stock_code);
       await fetchComparisonDetail(activeSetId);
     } catch (e) {
       console.error("기업 제거 실패:", e);
@@ -400,9 +406,26 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     }
   };
 
-  const handleSaveName = () => {
-    // TODO: API에 이름 변경 기능이 있다면 호출
-    setIsEditingName(false);
+  const handleSaveName = async () => {
+    if (!activeSetId || !tempSetName.trim()) {
+      setIsEditingName(false);
+      return;
+    }
+
+    try {
+      await updateComparisonName(activeSetId, tempSetName.trim());
+      // 목록과 상세 데이터 갱신
+      await fetchComparisonList();
+      if (activeComparison) {
+        setActiveComparison({ ...activeComparison, name: tempSetName.trim() });
+      }
+    } catch (e) {
+      console.error("이름 변경 실패:", e);
+      // 실패 시 원래 이름으로 복원
+      setTempSetName(activeComparison?.name ?? "");
+    } finally {
+      setIsEditingName(false);
+    }
   };
 
   const toggleMetric = (key: DetailMetricKey) => {

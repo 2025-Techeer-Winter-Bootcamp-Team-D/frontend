@@ -91,8 +91,8 @@ export const comparisonHandlers = [
       id: nextComparisonId++,
       name: body.name,
       companies: (body.companies ?? []).map((id) => ({
-        companyId: id,
-        name: `기업 ${id}`,
+        stock_code: String(id),
+        companyName: `기업 ${id}`,
       })),
     };
 
@@ -257,7 +257,7 @@ export const comparisonHandlers = [
 
   // 비교 세트에서 기업 삭제 (DELETE /comparisons/:comparison_id/:stock_code)
   http.delete<{ comparison_id: string; stock_code: string }>(
-    "/comparisons/:comparison_id/:stock_code",
+    "/comparisons/:comparison_id/:stock_code/",
     async ({ params }) => {
       await delay(150);
       const id = Number(params.comparison_id);

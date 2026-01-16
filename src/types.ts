@@ -121,11 +121,11 @@ export interface ExpenseItem {
 
 // GET /industries/{industry_id}/news
 export interface IndustryNewsItem {
-  newId: number;
+  id: number;
   title: string;
-  summary: string;
+  summary?: string;
   source: string;
-  publishedAt: string;
+  time: string;
   author?: string;
   content?: string;
   keywords?: string[];
