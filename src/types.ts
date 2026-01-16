@@ -41,7 +41,7 @@ export interface NewsItem {
   source: string;
   date: string;
   author: string;
-  avatar: string;
+  avatar?: string;
   content: string;
   keywords: string[];
 }
@@ -120,11 +120,17 @@ export interface ExpenseItem {
 
 // GET /industries/{industry_id}/news
 export interface IndustryNewsItem {
+  id: number; //
   title: string;
-  url: string;
-  publishedAt: string;
+  summary?: string;
+  source?: string; //
+  date?: string;
+  time?: string;
+  author?: string;
+  content?: string; //
+  keywords?: string[];
+  url?: string;
 }
-
 export interface IndustryNewsResponse {
   industryId: string;
   items: IndustryNewsItem[];
@@ -298,10 +304,46 @@ export interface FinancialData {
   operating: FinancialMetric;
   netIncome: FinancialMetric;
 }
-export interface NewsItem_industry {
-  id: number;
-  title: string;
-  source: string;
-  time: string;
-  content: string; // Full content for modal
+//산업
+export type IndustryKey =
+  | "finance"
+  | "semicon"
+  | "auto"
+  | "bio"
+  | "battery"
+  | "internet"
+  | "ent"
+  | "steel"
+  | "ship"
+  | "const"
+  | "retail"
+  | "telecom";
+
+export type TimeRange = "1M" | "3M" | "6M" | "1Y";
+
+export interface IndustryData {
+  id: IndustryKey;
+  name: string;
+  indexName: string;
+  indexValue: number;
+  changeValue: number;
+  changePercent: number;
+  outlook: string; // New field for Industry Outlook
+  insights: {
+    positive: string;
+    risk: string;
+  };
+  companies: {
+    name: string;
+    code: string;
+    price: string;
+    change: string; // includes sign
+    per: number;
+    pbr: number;
+    roe: number;
+    aiScore: number;
+    marketCap: string; // Added Market Cap
+    logo?: string; // Optional: Company logo URL (for backend integration)
+  }[];
+  news: IndustryNewsItem[]; // New field for News
 }

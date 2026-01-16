@@ -11,7 +11,15 @@ import {
   Trophy,
 } from "lucide-react";
 import { PageView } from "../types";
-import type { Stock, AxisKey, BrushRange } from "../types";
+import type {
+  Stock,
+  AxisKey,
+  BrushRange,
+  NewsItem_industry,
+  IndustryData,
+  TimeRange,
+  IndustryKey,
+} from "../types";
 import { SAMPLE_STOCKS } from "../constants";
 import {
   ResponsiveContainer,
@@ -30,57 +38,6 @@ interface AnalysisProps {
   starred: Set<string>;
   onToggleStar: (code: string) => void;
   setCompanyCode?: (code: string) => void;
-}
-
-type IndustryKey =
-  | "finance"
-  | "semicon"
-  | "auto"
-  | "bio"
-  | "battery"
-  | "internet"
-  | "ent"
-  | "steel"
-  | "ship"
-  | "const"
-  | "retail"
-  | "telecom";
-
-type TimeRange = "1M" | "3M" | "6M" | "1Y";
-
-interface NewsItem {
-  id: number;
-  title: string;
-  source: string;
-  time: string;
-  content: string; // Full content for modal
-}
-
-interface IndustryData {
-  id: IndustryKey;
-  name: string;
-  indexName: string;
-  indexValue: number;
-  changeValue: number;
-  changePercent: number;
-  outlook: string; // New field for Industry Outlook
-  insights: {
-    positive: string;
-    risk: string;
-  };
-  companies: {
-    name: string;
-    code: string;
-    price: string;
-    change: string; // includes sign
-    per: number;
-    pbr: number;
-    roe: number;
-    aiScore: number;
-    marketCap: string; // Added Market Cap
-    logo?: string; // Optional: Company logo URL (for backend integration)
-  }[];
-  news: NewsItem[]; // New field for News
 }
 
 // Generate random sparkline data for the mini chart
@@ -622,7 +579,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedIndustry, setSelectedIndustry] =
     useState<IndustryKey>("finance");
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
-  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [selectedNews, setSelectedNews] = useState<NewsItem_industry | null>(
+    null,
+  );
 
   // Parallel Coordinates Chart State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(

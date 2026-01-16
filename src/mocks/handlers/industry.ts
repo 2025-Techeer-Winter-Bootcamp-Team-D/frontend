@@ -15,14 +15,16 @@ export const industryHandlers = [
       industryId,
       items: [
         {
+          id: 1,
           title: `산업(${industryId}) 뉴스 1`,
           url: "https://example.com/1",
-          publishedAt: "2026-01-10",
+          date: "2026-01-10",
         },
         {
+          id: 2,
           title: `산업(${industryId}) 뉴스 2`,
           url: "https://example.com/2",
-          publishedAt: "2026-01-11",
+          date: "2026-01-11",
         },
       ],
     };
