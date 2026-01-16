@@ -1,5 +1,27 @@
 import { http, HttpResponse, delay } from "msw";
-import type { NewsItem } from "@/types";
+import type { NewsItem, SankeyData, ExpenseItem } from "@/types";
+
+// 재무 데이터 타입
+interface FinancialMetric {
+  current: string;
+  yoy: string;
+  industryAvg: string;
+  history: { year: string; value: number; label: string }[];
+}
+
+interface FinancialData {
+  business: { name: string; value: number; color: string }[];
+  revenue: FinancialMetric;
+  operating: FinancialMetric;
+  netIncome: FinancialMetric;
+}
+
+// 공시 데이터 타입
+interface DisclosureItem {
+  date: string;
+  type: string;
+  title: string;
+}
 
 type CompanyInfo = {
   stock_code: string;

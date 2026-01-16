@@ -253,7 +253,7 @@ export interface OhlcvData {
   close: number;
   volume: number;
 }
-// OHLCV API Response Item (MSW mock format)
+// 주가 데이터
 export interface OhlcvItem {
   time: number;
   open: number;
@@ -292,7 +292,7 @@ export interface CompanyApiData {
   establishment_date: string;
   homepage_url: string;
 }
-// Expanded Mock Data for Financial Analysis matching the image
+// 재무 데이터 타입
 export interface FinancialMetric {
   current: string;
   yoy: string;

@@ -284,11 +284,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
     }
   }, [apiCompanyData, fetchPeerCompanies]);
 
-  // 주가 데이터 초기 로드
-  useEffect(() => {
-    fetchStockData("1D");
-  }, [fetchStockData]);
-
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
 
