@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -22,7 +22,6 @@ import type {
   TimeRange,
   IndustryKey,
 } from "../types";
-import { SAMPLE_STOCKS } from "../constants";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -373,49 +372,58 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   const industryId = INDUSTRY_ID_BY_KEY[selectedIndustry];
 
-  // API 호출
-  useEffect(() => {
-    let cancelled = false;
+  // API 호출 함수 (재시도용)
+  const fetchIndustryData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-    (async () => {
-      if (!cancelled) {
-        setLoading(true);
-        setError(null);
-      }
+    try {
+      const [newsRes, analysisRes, companiesRes] = await Promise.all([
+        getIndustryNews(industryId),
+        getIndustryAnalysis(industryId),
+        getIndustryCompanies(industryId),
+      ]);
 
-      try {
-        const [newsRes, analysisRes, companiesRes] = await Promise.all([
-          getIndustryNews(industryId),
-          getIndustryAnalysis(industryId),
-          getIndustryCompanies(industryId),
-        ]);
-
-        if (!cancelled) {
-          setIndustryNews(newsRes.data ?? []);
-          setAnalysis(analysisRes);
-          setCompanies(companiesRes.data ?? []);
-          setError(null);
-          setLoading(false);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError((e as Error)?.message ?? "산업 데이터 로딩 실패");
-          setIndustryNews([]);
-          setAnalysis(null);
-          setCompanies([]);
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+      setIndustryNews(newsRes.data ?? []);
+      setAnalysis(analysisRes);
+      setCompanies(companiesRes.data ?? []);
+      setError(null);
+    } catch (e) {
+      setError((e as Error)?.message ?? "산업 데이터 로딩 실패");
+      setIndustryNews([]);
+      setAnalysis(null);
+      setCompanies([]);
+    } finally {
+      setLoading(false);
+    }
   }, [industryId]);
+
+  // 초기 데이터 로드 및 산업 변경 시 재로드
+  useEffect(() => {
+    fetchIndustryData();
+  }, [fetchIndustryData]);
+
+  // Use the selected industry data directly.
+  // Since we populated all keys in industryDB, we don't need a fallback.
+  const currentData = industryDB[selectedIndustry];
+
+  // API 데이터를 Stock 형식으로 변환 (ParallelCoordinatesChart용)
+  const stocksFromApi: Stock[] = useMemo(() => {
+    return companies.map((company) => ({
+      id: String(company.companyId),
+      name: company.name,
+      sector: currentData.name.split(" (")[0],
+      per: company.per ?? 0,
+      pbr: company.pbr ?? 0,
+      roe: company.roe ?? 0,
+      debtRatio: 0, // API에서 제공되지 않으면 기본값
+      divYield: 0, // API에서 제공되지 않으면 기본값
+    }));
+  }, [companies, currentData.name]);
 
   const filteredIds = useMemo(() => {
     const ids = new Set<string>();
-    SAMPLE_STOCKS.forEach((stock) => {
+    stocksFromApi.forEach((stock) => {
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
@@ -427,11 +435,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       if (pass) ids.add(stock.id);
     });
     return ids;
-  }, [filters]);
-
-  // Use the selected industry data directly.
-  // Since we populated all keys in industryDB, we don't need a fallback.
-  const currentData = industryDB[selectedIndustry];
+  }, [filters, stocksFromApi]);
 
   const handleToggleStar = (e: React.MouseEvent, code: string) => {
     e.stopPropagation();
@@ -639,118 +643,167 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       <h3 className="text-lg font-bold text-slate-700 mb-4 px-2">
         {currentData.name.split(" (")[0]} 산업 기업 순위
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
-        {companies
-          .slice(0, 3)
-          .map((company: IndustryCompany, index: number) => {
-            const isFirst = index === 0;
-            const isSecond = index === 1;
 
-            let containerClasses =
-              "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
-            let badgeClasses = "";
-            let label = "";
-
-            if (isFirst) {
-              containerClasses +=
-                " border-yellow-200 bg-white shadow-sm min-h-[260px] mt-2";
-              badgeClasses = "bg-yellow-100 text-yellow-600";
-              label = "1st Place";
-            } else if (isSecond) {
-              containerClasses +=
-                " border-slate-200 bg-white shadow-sm min-h-[260px] mt-2";
-              badgeClasses = "bg-slate-100 text-slate-500";
-              label = "2nd Place";
-            } else {
-              containerClasses +=
-                " border-orange-200 bg-white shadow-sm min-h-[260px] mt-2";
-              badgeClasses = "bg-orange-100 text-orange-600";
-              label = "3rd Place";
-            }
-
-            return (
-              <GlassCard
-                key={company.companyId}
-                className={containerClasses}
-                onClick={() => handleCompanyClick(String(company.companyId))}
-              >
-                {/* Header */}
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center ${badgeClasses}`}
-                    >
-                      <Trophy size={20} />
-                    </div>
-                    <div>
-                      <div
-                        className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isFirst ? "text-yellow-600" : isSecond ? "text-slate-500" : "text-orange-500"}`}
-                      >
-                        {label}
-                      </div>
-                      <div className="text-xs text-gray-400 font-mono">
-                        {company.companyId}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) =>
-                      handleToggleStar(e, String(company.companyId))
-                    }
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <StarIcon
-                      isActive={starred.has(String(company.companyId))}
-                    />
-                  </button>
-                </div>
-
-                {/* Center Content */}
-                <div className="text-center mb-6">
-                  <h3
-                    className={`font-bold text-slate-800 mb-2 ${isFirst ? "text-2xl" : "text-xl"}`}
-                  >
-                    {company.name}
-                  </h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <span
-                      className={`text-lg font-bold ${isFirst ? "text-slate-900" : "text-slate-700"}`}
-                    >
-                      {company.price}
-                    </span>
-                    <span
-                      className={`text-sm font-bold px-2 py-0.5 rounded ${company.change?.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
-                    >
-                      {company.change}
-                    </span>
+      {/* 로딩 스켈레톤 */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
+          {[1, 2, 3].map((i) => (
+            <GlassCard key={i} className="p-6 animate-pulse min-h-[260px]">
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-200" />
+                  <div>
+                    <div className="w-16 h-3 bg-gray-200 rounded mb-2" />
+                    <div className="w-12 h-3 bg-gray-200 rounded" />
                   </div>
                 </div>
+              </div>
+              <div className="text-center mb-6">
+                <div className="w-24 h-6 bg-gray-200 rounded mx-auto mb-2" />
+                <div className="w-20 h-5 bg-gray-200 rounded mx-auto" />
+              </div>
+              <div className="mt-auto pt-4 border-t border-gray-100">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="w-16 h-4 bg-gray-200 rounded mx-auto" />
+                  <div className="w-16 h-4 bg-gray-200 rounded mx-auto" />
+                </div>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+      )}
 
-                {/* Footer Metrics */}
-                <div
-                  className={`mt-auto pt-4 border-t ${isFirst ? "border-yellow-100" : "border-gray-50"}`}
+      {/* 에러 UI with 재시도 */}
+      {error && !loading && (
+        <div className="mb-8 p-8 bg-red-50 border border-red-200 rounded-xl text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchIndustryData}
+            className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 mx-auto"
+          >
+            <RotateCcw size={16} />
+            다시 시도
+          </button>
+        </div>
+      )}
+
+      {/* 정상 데이터 표시 */}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
+          {companies
+            .slice(0, 3)
+            .map((company: IndustryCompany, index: number) => {
+              const isFirst = index === 0;
+              const isSecond = index === 1;
+
+              let containerClasses =
+                "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
+              let badgeClasses = "";
+              let label = "";
+
+              if (isFirst) {
+                containerClasses +=
+                  " border-yellow-200 bg-white shadow-sm min-h-[260px] mt-2";
+                badgeClasses = "bg-yellow-100 text-yellow-600";
+                label = "1st Place";
+              } else if (isSecond) {
+                containerClasses +=
+                  " border-slate-200 bg-white shadow-sm min-h-[260px] mt-2";
+                badgeClasses = "bg-slate-100 text-slate-500";
+                label = "2nd Place";
+              } else {
+                containerClasses +=
+                  " border-orange-200 bg-white shadow-sm min-h-[260px] mt-2";
+                badgeClasses = "bg-orange-100 text-orange-600";
+                label = "3rd Place";
+              }
+
+              return (
+                <GlassCard
+                  key={company.companyId}
+                  className={containerClasses}
+                  onClick={() => handleCompanyClick(String(company.companyId))}
                 >
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="text-[10px] text-gray-400 mb-1">
-                        시가총액
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center ${badgeClasses}`}
+                      >
+                        <Trophy size={20} />
                       </div>
-                      <div className="text-sm font-bold text-slate-600">
-                        {company.marketAmount.toLocaleString()}
+                      <div>
+                        <div
+                          className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isFirst ? "text-yellow-600" : isSecond ? "text-slate-500" : "text-orange-500"}`}
+                        >
+                          {label}
+                        </div>
+                        <div className="text-xs text-gray-400 font-mono">
+                          {company.companyId}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <div className="text-[10px] text-gray-400 mb-1">ROE</div>
-                      <div className="text-sm font-bold text-shinhan-blue">
-                        {company.roe != null ? `${company.roe}%` : "-"}
+                    <button
+                      onClick={(e) =>
+                        handleToggleStar(e, String(company.companyId))
+                      }
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <StarIcon
+                        isActive={starred.has(String(company.companyId))}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Center Content */}
+                  <div className="text-center mb-6">
+                    <h3
+                      className={`font-bold text-slate-800 mb-2 ${isFirst ? "text-2xl" : "text-xl"}`}
+                    >
+                      {company.name}
+                    </h3>
+                    <div className="flex items-center justify-center gap-2">
+                      <span
+                        className={`text-lg font-bold ${isFirst ? "text-slate-900" : "text-slate-700"}`}
+                      >
+                        {company.price}
+                      </span>
+                      <span
+                        className={`text-sm font-bold px-2 py-0.5 rounded ${company.change?.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
+                      >
+                        {company.change}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Footer Metrics */}
+                  <div
+                    className={`mt-auto pt-4 border-t ${isFirst ? "border-yellow-100" : "border-gray-50"}`}
+                  >
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-1">
+                          시가총액
+                        </div>
+                        <div className="text-sm font-bold text-slate-600">
+                          {company.marketAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-1">
+                          ROE
+                        </div>
+                        <div className="text-sm font-bold text-shinhan-blue">
+                          {company.roe != null ? `${company.roe}%` : "-"}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </GlassCard>
-            );
-          })}
-      </div>
+                </GlassCard>
+              );
+            })}
+        </div>
+      )}
 
       {/* --- All Companies Ranking Table --- */}
       <div className="mb-10">
@@ -865,7 +918,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
 
         <ParallelCoordinatesChart
-          data={SAMPLE_STOCKS}
+          data={stocksFromApi}
           onFilterChange={setFilters}
           filters={filters}
           filteredIds={filteredIds}
@@ -966,30 +1019,30 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   </h4>
                 </div>
                 <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-                  {SAMPLE_STOCKS.filter((stock) =>
-                    filteredIds.has(stock.id),
-                  ).map((stock) => (
-                    <div
-                      key={stock.id}
-                      className="px-6 py-4 flex items-center justify-between hover:bg-blue-50/30 cursor-pointer transition-colors"
-                      onClick={() => setSelectedStock(stock)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="inline-flex w-10 h-10 rounded-lg bg-slate-100 items-center justify-center font-bold text-slate-600 text-sm">
-                          {stock.name.charAt(0)}
-                        </span>
-                        <div>
-                          <div className="font-bold text-slate-800">
-                            {stock.name}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            {stock.sector}
+                  {stocksFromApi
+                    .filter((stock) => filteredIds.has(stock.id))
+                    .map((stock) => (
+                      <div
+                        key={stock.id}
+                        className="px-6 py-4 flex items-center justify-between hover:bg-blue-50/30 cursor-pointer transition-colors"
+                        onClick={() => setSelectedStock(stock)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="inline-flex w-10 h-10 rounded-lg bg-slate-100 items-center justify-center font-bold text-slate-600 text-sm">
+                            {stock.name.charAt(0)}
+                          </span>
+                          <div>
+                            <div className="font-bold text-slate-800">
+                              {stock.name}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {stock.sector}
+                            </div>
                           </div>
                         </div>
+                        <ArrowRight size={16} className="text-slate-400" />
                       </div>
-                      <ArrowRight size={16} className="text-slate-400" />
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
 

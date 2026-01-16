@@ -182,8 +182,15 @@ export interface CompareCompany {
   companyName: string;
   revenue: number;
   operatingProfit: number;
+  netIncome: number;
+  marketCap: number;
   roe: number;
   per: number;
+  pbr?: number;
+  eps?: number;
+  yoy?: number;
+  qoq?: number;
+  operatingMargin?: number;
 }
 
 export interface Comparison {
@@ -300,7 +307,7 @@ export interface OhlcvData {
   close: number;
   volume: number;
 }
-// OHLCV API Response Item (MSW mock format)
+// OHLCV API Response Item
 export interface OhlcvItem {
   time: number;
   open: number;
@@ -308,6 +315,7 @@ export interface OhlcvItem {
   low: number;
   close: number;
   volume: number;
+  amount: number;
 }
 // 동종업계 순위 아이템
 export interface PeerCompanyItem {

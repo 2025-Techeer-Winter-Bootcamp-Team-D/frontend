@@ -35,8 +35,8 @@ import {
   addCompany,
   removeCompany,
 } from "../api/comparison";
-import { searchCompanies } from "../api/company";
-import type { Company } from "../types";
+import { searchCompanies, getStockOhlcv } from "../api/company";
+import type { Company, OhlcvItem } from "../types";
 
 interface CompareProps {
   setPage: (page: PageView) => void;
@@ -151,6 +151,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempSetName, setTempSetName] = useState("");
 
+  // State for OHLCV data (주가 추이)
+  const [ohlcvData, setOhlcvData] = useState<Record<string, OhlcvItem[]>>({});
+  const [ohlcvLoading, setOhlcvLoading] = useState(false);
+
   const currentMetricOption =
     metricOptions.find((o) => o.id === selectedMetric) || metricOptions[0];
 
@@ -220,6 +224,42 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
+  // OHLCV 데이터 조회 (주가 추이용)
+  const fetchOhlcvData = useCallback(async () => {
+    if (!activeComparison?.companies?.length) return;
+
+    const intervalMap: Record<TimeRange, string> = {
+      "1M": "1d",
+      "3M": "1d",
+      "6M": "1d",
+      "1Y": "1d",
+    };
+
+    setOhlcvLoading(true);
+    try {
+      const results: Record<string, OhlcvItem[]> = {};
+      await Promise.all(
+        activeComparison.companies.map(async (company) => {
+          const response = await getStockOhlcv(
+            company.stock_code,
+            intervalMap[timeRange],
+          );
+          results[company.companyName] = response.data?.data ?? [];
+        }),
+      );
+      setOhlcvData(results);
+    } catch (e) {
+      console.error("OHLCV 데이터 조회 실패:", e);
+    } finally {
+      setOhlcvLoading(false);
+    }
+  }, [activeComparison?.companies, timeRange]);
+
+  // timeRange 또는 companies가 변경되면 OHLCV 데이터 다시 조회
+  useEffect(() => {
+    fetchOhlcvData();
+  }, [fetchOhlcvData]);
+
   // 차트 데이터 생성 (API 데이터 기반)
   const financialChartData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
@@ -227,8 +267,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     const metricMap: Record<MetricType, keyof CompareCompany> = {
       revenue: "revenue",
       operating: "operatingProfit",
-      net: "operatingProfit", // API에 맞게 조정 필요
-      marketCap: "revenue", // API에 맞게 조정 필요
+      net: "netIncome",
+      marketCap: "marketCap",
     };
 
     return [{ year: "현재" }].map((item) => {
@@ -253,6 +293,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       > = {
         roe: "roe",
         per: "per",
+        pbr: "pbr",
+        eps: "eps",
+        yoy: "yoy",
+        qoq: "qoq",
+        operatingMargin: "operatingMargin",
       };
       const apiKey = metricKeyMap[key];
 
@@ -265,31 +310,56 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     return result;
   }, [activeComparison?.companies, activeMetrics]);
 
-  // 주가 추이 차트 데이터 (더미 - 실제 API 연동 필요)
+  // 주가 추이 차트 데이터 (OHLCV API 기반)
   const trendChartData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
 
-    const dataPoints =
-      timeRange === "1M"
-        ? 4
-        : timeRange === "3M"
-          ? 12
-          : timeRange === "6M"
-            ? 24
-            : 52;
-    const data: Record<string, string | number>[] = [];
+    // 데이터 포인트 수 결정
+    const dataPointsMap: Record<TimeRange, number> = {
+      "1M": 22, // 약 1개월 영업일
+      "3M": 65, // 약 3개월 영업일
+      "6M": 130, // 약 6개월 영업일
+      "1Y": 250, // 약 1년 영업일
+    };
+    const maxPoints = dataPointsMap[timeRange];
 
-    for (let i = 0; i < dataPoints; i++) {
-      const point: Record<string, string | number> = { date: `${i + 1}주차` };
-      activeComparison.companies.forEach((company, idx) => {
-        // 실제 OHLCV API 연동 시 대체 필요
-        const baseValue = 50000 + idx * 10000;
-        point[company.companyName] = baseValue + Math.sin(i / 3 + idx) * 5000;
-      });
-      data.push(point);
+    // OHLCV 데이터가 있으면 실제 데이터 사용
+    const hasOhlcvData = Object.keys(ohlcvData).length > 0;
+
+    if (hasOhlcvData) {
+      // 모든 기업의 데이터 길이 중 최소값 찾기
+      const minLength = Math.min(
+        ...activeComparison.companies.map(
+          (c) => ohlcvData[c.companyName]?.length ?? 0,
+        ),
+      );
+      const actualPoints = Math.min(minLength, maxPoints);
+
+      if (actualPoints === 0) return [];
+
+      const data: Record<string, string | number>[] = [];
+      for (let i = 0; i < actualPoints; i++) {
+        const point: Record<string, string | number> = {};
+        activeComparison.companies.forEach((company) => {
+          const companyOhlcv = ohlcvData[company.companyName];
+          if (companyOhlcv && companyOhlcv[i]) {
+            // 첫 번째 항목에서만 날짜 설정
+            if (!point.date) {
+              const timestamp = companyOhlcv[i].time;
+              const dateObj = new Date(timestamp * 1000);
+              point.date = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+            }
+            point[company.companyName] = companyOhlcv[i].close;
+          }
+        });
+        if (point.date) data.push(point);
+      }
+      return data;
     }
-    return data;
-  }, [activeComparison?.companies, timeRange]);
+
+    // OHLCV 데이터가 없으면 빈 배열 반환 (로딩 중이거나 에러)
+    return [];
+  }, [activeComparison?.companies, timeRange, ohlcvData]);
 
   // 새 비교 세트 생성
   const handleAddSet = async () => {
@@ -660,6 +730,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               >
                 {activeMetrics.map((key) => {
                   const info = dynamicDetails[key];
+                  if (!info) return null;
                   return (
                     <GlassCard
                       key={key}
