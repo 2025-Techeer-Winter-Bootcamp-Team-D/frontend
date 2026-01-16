@@ -199,6 +199,13 @@ export interface DeleteComparisonResponse {
 // User API Types
 // ============================================
 
+export type User = {
+  id: number;
+  email: string;
+  password: string;
+  createdAt: string;
+};
+
 // POST /users/signup, /users/login - Request
 export interface LoginRequest {
   email: string;
