@@ -25,6 +25,7 @@ export interface Company {
 }
 
 //분석 및 트랜드 기능
+/*
 export interface NewsItem {
   id: string;
   title: string;
@@ -32,7 +33,18 @@ export interface NewsItem {
   time: string;
   sentiment: "positive" | "negative" | "neutral";
 }
-
+  */
+export interface NewsItem {
+  id: number;
+  title: string;
+  summary: string;
+  source: string;
+  date: string;
+  author: string;
+  avatar: string;
+  content: string;
+  keywords: string[];
+}
 export enum PageView {
   DASHBOARD = "DASHBOARD",
   COMPANY_DETAIL = "COMPANY_DETAIL",
@@ -236,7 +248,6 @@ export interface ApiResponse<T> {
   message?: string;
   success: boolean;
 }
-
 // GET /companies/{companyId}/ohlcv - OHLCV Data
 export interface OhlcvData {
   date: string;
@@ -246,7 +257,6 @@ export interface OhlcvData {
   close: number;
   volume: number;
 }
-
 // OHLCV API Response Item (MSW mock format)
 export interface OhlcvItem {
   time: number;
@@ -256,7 +266,6 @@ export interface OhlcvItem {
   close: number;
   volume: number;
 }
-
 // 동종업계 순위 아이템
 export interface PeerCompanyItem {
   rank: number;
@@ -265,7 +274,6 @@ export interface PeerCompanyItem {
   price: string;
   change: string;
 }
-
 export interface RankingItem {
   rank: number;
   name: string;
@@ -275,4 +283,25 @@ export interface RankingItem {
   change: string;
   changeVal: number;
   marketCap: string;
+}
+// Expanded Mock Data for Financial Analysis matching the image
+export interface FinancialMetric {
+  current: string;
+  yoy: string;
+  industryAvg: string;
+  history: { year: string; value: number; label: string }[];
+}
+
+export interface FinancialData {
+  business: { name: string; value: number; color: string }[];
+  revenue: FinancialMetric;
+  operating: FinancialMetric;
+  netIncome: FinancialMetric;
+}
+export interface NewsItem_industry {
+  id: number;
+  title: string;
+  source: string;
+  time: string;
+  content: string; // Full content for modal
 }

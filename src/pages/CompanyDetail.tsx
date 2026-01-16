@@ -18,6 +18,9 @@ import type {
   ExpenseItem,
   OhlcvItem,
   PeerCompanyItem,
+  FinancialData,
+  FinancialMetric,
+  NewsItem,
 } from "../types";
 import {
   BarChart,
@@ -59,21 +62,6 @@ interface DetailProps {
 
 const PIE_COLORS = ["#3B82F6", "#EF4444", "#F59E0B", "#10B981", "#94A3B8"];
 
-// Expanded Mock Data for Financial Analysis matching the image
-interface FinancialMetric {
-  current: string;
-  yoy: string;
-  industryAvg: string;
-  history: { year: string; value: number; label: string }[];
-}
-
-interface FinancialData {
-  business: { name: string; value: number; color: string }[];
-  revenue: FinancialMetric;
-  operating: FinancialMetric;
-  netIncome: FinancialMetric;
-}
-
 // 기본 회사 데이터 (API 로딩 전 또는 실패 시 사용)
 const DEFAULT_COMPANY = {
   name: "-",
@@ -86,18 +74,6 @@ const DEFAULT_COMPANY = {
   desc: "-",
   logo: "--",
 };
-
-interface NewsItem {
-  id: number;
-  title: string;
-  summary: string;
-  source: string;
-  date: string;
-  author: string;
-  avatar: string;
-  content: string;
-  keywords: string[];
-}
 
 const companyNews: NewsItem[] = [
   {
