@@ -3,12 +3,14 @@ import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
   ArrowLeft,
+  ArrowRight,
   TrendingUp,
   Info,
   ChevronDown,
   X,
   ChevronRight,
   Trophy,
+  RotateCcw,
 } from "lucide-react";
 import { PageView } from "../types";
 import type {
@@ -32,6 +34,11 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import {
+  getIndustryNews,
+  getIndustryAnalysis,
+  getIndustryCompanies,
+} from "../api/industry";
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -47,31 +54,6 @@ const generateSparklineData = () => {
     i,
     value: 50 + Math.random() * 20 - 10,
   }));
-};
-
-// Helper to create dummy companies for industries we don't need fully detailed mock data for
-const createMockCompanies = (
-  sectorName: string,
-  basePrice: number,
-  count: number,
-) => {
-  return Array.from({ length: count }, (_, i) => {
-    const isUp = Math.random() > 0.4;
-    const changeVal = (Math.random() * 3).toFixed(2);
-    return {
-      name: `${sectorName} 관련주 ${String.fromCharCode(65 + i)}`,
-      code: `00${Math.floor(Math.random() * 9000) + 1000}0`,
-      price: (
-        basePrice + Math.floor(Math.random() * 10000 - 5000)
-      ).toLocaleString(),
-      change: `${isUp ? "+" : "-"}${changeVal}%`,
-      per: parseFloat((Math.random() * 20 + 5).toFixed(2)),
-      pbr: parseFloat((Math.random() * 3 + 0.5).toFixed(2)),
-      roe: parseFloat((Math.random() * 15 + 5).toFixed(2)),
-      aiScore: Math.floor(Math.random() * 30 + 60),
-      marketCap: `${Math.floor(Math.random() * 50 + 1)}조 ${Math.floor(Math.random() * 9000)}억`,
-    };
-  });
 };
 
 const industryDB: Record<IndustryKey, IndustryData> = {
@@ -239,60 +221,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 1850.3,
     changeValue: -12.5,
     changePercent: -0.67,
-    outlook:
-      "피크아웃 우려에도 불구하고 하이브리드 차량(HEV) 판매 호조와 고환율 효과로 양호한 실적이 예상됩니다. 전기차(EV) 수요 둔화(Chasm)를 하이브리드 라인업 강화로 방어하고 있으며, 주주환원 정책 강화도 긍정적입니다. 미국 대선 결과에 따른 IRA 법안 변화 가능성은 중장기적인 불확실성 요인입니다.",
-    insights: {
-      positive: "하이브리드 판매 비중 확대로 수익성 방어",
-      risk: "전기차 시장 성장 둔화 및 경쟁 심화",
-    },
-    companies: [
-      {
-        name: "현대차",
-        code: "005380",
-        price: "245,000",
-        change: "-1.20%",
-        per: 5.4,
-        pbr: 0.75,
-        roe: 12.5,
-        aiScore: 88,
-        marketCap: "51조 5,000억",
-      },
-      {
-        name: "기아",
-        code: "000270",
-        price: "112,000",
-        change: "-0.80%",
-        per: 4.8,
-        pbr: 0.85,
-        roe: 15.2,
-        aiScore: 89,
-        marketCap: "44조 2,000억",
-      },
-      {
-        name: "현대모비스",
-        code: "012330",
-        price: "230,500",
-        change: "+0.50%",
-        per: 6.5,
-        pbr: 0.55,
-        roe: 7.5,
-        aiScore: 75,
-        marketCap: "21조 8,000억",
-      },
-      {
-        name: "HL만도",
-        code: "204320",
-        price: "34,200",
-        change: "+1.50%",
-        per: 9.2,
-        pbr: 0.9,
-        roe: 8.5,
-        aiScore: 72,
-        marketCap: "1조 6,000억",
-      },
-      ...createMockCompanies("자동차", 15000, 3),
-    ],
-    news: [],
   },
   bio: {
     id: "bio",
@@ -301,49 +229,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 2150.1,
     changeValue: 35.4,
     changePercent: 1.67,
-    outlook:
-      "금리 인하 기대감과 함께 바이오 섹터에 대한 투자 심리가 개선되고 있습니다. 특히 ADC(항체약물접합체), 비만 치료제 등 신규 모달리티에 대한 관심이 뜨거우며, 대형 바이오 시밀러 기업들의 미국 시장 침투율 확대가 실적 성장을 견인할 것으로 보입니다.",
-    insights: {
-      positive: "금리 인하 시 자금 조달 여건 개선 및 밸류에이션 매력 부각",
-      risk: "신약 개발 임상 실패 리스크",
-    },
-    companies: [
-      {
-        name: "삼성바이오",
-        code: "207940",
-        price: "812,000",
-        change: "+2.50%",
-        per: 65.4,
-        pbr: 8.2,
-        roe: 12.5,
-        aiScore: 90,
-        marketCap: "57조 8,000억",
-      },
-      {
-        name: "셀트리온",
-        code: "068270",
-        price: "185,000",
-        change: "+1.80%",
-        per: 45.2,
-        pbr: 4.5,
-        roe: 10.2,
-        aiScore: 85,
-        marketCap: "40조 5,000억",
-      },
-      {
-        name: "유한양행",
-        code: "000100",
-        price: "72,500",
-        change: "-0.50%",
-        per: 35.2,
-        pbr: 2.1,
-        roe: 8.5,
-        aiScore: 80,
-        marketCap: "5조 8,000억",
-      },
-      ...createMockCompanies("바이오", 40000, 4),
-    ],
-    news: [],
   },
   battery: {
     id: "battery",
@@ -352,49 +237,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 4500.2,
     changeValue: -85.0,
     changePercent: -1.85,
-    outlook:
-      "전기차 수요 성장 둔화(Chasm)와 메탈 가격 하락으로 인해 단기적인 실적 부진이 지속되고 있습니다. 다만, 북미 시장 중심의 출하량 증가와 ESS(에너지저장장치) 시장 확대가 하반기 반등의 트리거가 될 수 있습니다. 차세대 배터리(전고체 등) 기술 개발 현황에도 주목해야 합니다.",
-    insights: {
-      positive: "북미 합작 공장 가동 본격화로 AMPC 수혜 확대",
-      risk: "전기차 판매 부진 장기화 및 양극재 판가 하락",
-    },
-    companies: [
-      {
-        name: "LG에너지",
-        code: "373220",
-        price: "385,000",
-        change: "-1.50%",
-        per: 85.2,
-        pbr: 4.5,
-        roe: 5.5,
-        aiScore: 78,
-        marketCap: "90조",
-      },
-      {
-        name: "POSCO퓨처",
-        code: "003670",
-        price: "265,000",
-        change: "-2.10%",
-        per: 105.2,
-        pbr: 8.5,
-        roe: 4.2,
-        aiScore: 75,
-        marketCap: "20조",
-      },
-      {
-        name: "에코프로비엠",
-        code: "247540",
-        price: "235,000",
-        change: "-0.80%",
-        per: 95.4,
-        pbr: 9.2,
-        roe: 6.5,
-        aiScore: 72,
-        marketCap: "23조",
-      },
-      ...createMockCompanies("2차전지", 50000, 4),
-    ],
-    news: [],
   },
   internet: {
     id: "internet",
@@ -403,14 +245,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 1205,
     changeValue: 15,
     changePercent: 1.2,
-    outlook:
-      "플랫폼 규제 완화 기대감과 함께 광고 시장의 회복세가 감지되고 있습니다. 네이버, 카카오 등 주요 플랫폼 기업들의 AI 서비스 본격화(B2B/B2C)가 새로운 성장 동력으로 작용할 전망입니다.",
-    insights: {
-      positive: "AI 서비스 수익화 가시화",
-      risk: "글로벌 빅테크와의 경쟁 심화",
-    },
-    companies: createMockCompanies("플랫폼", 60000, 7),
-    news: [],
   },
   ent: {
     id: "ent",
@@ -419,14 +253,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 850,
     changeValue: -5,
     changePercent: -0.6,
-    outlook:
-      "주요 아티스트들의 활동 재개와 글로벌 팬덤 확장이 지속되고 있으나, 앨범 판매량 피크아웃 우려가 주가 상단을 제한하고 있습니다.",
-    insights: {
-      positive: "신인 그룹 데뷔 모멘텀",
-      risk: "중국 공구 감소 및 앨범 판매 둔화",
-    },
-    companies: createMockCompanies("엔터", 30000, 7),
-    news: [],
   },
   steel: {
     id: "steel",
@@ -435,14 +261,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 1450,
     changeValue: 8,
     changePercent: 0.5,
-    outlook:
-      "중국 경기 부양책에 대한 기대감과 원재료 가격 안정화가 긍정적이나, 전방 산업인 건설 경기 침체가 수요 회복을 제한하고 있습니다.",
-    insights: {
-      positive: "PBR 0.3배 수준의 저평가 매력",
-      risk: "중국 철강 수요 부진 지속",
-    },
-    companies: createMockCompanies("철강", 50000, 7),
-    news: [],
   },
   ship: {
     id: "ship",
@@ -451,14 +269,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 980,
     changeValue: 18,
     changePercent: 1.8,
-    outlook:
-      "신조선가 상승세가 지속되는 가운데, 고부가가치 선박(LNG선 등) 위주의 선별 수주로 수익성 개선이 가속화되고 있습니다.",
-    insights: {
-      positive: "3년치 이상의 충분한 수주 잔고",
-      risk: "인력난 및 후판 가격 협상",
-    },
-    companies: createMockCompanies("조선", 25000, 7),
-    news: [],
   },
   const: {
     id: "const",
@@ -467,14 +277,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 520,
     changeValue: -5,
     changePercent: -1.0,
-    outlook:
-      "국내 주택 시장 침체와 부동산 PF 리스크가 여전히 주가에 부담으로 작용하고 있습니다. 해외 수주 확대와 신사업(SMR 등) 구체화가 반등의 열쇠입니다.",
-    insights: {
-      positive: "해외 플랜트 수주 회복",
-      risk: "미분양 증가 및 PF 우발채무",
-    },
-    companies: createMockCompanies("건설", 12000, 7),
-    news: [],
   },
   retail: {
     id: "retail",
@@ -483,14 +285,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 890,
     changeValue: 4,
     changePercent: 0.5,
-    outlook:
-      "고물가에 따른 소비 심리 위축이 지속되고 있으나, 편의점 및 식자재 유통 등 필수 소비재 중심의 방어적인 매력이 유효합니다.",
-    insights: {
-      positive: "외국인 관광객 증가 면세점 회복",
-      risk: "내수 소비 부진 장기화",
-    },
-    companies: createMockCompanies("유통", 80000, 7),
-    news: [],
   },
   telecom: {
     id: "telecom",
@@ -499,14 +293,6 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 350,
     changeValue: 1,
     changePercent: 0.3,
-    outlook:
-      "전통적인 경기 방어주로서 안정적인 배당 매력이 부각됩니다. AI(B2B) 사업 확장을 통해 통신업의 성장 한계를 극복하려는 시도가 이어지고 있습니다.",
-    insights: {
-      positive: "높은 배당 수익률",
-      risk: "정부의 가계 통신비 인하 압박",
-    },
-    companies: createMockCompanies("통신", 40000, 7),
-    news: [],
   },
 };
 
@@ -537,8 +323,16 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   onToggleStar,
   setCompanyCode,
 }) => {
+  // 초기값으로 initialIndustryId 사용
+  const getInitialIndustry = (): IndustryKey => {
+    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
+      return initialIndustryId as IndustryKey;
+    }
+    return "finance";
+  };
+
   const [selectedIndustry, setSelectedIndustry] =
-    useState<IndustryKey>("finance");
+    useState<IndustryKey>(getInitialIndustry);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
@@ -575,6 +369,43 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   );
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
 
+  const industryId = INDUSTRY_ID_BY_KEY[selectedIndustry];
+
+  // API 호출
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(ture);
+    setError(null);
+
+    Promise.all([
+      getIndustryNews(industryId),
+      getIndustryAnalysis(industryId),
+      getIndustryCompanies(industryId),
+    ])
+      .then(([newsRes, analysisRes, companiesRes]) => {
+        if (!cancelled) {
+          setNewsItems(newsRes.data ?? []);
+          setAnalysis(analysisRes);
+          setCompanies(companiesRes.companies ?? []);
+          setError(null);
+          setLoading(false);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError((e as Error)?.message ?? "산업 데이터 로딩 실패");
+          setNewsItems([]);
+          setAnalysis(null);
+          setCompanies([]);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [industryId]);
+
   const filteredIds = useMemo(() => {
     const ids = new Set<string>();
     SAMPLE_STOCKS.forEach((stock) => {
@@ -590,13 +421,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     });
     return ids;
   }, [filters]);
-
-  // Handle deep linking from dashboard
-  useEffect(() => {
-    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
-      setSelectedIndustry(initialIndustryId as IndustryKey);
-    }
-  }, [initialIndustryId]);
 
   // Use the selected industry data directly.
   // Since we populated all keys in industryDB, we don't need a fallback.
@@ -631,21 +455,25 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         break;
     }
 
+    // 결정적 값 생성 (industryId와 timeRange 기반)
+    const seed = industryId * 100 + labels.length;
+    const variations = [0.02, -0.015, 0.025, -0.01, 0.018, -0.022];
+
     const result = [];
     let current = currentData.indexValue;
-    const volatility = currentData.indexValue * 0.05;
 
     for (let i = labels.length - 1; i >= 0; i--) {
       if (i === labels.length - 1) {
         result.unshift({ time: labels[i], value: current });
       } else {
-        const change = (Math.random() - 0.45) * volatility;
+        const variationIndex = (seed + i) % variations.length;
+        const change = currentData.indexValue * variations[variationIndex];
         current -= change;
         result.unshift({ time: labels[i], value: Math.round(current) });
       }
     }
     return result;
-  }, [selectedIndustry, timeRange, currentData.indexValue]);
+  }, [timeRange, currentData.indexValue, industryId]);
 
   return (
     <div className="animate-fade-in pb-12 relative">
@@ -788,9 +616,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             <Info size={18} className="text-shinhan-gold" />
             산업분야 전망
           </h3>
-          <p className="text-white/90 text-sm leading-relaxed">
-            {currentData.outlook}
-          </p>
+          {loading ? (
+            <p className="text-white/60 text-sm">로딩 중...</p>
+          ) : error ? (
+            <p className="text-red-300 text-sm">{error}</p>
+          ) : (
+            <p className="text-white/90 text-sm leading-relaxed">
+              {analysis?.outlook ?? "전망 정보가 없습니다."}
+            </p>
+          )}
         </GlassCard>
       </div>
 
@@ -799,111 +633,112 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         {currentData.name.split(" (")[0]} 산업 기업 순위
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
-        {currentData.companies.slice(0, 3).map((company, index) => {
-          const isFirst = index === 0;
-          const isSecond = index === 1;
-          const isThird = index === 2;
+        {companies
+          .slice(0, 3)
+          .map((company: IndustryCompany, index: number) => {
+            const isFirst = index === 0;
+            const isSecond = index === 1;
 
-          let containerClasses =
-            "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
-          let badgeClasses = "";
-          let label = "";
+            let containerClasses =
+              "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
+            let badgeClasses = "";
+            let label = "";
 
-          if (isFirst) {
-            containerClasses +=
-              " border-yellow-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-yellow-100 text-yellow-600";
-            label = "1st Place";
-          } else if (isSecond) {
-            containerClasses +=
-              " border-slate-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-slate-100 text-slate-500";
-            label = "2nd Place";
-          } else {
-            containerClasses +=
-              " border-orange-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-orange-100 text-orange-600";
-            label = "3rd Place";
-          }
+            if (isFirst) {
+              containerClasses +=
+                " border-yellow-200 bg-white shadow-sm min-h-[260px] mt-2";
+              badgeClasses = "bg-yellow-100 text-yellow-600";
+              label = "1st Place";
+            } else if (isSecond) {
+              containerClasses +=
+                " border-slate-200 bg-white shadow-sm min-h-[260px] mt-2";
+              badgeClasses = "bg-slate-100 text-slate-500";
+              label = "2nd Place";
+            } else {
+              containerClasses +=
+                " border-orange-200 bg-white shadow-sm min-h-[260px] mt-2";
+              badgeClasses = "bg-orange-100 text-orange-600";
+              label = "3rd Place";
+            }
 
-          return (
-            <GlassCard
-              key={company.code}
-              className={containerClasses}
-              onClick={() => handleCompanyClick(company.code)}
-            >
-              {/* Header */}
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center ${badgeClasses}`}
-                  >
-                    <Trophy size={20} />
-                  </div>
-                  <div>
-                    <div
-                      className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isFirst ? "text-yellow-600" : isSecond ? "text-slate-500" : "text-orange-500"}`}
-                    >
-                      {label}
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {company.code}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={(e) => handleToggleStar(e, company.code)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <StarIcon isActive={starred.has(company.code)} />
-                </button>
-              </div>
-
-              {/* Center Content */}
-              <div className="text-center mb-6">
-                <h3
-                  className={`font-bold text-slate-800 mb-2 ${isFirst ? "text-2xl" : "text-xl"}`}
-                >
-                  {company.name}
-                </h3>
-                <div className="flex items-center justify-center gap-2">
-                  <span
-                    className={`text-lg font-bold ${isFirst ? "text-slate-900" : "text-slate-700"}`}
-                  >
-                    {company.price}
-                  </span>
-                  <span
-                    className={`text-sm font-bold px-2 py-0.5 rounded ${company.change.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
-                  >
-                    {company.change}
-                  </span>
-                </div>
-              </div>
-
-              {/* Footer Metrics */}
-              <div
-                className={`mt-auto pt-4 border-t ${isFirst ? "border-yellow-100" : "border-gray-50"}`}
+            return (
+              <GlassCard
+                key={company.stockCode}
+                className={containerClasses}
+                onClick={() => handleCompanyClick(company.stockCode)}
               >
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">
-                      시가총액
+                {/* Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center ${badgeClasses}`}
+                    >
+                      <Trophy size={20} />
                     </div>
-                    <div className="text-sm font-bold text-slate-600">
-                      {company.marketCap}
+                    <div>
+                      <div
+                        className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isFirst ? "text-yellow-600" : isSecond ? "text-slate-500" : "text-orange-500"}`}
+                      >
+                        {label}
+                      </div>
+                      <div className="text-xs text-gray-400 font-mono">
+                        {company.stockCode}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">ROE</div>
-                    <div className="text-sm font-bold text-shinhan-blue">
-                      {company.roe}%
+                  <button
+                    onClick={(e) => handleToggleStar(e, company.stockCode)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <StarIcon isActive={starred.has(company.stockCode)} />
+                  </button>
+                </div>
+
+                {/* Center Content */}
+                <div className="text-center mb-6">
+                  <h3
+                    className={`font-bold text-slate-800 mb-2 ${isFirst ? "text-2xl" : "text-xl"}`}
+                  >
+                    {company.name}
+                  </h3>
+                  <div className="flex items-center justify-center gap-2">
+                    <span
+                      className={`text-lg font-bold ${isFirst ? "text-slate-900" : "text-slate-700"}`}
+                    >
+                      {company.price}
+                    </span>
+                    <span
+                      className={`text-sm font-bold px-2 py-0.5 rounded ${company.change?.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
+                    >
+                      {company.change}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer Metrics */}
+                <div
+                  className={`mt-auto pt-4 border-t ${isFirst ? "border-yellow-100" : "border-gray-50"}`}
+                >
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                      <div className="text-[10px] text-gray-400 mb-1">
+                        시가총액
+                      </div>
+                      <div className="text-sm font-bold text-slate-600">
+                        {company.marketCap.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-gray-400 mb-1">ROE</div>
+                      <div className="text-sm font-bold text-shinhan-blue">
+                        {company.roe != null ? `${company.roe}%` : "-"}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </GlassCard>
-          );
-        })}
+              </GlassCard>
+            );
+          })}
       </div>
 
       {/* --- All Companies Ranking Table --- */}
@@ -931,18 +766,18 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {currentData.companies.map((company, index) => (
+                {companies.map((company: IndustryCompany, index: number) => (
                   <tr
-                    key={company.code}
+                    key={company.stockCode}
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
-                    onClick={() => handleCompanyClick(company.code)}
+                    onClick={() => handleCompanyClick(company.stockCode)}
                   >
                     <td className="pl-6 pr-2 py-4">
                       <button
-                        onClick={(e) => handleToggleStar(e, company.code)}
+                        onClick={(e) => handleToggleStar(e, company.stockCode)}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                       >
-                        <StarIcon isActive={starred.has(company.code)} />
+                        <StarIcon isActive={starred.has(company.stockCode)} />
                       </button>
                     </td>
                     <td className="px-2 py-4 text-center">
@@ -970,7 +805,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       {company.price}
                     </td>
                     <td
-                      className={`px-6 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                      className={`px-6 py-4 text-center font-medium ${company.change?.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                     >
                       {company.change}
                     </td>
@@ -978,7 +813,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       <div className="inline-block">
                         <MiniChart
                           color={
-                            company.change.startsWith("+")
+                            company.change?.startsWith("+")
                               ? "#EF4444"
                               : "#3B82F6"
                           }
@@ -986,8 +821,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center font-medium text-slate-800">
-                      {company.roe >= 0 ? "+" : ""}
-                      {company.roe}%
+                      {company.roe != null
+                        ? `${company.roe >= 0 ? "+" : ""}${company.roe}%`
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 text-center text-slate-600 font-medium">
                       {company.marketCap}
@@ -1002,12 +838,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Parallel Coordinates Chart --- */}
       <div className="mb-10">
-        <h3 className="text-lg font-bold text-slate-700 mb-4 px-2">
-          나만의 저평가 우량주 발굴 (Parallel Coordinates)
-        </h3>
-        <p className="text-slate-500 mb-4 px-2">
-          각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
-        </p>
+        <div className="mb-4 px-2">
+          <h3 className="text-lg font-bold text-slate-700">
+            나만의 저평가 우량주 발굴 (Parallel Coordinates)
+          </h3>
+          <p className="text-slate-500 text-sm mt-1">
+            각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
+          </p>
+        </div>
+
         <ParallelCoordinatesChart
           data={SAMPLE_STOCKS}
           onFilterChange={setFilters}
@@ -1016,6 +855,177 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           onStockSelect={setSelectedStock}
           selectedStockId={selectedStock?.id ?? null}
         />
+
+        {/* Filter Summary */}
+        <div className="mt-4 px-2 flex items-center justify-between text-sm text-slate-500">
+          <span>
+            필터링 결과:{" "}
+            <strong className="text-shinhan-blue">{filteredIds.size}</strong>개
+            종목
+          </span>
+          {Object.keys(filters).length > 0 && (
+            <button
+              onClick={() => {
+                setFilters({});
+                setSelectedStock(null);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
+            >
+              <RotateCcw size={16} />
+              필터 초기화
+            </button>
+          )}
+        </div>
+
+        {/* Selected Stock Info */}
+        {selectedStock && (
+          <div className="mt-6 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  {selectedStock.name}
+                </h3>
+                <span className="text-sm text-slate-500">
+                  {selectedStock.sector}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  if (setCompanyCode) {
+                    setCompanyCode(selectedStock.id);
+                    setPage(PageView.COMPANY_DETAIL);
+                  }
+                }}
+                className="px-6 py-3 bg-shinhan-blue text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                상세 분석 <ArrowRight size={18} />
+              </button>
+            </div>
+            <div className="grid grid-cols-5 gap-4 mt-6">
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">PER</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.per.toFixed(1)}
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">PBR</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.pbr.toFixed(2)}
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">ROE</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.roe.toFixed(1)}%
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">부채비율</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.debtRatio}%
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">배당수익률</div>
+                <div className="text-xl font-bold text-slate-900">
+                  {selectedStock.divYield.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filtered Stocks List & Filter Panel - 2 Column Layout */}
+        {Object.keys(filters).length > 0 &&
+          filteredIds.size > 0 &&
+          !selectedStock && (
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left: Stocks List */}
+              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 bg-[#0046FF] text-white border-b border-[#0036CC]">
+                  <h4 className="font-semibold">
+                    필터링된 기업 목록 ({filteredIds.size}개)
+                  </h4>
+                </div>
+                <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                  {SAMPLE_STOCKS.filter((stock) =>
+                    filteredIds.has(stock.id),
+                  ).map((stock) => (
+                    <div
+                      key={stock.id}
+                      className="px-6 py-4 flex items-center justify-between hover:bg-blue-50/30 cursor-pointer transition-colors"
+                      onClick={() => setSelectedStock(stock)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="inline-flex w-10 h-10 rounded-lg bg-slate-100 items-center justify-center font-bold text-slate-600 text-sm">
+                          {stock.name.charAt(0)}
+                        </span>
+                        <div>
+                          <div className="font-bold text-slate-800">
+                            {stock.name}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {stock.sector}
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowRight size={16} className="text-slate-400" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Filter Panel */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden h-fit">
+                <div className="px-6 py-4 bg-[#0046FF] border-b border-[#0036CC]">
+                  <h4 className="font-semibold text-white">적용된 필터</h4>
+                </div>
+                <div className="p-4 space-y-3">
+                  {(Object.keys(filters) as AxisKey[]).map((key) => {
+                    const range = filters[key];
+                    if (!range) return null;
+                    const labels: Record<AxisKey, string> = {
+                      per: "PER",
+                      pbr: "PBR",
+                      roe: "ROE",
+                      debtRatio: "부채비율",
+                      divYield: "배당수익률",
+                    };
+                    return (
+                      <div
+                        key={key}
+                        className="group flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-900">
+                            {labels[key]}
+                          </div>
+                          <div className="text-xs text-slate-600 mt-0.5">
+                            {range.min.toFixed(1)} ~ {range.max.toFixed(1)}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`${labels[key]} 필터제거`}
+                          onClick={() => {
+                            const newFilters = { ...filters };
+                            delete newFilters[key];
+                            setFilters(newFilters);
+                          }}
+                          className="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition
+                                  hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200
+                                  opacity-70 group-hover:opacity-100"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
       </div>
 
       {/* --- News Section --- */}
@@ -1027,7 +1037,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           {industryNews.length > 0 ? (
             industryNews.slice(0, 6).map((news) => (
               <GlassCard
-                key={news.id}
+                key={news.newId}
                 className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"
                 onClick={() => setSelectedNews(news)}
               >
@@ -1036,9 +1046,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     {news.title}
                   </h4>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>{news.source}</span>
+                    <span>{news.summary}</span>
                     <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>{news.time}</span>
+                    <span>{news.publishedAt}</span>
                   </div>
                 </div>
                 {/* Rounded-md */}
@@ -1086,17 +1096,25 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               </h2>
               <div className="flex items-center gap-3 text-sm text-gray-500 mb-8 border-b border-gray-100 pb-4">
                 <span className="font-medium text-slate-700">
-                  {selectedNews.source}
+                  {selectedNews.summary}
                 </span>
-                <span>{selectedNews.time}</span>
+                <span>{selectedNews.publishedAt}</span>
               </div>
 
               <div className="flex flex-col sm:flex-row-reverse gap-6 mb-6">
                 {/* Rounded-md */}
                 <div className="w-full sm:w-1/3 h-40 bg-gray-200 rounded-md flex-shrink-0"></div>
                 <p className="text-slate-700 leading-loose text-lg flex-1">
-                  {selectedNews.content}
+                  {selectedNews.summary}
                 </p>
+                <a
+                  href={selectedNews.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#0046FF] hover:underline text-sm"
+                >
+                  원문보기 →
+                </a>
               </div>
 
               {/* Rounded-md */}
