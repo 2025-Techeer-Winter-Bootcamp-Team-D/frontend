@@ -1,20 +1,11 @@
 import { http, HttpResponse, delay } from "msw";
-import type { NewsItem, SankeyData, ExpenseItem } from "@/types";
-
-// 재무 데이터 타입
-interface FinancialMetric {
-  current: string;
-  yoy: string;
-  industryAvg: string;
-  history: { year: string; value: number; label: string }[];
-}
-
-interface FinancialData {
-  business: { name: string; value: number; color: string }[];
-  revenue: FinancialMetric;
-  operating: FinancialMetric;
-  netIncome: FinancialMetric;
-}
+import type {
+  NewsItem,
+  SankeyData,
+  ExpenseItem,
+  FinancialData,
+  FinancialMetric,
+} from "@/types";
 
 // 공시 데이터 타입
 interface DisclosureItem {
