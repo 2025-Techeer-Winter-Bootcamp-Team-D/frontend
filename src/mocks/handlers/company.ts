@@ -1,5 +1,4 @@
 import { http, HttpResponse } from "msw";
-import companyData from "../data/company.json";
 
 type CompanyInfo = {
   stock_code: string;

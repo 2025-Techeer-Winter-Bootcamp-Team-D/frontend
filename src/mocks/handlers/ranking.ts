@@ -166,7 +166,7 @@ export const rankingHandlers = [
   }),
 
   // 산업 순위 조회
-  http.get("/rankings/기industries", async () => {
+  http.get("/rankings/industries", async () => {
     await delay(200);
 
     const industries = [

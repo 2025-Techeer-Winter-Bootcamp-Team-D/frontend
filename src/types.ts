@@ -246,3 +246,33 @@ export interface OhlcvData {
   close: number;
   volume: number;
 }
+
+// OHLCV API Response Item (MSW mock format)
+export interface OhlcvItem {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+// 동종업계 순위 아이템
+export interface PeerCompanyItem {
+  rank: number;
+  name: string;
+  code: string;
+  price: string;
+  change: string;
+}
+
+export interface RankingItem {
+  rank: number;
+  name: string;
+  code: string;
+  sector: string;
+  price: string;
+  change: string;
+  changeVal: number;
+  marketCap: string;
+}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { PageView } from "../types";
-import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, X, Loader2 } from "lucide-react";
+import { login } from "../api/users";
 
 interface LoginProps {
   setPage: (page: PageView) => void;
@@ -10,6 +11,37 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("이메일과 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await login({ email, password });
+
+      if (response.data.accessToken) {
+        localStorage.setItem("accessToken", response.data.accessToken);
+        onLogin?.();
+        onClose();
+        setPage(PageView.DASHBOARD);
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "로그인에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -36,7 +68,14 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleLogin}>
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
             {/* Email Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">
@@ -52,6 +91,8 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
                 <input
                   type="email"
                   placeholder="example@shinhan.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
                 />
               </div>
@@ -72,6 +113,8 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="비밀번호 입력"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
                 />
                 <button
@@ -87,14 +130,17 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
             {/* Login Button */}
             <button
               type="submit"
-              onClick={() => {
-                onLogin?.();
-                onClose();
-                setPage(PageView.DASHBOARD);
-              }}
-              className="w-full py-4 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-6"
+              disabled={isLoading}
+              className="w-full py-4 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              로그인
+              {isLoading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  로그인 중...
+                </>
+              ) : (
+                "로그인"
+              )}
             </button>
           </form>
 

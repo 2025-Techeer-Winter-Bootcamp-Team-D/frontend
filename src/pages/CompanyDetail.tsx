@@ -1,48 +1,51 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { useParams } from "react-router-dom";
+import { getCompanyDetail, getStockOhlcv } from "../api/company";
+import { getIndustryCompanies } from "../api/industry";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
 import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
 import { ExpenseRanking } from "../components/Ranking/ExpenseRanking";
-import type { SankeyData, ExpenseItem } from "../types";
+import type {
+  SankeyData,
+  ExpenseItem,
+  OhlcvItem,
+  PeerCompanyItem,
+} from "../types";
 import {
   BarChart,
   Bar,
   XAxis,
-  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
   PieChart,
   Pie,
-  Legend,
   LabelList,
 } from "recharts";
 import {
-  ArrowLeft,
   Star,
-  Download,
-  Share2,
   TrendingUp,
   DollarSign,
-  Users,
   ChevronDown,
-  Check,
   Globe,
   MapPin,
-  Building,
-  Calendar,
   User,
   Quote,
   ChevronLeft,
   ChevronRight,
   X,
-  Link2,
-  ExternalLink,
   Tag,
   BarChart3,
   HelpCircle,
   ArrowDown,
+  Loader2,
 } from "lucide-react";
 import { PageView } from "../types";
 
@@ -71,63 +74,17 @@ interface FinancialData {
   netIncome: FinancialMetric;
 }
 
-// Mock Database for Companies
-const COMPANY_DATA: Record<string, any> = {
-  "055550": {
-    name: "신한지주",
-    price: "78,200",
-    change: "+0.51%",
-    marketCap: "40조 1,230억",
-    ceo: "진옥동",
-    sales: "31조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "SH",
-  },
-  "105560": {
-    name: "KB금융",
-    price: "72,100",
-    change: "+1.12%",
-    marketCap: "38조 5,400억",
-    ceo: "양종희",
-    sales: "33조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "KB",
-  },
-  "086790": {
-    name: "하나금융",
-    price: "58,400",
-    change: "-0.32%",
-    marketCap: "28조 2,100억",
-    ceo: "함영주",
-    sales: "29조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "HN",
-  },
-  "138040": {
-    name: "메리츠금융",
-    price: "62,000",
-    change: "+2.40%",
-    marketCap: "24조 5,000억",
-    ceo: "김용범",
-    sales: "25조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "ME",
-  },
-  "316140": {
-    name: "우리금융",
-    price: "14,800",
-    change: "+0.15%",
-    marketCap: "12조 4,500억",
-    ceo: "임종룡",
-    sales: "22조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "WO",
-  },
+// 기본 회사 데이터 (API 로딩 전 또는 실패 시 사용)
+const DEFAULT_COMPANY = {
+  name: "-",
+  price: "-",
+  change: "-",
+  marketCap: "-",
+  ceo: "-",
+  sales: "-",
+  industry: "-",
+  desc: "-",
+  logo: "--",
 };
 
 interface NewsItem {
@@ -267,6 +224,19 @@ const generateFinancialData = (
   };
 };
 
+interface CompanyApiData {
+  stock_code: string;
+  corp_code: string;
+  company_name: string;
+  industry: { industry_id: number; name: string };
+  description: string;
+  logo_url: string;
+  market_amount: number;
+  ceo_name: string;
+  establishment_date: string;
+  homepage_url: string;
+}
+
 const CompanyDetail: React.FC<DetailProps> = ({
   setPage,
   starred,
@@ -280,15 +250,112 @@ const CompanyDetail: React.FC<DetailProps> = ({
   // URL 파라미터가 있으면 우선 사용, 없으면 props 사용
   const companyCode = id || propCompanyCode;
 
-  // 콘솔에 id 값 로그 출력
-  useEffect(() => {
-    if (id) {
-      console.log("URL 파라미터로 받은 기업 ID:", id);
+  // API에서 가져온 기업 데이터
+  const [apiCompanyData, setApiCompanyData] = useState<CompanyApiData | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 주가 데이터
+  const [stockData, setStockData] = useState<OhlcvItem[]>([]);
+  const [isStockLoading, setIsStockLoading] = useState(false);
+
+  // 동종업계 순위 데이터
+  const [peerCompanies, setPeerCompanies] = useState<PeerCompanyItem[]>([]);
+  const [isPeerLoading, setIsPeerLoading] = useState(false);
+
+  // 기업 정보 API 호출
+  const fetchCompanyData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await getCompanyDetail(companyCode);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseData = response.data as any;
+      if (responseData?.data) {
+        setApiCompanyData(responseData.data);
+      }
+    } catch (error) {
+      console.error("기업 정보 조회 실패:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [id]);
+  }, [companyCode]);
+
+  // 주가 데이터 API 호출
+  const fetchStockData = useCallback(
+    async (interval: string) => {
+      try {
+        setIsStockLoading(true);
+        const response = await getStockOhlcv(companyCode, interval);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const responseData = response.data as any;
+        if (responseData?.data) {
+          setStockData(responseData.data);
+        }
+      } catch (error) {
+        console.error("주가 데이터 조회 실패:", error);
+      } finally {
+        setIsStockLoading(false);
+      }
+    },
+    [companyCode],
+  );
+
+  // 동종업계 순위 API 호출
+  const fetchPeerCompanies = useCallback(async (industryId: number) => {
+    try {
+      setIsPeerLoading(true);
+      const response = await getIndustryCompanies(industryId);
+      if (response?.data?.companies) {
+        const peers = response.data.companies.map(
+          (
+            company: {
+              stockCode: string;
+              name: string;
+              rank: number;
+              marketCap: number;
+            },
+            index: number,
+          ) => ({
+            rank: company.rank || index + 1,
+            name: company.name,
+            code: company.stockCode,
+            price: "-",
+            change: "-",
+          }),
+        );
+        setPeerCompanies(peers);
+      }
+    } catch (error) {
+      console.error("동종업계 순위 조회 실패:", error);
+    } finally {
+      setIsPeerLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCompanyData();
+  }, [fetchCompanyData]);
+
+  // 기업 정보 로드 후 동종업계 순위 조회
+  useEffect(() => {
+    if (apiCompanyData?.industry?.industry_id) {
+      fetchPeerCompanies(apiCompanyData.industry.industry_id);
+    }
+  }, [apiCompanyData, fetchPeerCompanies]);
+
+  // 주가 데이터 초기 로드
+  useEffect(() => {
+    fetchStockData("1D");
+  }, [fetchStockData]);
 
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
+
+  // chartRange 변경 시 주가 데이터 재로드
+  useEffect(() => {
+    fetchStockData(chartRange);
+  }, [chartRange, fetchStockData]);
 
   // Year & Quarter State
   const [selectedYear, setSelectedYear] = useState("2024");
@@ -378,10 +445,23 @@ const CompanyDetail: React.FC<DetailProps> = ({
     }
   };
 
-  // Get current company data or fallback
-  const currentCompany = COMPANY_DATA[companyCode] || COMPANY_DATA["055550"];
+  // API 데이터가 있으면 변환하여 사용, 없으면 기본값
+  const currentCompany = apiCompanyData
+    ? {
+        name: apiCompanyData.company_name,
+        price: "-", // 주가는 별도 API에서 가져와야 함
+        change: "-",
+        marketCap: `${Math.floor(apiCompanyData.market_amount / 100000000).toLocaleString()}억`,
+        ceo: apiCompanyData.ceo_name,
+        sales: "-",
+        industry: apiCompanyData.industry.name,
+        desc: apiCompanyData.description,
+        logo: apiCompanyData.company_name.substring(0, 2),
+      }
+    : DEFAULT_COMPANY;
+
   const COMPANY_CODE = companyCode;
-  const COMPANY_URL = "http://www.shinhangroup.com";
+  const COMPANY_URL = apiCompanyData?.homepage_url || "";
 
   const isStarred = starred.has(COMPANY_CODE);
 
@@ -604,10 +684,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
-      {/* URL 파라미터 확인용 알림 */}
-      {id && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-          URL 파라미터로 받은 기업 ID: <span className="font-bold">{id}</span>
+      {/* 로딩 상태 UI */}
+      {isLoading && (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 size={48} className="animate-spin text-shinhan-blue" />
+            <p className="text-slate-500">기업 정보를 불러오는 중...</p>
+          </div>
         </div>
       )}
 
@@ -819,127 +902,82 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-800">동종업계 순위</h3>
                 <span className="text-xs font-bold text-shinhan-blue bg-blue-50 px-2 py-1 rounded">
-                  금융업
+                  {currentCompany.industry || "-"}
                 </span>
               </div>
 
-              {/* Compact Medal Graphic */}
-              <div className="flex justify-center mb-6 gap-4 items-end shrink-0">
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold border-4 border-white shadow-sm mb-1 relative top-2">
-                    2
-                  </div>
-                  <div className="h-12 w-10 bg-gray-100 rounded-t-lg"></div>
-                  <span className="text-[10px] font-bold mt-1 text-slate-600">
-                    KB금융
-                  </span>
+              {/* 로딩 상태 */}
+              {isPeerLoading ? (
+                <div className="flex items-center justify-center flex-1">
+                  <Loader2
+                    size={24}
+                    className="animate-spin text-shinhan-blue"
+                  />
                 </div>
-                <div className="flex flex-col items-center z-10">
-                  <div className="w-14 h-14 rounded-full bg-shinhan-gold flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-md mb-1">
-                    1
-                  </div>
-                  <div className="h-20 w-14 bg-gradient-to-b from-shinhan-gold to-yellow-600/20 rounded-t-lg"></div>
-                  <span className="text-[10px] font-bold mt-1 text-shinhan-blue">
-                    신한지주
-                  </span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-bold border-4 border-white shadow-sm mb-1 relative top-4">
-                    3
-                  </div>
-                  <div className="h-8 w-10 bg-orange-50 rounded-t-lg"></div>
-                  <span className="text-[10px] font-bold mt-1 text-slate-600">
-                    하나금융
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
-                {[
-                  {
-                    rank: 1,
-                    name: "신한지주",
-                    code: "055550",
-                    price: "78,200",
-                    change: "+0.5%",
-                  },
-                  {
-                    rank: 2,
-                    name: "KB금융",
-                    code: "105560",
-                    price: "72,100",
-                    change: "+1.1%",
-                  },
-                  {
-                    rank: 3,
-                    name: "하나금융",
-                    code: "086790",
-                    price: "58,400",
-                    change: "-0.3%",
-                  },
-                  {
-                    rank: 4,
-                    name: "메리츠금융",
-                    code: "138040",
-                    price: "62,000",
-                    change: "+2.4%",
-                  },
-                  {
-                    rank: 5,
-                    name: "우리금융",
-                    code: "316140",
-                    price: "14,800",
-                    change: "+0.1%",
-                  },
-                  {
-                    rank: 6,
-                    name: "카카오뱅크",
-                    code: "323410",
-                    price: "25,300",
-                    change: "-1.5%",
-                  },
-                  {
-                    rank: 7,
-                    name: "기업은행",
-                    code: "024110",
-                    price: "13,200",
-                    change: "+0.4%",
-                  },
-                  {
-                    rank: 8,
-                    name: "BNK금융",
-                    code: "138930",
-                    price: "8,400",
-                    change: "-0.2%",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.name}
-                    onClick={() => handleCompanyClick(item.code)}
-                    className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
-                      currentCompany.name === item.name
-                        ? "bg-blue-50 border-blue-200 shadow-sm"
-                        : "bg-white border-transparent hover:bg-gray-50 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`text-sm font-bold w-4 ${item.rank === 1 ? "text-shinhan-blue" : "text-gray-400"}`}
-                      >
-                        {item.rank}
-                      </span>
-                      <span className="text-sm font-bold text-slate-700">
-                        {item.name}
+              ) : (
+                <>
+                  {/* Compact Medal Graphic */}
+                  <div className="flex justify-center mb-6 gap-4 items-end shrink-0">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold border-4 border-white shadow-sm mb-1 relative top-2">
+                        2
+                      </div>
+                      <div className="h-12 w-10 bg-gray-100 rounded-t-lg"></div>
+                      <span className="text-[10px] font-bold mt-1 text-slate-600">
+                        {peerCompanies[1]?.name || "-"}
                       </span>
                     </div>
-                    <span
-                      className={`text-xs font-medium ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
-                    >
-                      {item.change}
-                    </span>
+                    <div className="flex flex-col items-center z-10">
+                      <div className="w-14 h-14 rounded-full bg-shinhan-gold flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-md mb-1">
+                        1
+                      </div>
+                      <div className="h-20 w-14 bg-gradient-to-b from-shinhan-gold to-yellow-600/20 rounded-t-lg"></div>
+                      <span className="text-[10px] font-bold mt-1 text-shinhan-blue">
+                        {peerCompanies[0]?.name || "-"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-bold border-4 border-white shadow-sm mb-1 relative top-4">
+                        3
+                      </div>
+                      <div className="h-8 w-10 bg-orange-50 rounded-t-lg"></div>
+                      <span className="text-[10px] font-bold mt-1 text-slate-600">
+                        {peerCompanies[2]?.name || "-"}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                    {peerCompanies.map((item) => (
+                      <div
+                        key={item.name}
+                        onClick={() => handleCompanyClick(item.code)}
+                        className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                          currentCompany.name === item.name
+                            ? "bg-blue-50 border-blue-200 shadow-sm"
+                            : "bg-white border-transparent hover:bg-gray-50 hover:shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-sm font-bold w-4 ${item.rank === 1 ? "text-shinhan-blue" : "text-gray-400"}`}
+                          >
+                            {item.rank}
+                          </span>
+                          <span className="text-sm font-bold text-slate-700">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-xs font-medium ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                        >
+                          {item.change}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </GlassCard>
           </div>
         </div>
