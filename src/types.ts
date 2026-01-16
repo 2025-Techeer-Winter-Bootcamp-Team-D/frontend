@@ -35,15 +35,16 @@ export interface NewsItem {
 }
   */
 export interface NewsItem {
-  id: number;
+  id: number; //
   title: string;
-  summary: string;
-  source: string;
-  date: string;
-  author: string;
-  avatar?: string;
-  content: string;
-  keywords: string[];
+  summary?: string;
+  source?: string; //
+  date?: string;
+  time?: string;
+  author?: string;
+  content?: string; //
+  keywords?: string[];
+  url?: string;
 }
 export enum PageView {
   DASHBOARD = "DASHBOARD",
@@ -63,7 +64,7 @@ export interface AITrend {
   y: number;
   size: number;
 }
-
+//평행좌표계계
 export interface Stock {
   id: string;
   name: string;
@@ -119,18 +120,8 @@ export interface ExpenseItem {
 // ============================================
 
 // GET /industries/{industry_id}/news
-export interface IndustryNewsItem {
-  id: number; //
-  title: string;
-  summary?: string;
-  source?: string; //
-  date?: string;
-  time?: string;
-  author?: string;
-  content?: string; //
-  keywords?: string[];
-  url?: string;
-}
+export interface IndustryNewsItem extends NewsItem {}
+
 export interface IndustryNewsResponse {
   industryId: string;
   items: IndustryNewsItem[];
@@ -254,6 +245,24 @@ export interface ApiResponse<T> {
   message?: string;
   success: boolean;
 }
+
+// Company API Response Data
+export interface CompanyApiData {
+  stock_code: string;
+  corp_code: string;
+  company_name: string;
+  industry: {
+    industry_id: number;
+    name: string;
+  };
+  description: string;
+  logo_url: string;
+  market_amount: number;
+  ceo_name: string;
+  establishment_date: string;
+  homepage_url: string;
+}
+
 // GET /companies/{companyId}/ohlcv - OHLCV Data
 export interface OhlcvData {
   date: string;

@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Company, ApiResponse, OhlcvData } from "@/types";
+import type { Company, ApiResponse, OhlcvData, NewsItem } from "@/types";
 
 /**
  * 기업 검색
@@ -27,4 +27,12 @@ export const getStockOhlcv = (companyId: string, interval: string) => {
   return api.get<ApiResponse<OhlcvData[]>>(`/companies/${companyId}/ohlcv`, {
     params: { interval },
   });
+};
+
+/**
+ * 기업 뉴스 조회
+ * GET /companies/{companyId}/news
+ */
+export const getCompanyNews = (companyId: string) => {
+  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news`);
 };

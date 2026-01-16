@@ -1,162 +1,103 @@
 import { http, HttpResponse, delay } from "msw";
 
-export const rankingHandlers = [
-  // 기업 순위 조회 (시가총액 기준)
-  http.get("/rankings/companies", async () => {
-    await delay(200);
+// 기업 순위 타입
+type CompanyRank = {
+  rank: number;
+  name: string;
+  code: string;
+  sector: string;
+  price: string;
+  change: string;
+  changeVal: number;
+  marketCap: string;
+};
 
-    const companies = [
+// 산업 순위 타입
+type IndustryRank = {
+  rank: number;
+  name: string;
+  change: string;
+  marketCap: string;
+};
+
+// 키워드 순위 타입
+type KeywordRank = {
+  rank: number;
+  keyword: string;
+  count: number;
+};
+
+// In-Memory 기업 순위 데이터 저장소 (빈 상태로 시작)
+const companyRankings = new Map<string, CompanyRank>();
+
+// In-Memory 산업 순위 데이터 저장소 (빈 상태로 시작)
+const industryRankings = new Map<string, IndustryRank>();
+
+// In-Memory 키워드 순위 데이터 저장소 (빈 상태로 시작)
+const keywordRankings = new Map<string, KeywordRank>();
+
+export const rankingHandlers = [
+  // 기업 순위 등록 (POST /rankings/companies)
+  http.post("/rankings/companies", async ({ request }) => {
+    await delay(200);
+    const body = (await request.json()) as Partial<CompanyRank>;
+
+    if (!body.code || !body.name) {
+      return HttpResponse.json(
+        { status: 400, message: "code와 name은 필수입니다." },
+        { status: 400 },
+      );
+    }
+
+    const existingCount = companyRankings.size;
+    const newRank: CompanyRank = {
+      rank: body.rank ?? existingCount + 1,
+      name: body.name,
+      code: body.code,
+      sector: body.sector ?? "미분류",
+      price: body.price ?? "0",
+      change: body.change ?? "0%",
+      changeVal: body.changeVal ?? 0,
+      marketCap: body.marketCap ?? "0",
+    };
+
+    companyRankings.set(body.code, newRank);
+
+    // 순위 재정렬
+    const sorted = Array.from(companyRankings.values()).sort(
+      (a, b) => a.rank - b.rank,
+    );
+    sorted.forEach((item, index) => {
+      item.rank = index + 1;
+      companyRankings.set(item.code, item);
+    });
+
+    return HttpResponse.json(
       {
-        rank: 1,
-        name: "삼성전자",
-        code: "005930",
-        sector: "반도체",
-        price: "73,400",
-        change: "+0.96%",
-        changeVal: 700,
-        marketCap: "430조",
+        status: 201,
+        message: "기업 순위가 등록되었습니다.",
+        data: newRank,
       },
-      {
-        rank: 2,
-        name: "SK하이닉스",
-        code: "000660",
-        sector: "반도체",
-        price: "164,500",
-        change: "+2.10%",
-        changeVal: 3400,
-        marketCap: "119조",
-      },
-      {
-        rank: 3,
-        name: "LG에너지솔루션",
-        code: "373220",
-        sector: "2차전지",
-        price: "385,000",
-        change: "-1.50%",
-        changeVal: -5000,
-        marketCap: "90조",
-      },
-      {
-        rank: 4,
-        name: "삼성바이오로직스",
-        code: "207940",
-        sector: "바이오",
-        price: "812,000",
-        change: "+2.50%",
-        changeVal: 19000,
-        marketCap: "57조",
-      },
-      {
-        rank: 5,
-        name: "현대차",
-        code: "005380",
-        sector: "자동차",
-        price: "245,000",
-        change: "-1.20%",
-        changeVal: -3000,
-        marketCap: "51조",
-      },
-      {
-        rank: 6,
-        name: "기아",
-        code: "000270",
-        sector: "자동차",
-        price: "112,000",
-        change: "-0.80%",
-        changeVal: -900,
-        marketCap: "44조",
-      },
-      {
-        rank: 7,
-        name: "셀트리온",
-        code: "068270",
-        sector: "바이오",
-        price: "185,000",
-        change: "+1.80%",
-        changeVal: 3300,
-        marketCap: "40조",
-      },
-      {
-        rank: 8,
-        name: "POSCO홀딩스",
-        code: "005490",
-        sector: "철강",
-        price: "420,000",
-        change: "+0.50%",
-        changeVal: 2000,
-        marketCap: "35조",
-      },
-      {
-        rank: 9,
-        name: "신한지주",
-        code: "055550",
-        sector: "금융",
-        price: "78,200",
-        change: "+0.51%",
-        changeVal: 400,
-        marketCap: "40조",
-      },
-      {
-        rank: 10,
-        name: "KB금융",
-        code: "105560",
-        sector: "금융",
-        price: "72,100",
-        change: "+1.12%",
-        changeVal: 800,
-        marketCap: "38조",
-      },
-      {
-        rank: 11,
-        name: "NAVER",
-        code: "035420",
-        sector: "서비스",
-        price: "185,500",
-        change: "-0.30%",
-        changeVal: -500,
-        marketCap: "30조",
-      },
-      {
-        rank: 12,
-        name: "삼성SDI",
-        code: "006400",
-        sector: "2차전지",
-        price: "385,000",
-        change: "+0.20%",
-        changeVal: 1000,
-        marketCap: "26조",
-      },
-      {
-        rank: 13,
-        name: "LG화학",
-        code: "051910",
-        sector: "화학",
-        price: "450,000",
-        change: "-1.10%",
-        changeVal: -5000,
-        marketCap: "31조",
-      },
-      {
-        rank: 14,
-        name: "카카오",
-        code: "035720",
-        sector: "서비스",
-        price: "52,100",
-        change: "+0.80%",
-        changeVal: 400,
-        marketCap: "23조",
-      },
-      {
-        rank: 15,
-        name: "하나금융지주",
-        code: "086790",
-        sector: "금융",
-        price: "58,400",
-        change: "-0.32%",
-        changeVal: -200,
-        marketCap: "28조",
-      },
-    ];
+      { status: 201 },
+    );
+  }),
+
+  // 기업 순위 조회 (GET /rankings/companies)
+  http.get("/rankings/companies", async ({ request }) => {
+    await delay(200);
+    const url = new URL(request.url);
+    const sector = url.searchParams.get("sector");
+    const limit = parseInt(url.searchParams.get("limit") ?? "15", 10);
+
+    let companies = Array.from(companyRankings.values());
+
+    // 섹터 필터링
+    if (sector) {
+      companies = companies.filter((c) => c.sector === sector);
+    }
+
+    // 순위순 정렬 및 제한
+    companies = companies.sort((a, b) => a.rank - b.rank).slice(0, limit);
 
     return HttpResponse.json({
       status: 200,
@@ -165,17 +106,77 @@ export const rankingHandlers = [
     });
   }),
 
-  // 산업 순위 조회
-  http.get("/rankings/industries", async () => {
-    await delay(200);
+  // 기업 순위 삭제 (DELETE /rankings/companies/:code)
+  http.delete("/rankings/companies/:code", async ({ params }) => {
+    await delay(150);
+    const { code } = params;
+    const companyCode = code as string;
 
-    const industries = [
-      { rank: 1, name: "반도체", change: "+2.5%", marketCap: "600조" },
-      { rank: 2, name: "2차전지", change: "-0.8%", marketCap: "150조" },
-      { rank: 3, name: "바이오", change: "+1.2%", marketCap: "100조" },
-      { rank: 4, name: "자동차", change: "-0.5%", marketCap: "95조" },
-      { rank: 5, name: "금융", change: "+0.3%", marketCap: "90조" },
-    ];
+    if (!companyRankings.has(companyCode)) {
+      return HttpResponse.json(
+        { status: 404, message: "해당 기업을 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
+
+    companyRankings.delete(companyCode);
+
+    // 순위 재정렬
+    const sorted = Array.from(companyRankings.values()).sort(
+      (a, b) => a.rank - b.rank,
+    );
+    sorted.forEach((item, index) => {
+      item.rank = index + 1;
+      companyRankings.set(item.code, item);
+    });
+
+    return HttpResponse.json({
+      status: 200,
+      message: "기업 순위가 삭제되었습니다.",
+    });
+  }),
+
+  // 산업 순위 등록 (POST /rankings/industries)
+  http.post("/rankings/industries", async ({ request }) => {
+    await delay(200);
+    const body = (await request.json()) as Partial<IndustryRank>;
+
+    if (!body.name) {
+      return HttpResponse.json(
+        { status: 400, message: "name은 필수입니다." },
+        { status: 400 },
+      );
+    }
+
+    const existingCount = industryRankings.size;
+    const newRank: IndustryRank = {
+      rank: body.rank ?? existingCount + 1,
+      name: body.name,
+      change: body.change ?? "0%",
+      marketCap: body.marketCap ?? "0",
+    };
+
+    industryRankings.set(body.name, newRank);
+
+    return HttpResponse.json(
+      {
+        status: 201,
+        message: "산업 순위가 등록되었습니다.",
+        data: newRank,
+      },
+      { status: 201 },
+    );
+  }),
+
+  // 산업 순위 조회 (GET /rankings/industries)
+  http.get("/rankings/industries", async ({ request }) => {
+    await delay(200);
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get("limit") ?? "10", 10);
+
+    const industries = Array.from(industryRankings.values())
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, limit);
 
     return HttpResponse.json({
       status: 200,
@@ -184,17 +185,57 @@ export const rankingHandlers = [
     });
   }),
 
-  // 뉴스 키워드 빈도 순위 조회
-  http.get("/rankings/keywords", async () => {
+  // 키워드 순위 등록 (POST /rankings/keywords)
+  http.post("/rankings/keywords", async ({ request }) => {
     await delay(200);
+    const body = (await request.json()) as Partial<KeywordRank>;
 
-    const keywords = [
-      { rank: 1, keyword: "AI", count: 1520 },
-      { rank: 2, keyword: "반도체", count: 1340 },
-      { rank: 3, keyword: "2차전지", count: 980 },
-      { rank: 4, keyword: "금리", count: 870 },
-      { rank: 5, keyword: "환율", count: 650 },
-    ];
+    if (!body.keyword) {
+      return HttpResponse.json(
+        { status: 400, message: "keyword는 필수입니다." },
+        { status: 400 },
+      );
+    }
+
+    const existing = keywordRankings.get(body.keyword);
+    const existingCount = keywordRankings.size;
+
+    const newRank: KeywordRank = {
+      rank: body.rank ?? existing?.rank ?? existingCount + 1,
+      keyword: body.keyword,
+      count: body.count ?? (existing?.count ?? 0) + 1,
+    };
+
+    keywordRankings.set(body.keyword, newRank);
+
+    // count 기준으로 순위 재정렬
+    const sorted = Array.from(keywordRankings.values()).sort(
+      (a, b) => b.count - a.count,
+    );
+    sorted.forEach((item, index) => {
+      item.rank = index + 1;
+      keywordRankings.set(item.keyword, item);
+    });
+
+    return HttpResponse.json(
+      {
+        status: 201,
+        message: "키워드 순위가 등록되었습니다.",
+        data: newRank,
+      },
+      { status: 201 },
+    );
+  }),
+
+  // 뉴스 키워드 빈도 순위 조회 (GET /rankings/keywords)
+  http.get("/rankings/keywords", async ({ request }) => {
+    await delay(200);
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get("limit") ?? "10", 10);
+
+    const keywords = Array.from(keywordRankings.values())
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, limit);
 
     return HttpResponse.json({
       status: 200,

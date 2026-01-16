@@ -5,7 +5,7 @@ import { api } from "./client";
  * @param industryId 산업아이디
  */
 
-export const getIndustryNews = (industryId: number) => {
+export const getIndustryNews = (industryId: number | string) => {
   return api.get(`/industries/${industryId}/news`).then((res) => res.data);
 };
 

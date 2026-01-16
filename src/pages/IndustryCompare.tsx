@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -15,12 +15,13 @@ import type {
   Stock,
   AxisKey,
   BrushRange,
-  NewsItem_industry,
+  IndustryNewsItem,
   IndustryData,
   TimeRange,
   IndustryKey,
 } from "../types";
 import { SAMPLE_STOCKS } from "../constants";
+import { getIndustryNews } from "../api/industry";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -167,32 +168,7 @@ const industryDB: Record<IndustryKey, IndustryData> = {
         marketCap: "2조 7,000억",
       },
     ],
-    news: [
-      {
-        id: 1,
-        title: "11월 경상수지 122억4000만 달러 흑자...반도체·자동차 수출 호조",
-        source: "경제",
-        time: "4시간 전",
-        content:
-          "지난해 11월 한국의 경상수지가 122억4000만 달러 흑자를 기록하며 31개월 연속 흑자 흐름을 이어갔습니다. 이는 반도체와 자동차 수출의 호조 덕분으로, 누적 경상수지는 1018억2000만 달러에 달해 전년도 기록을 초과했습니다. 한국은행의 발표에 따르면, 상품수지 흑자는 133억1000만 달러로 역대 최대치를 기록했으며, 수출은 601억1000만 달러로 전년 동월 대비 5.5% 증가했습니다. 반면, 수입은 468억 달러로 소폭 감소했습니다. 서비스수지는 여행과 기타 서비스에서 27억3000만 달러 적자를 기록했습니다.\n\n이러한 경상수지 흑자 확대는 반도체 수출의 증가와 함께 비IT 품목인 승용차의 선전이 주요 요인으로 작용했습니다. 그러나 반도체를 제외한 무역수지는 감소세를 보였고, 서비스수지의 적자도 여전히 존재했습니다.\n\n이로 인해 다음과 같은 인사이트를 도출할 수 있습니다.\n\n첫째, 반도체 산업의 지속적인 성장세는 한국 경제에 긍정적인 영향을 미치고 있으며, 향후에도 이 같은 추세가 이어질 경우 경상수지 흑자 규모가 더욱 확대될 것으로 기대됩니다.\n둘째, 자동차와 같은 비IT 품목의 수출 증가도 주목할 만한 요소로, 이는 한국의 제조업 경쟁력을 강화하는 데 기여할 수 있습니다.\n셋째, 반도체를 제외한 무역수지의 감소는 미국의 관세 부과와 같은 외부 요인에 영향을 받고 있어, 향후 무역 정책의 변화에 주목할 필요가 있습니다.",
-      },
-      {
-        id: 2,
-        title: "은행권 연체율 소폭 상승, 건전성 관리 '비상'",
-        source: "매일경제",
-        time: "3시간 전",
-        content:
-          "중소기업과 가계 대출 연체율이 소폭 상승하며 은행권 건전성 관리에 비상등이 켜졌다. 금융당국은 대손충당금 적립을 확대하라고 주문하고 있으며, 각 은행은 리스크 관리 모니터링을 강화하고 있다.",
-      },
-      {
-        id: 3,
-        title: "신한금융, AI 기반 자산관리 서비스 고도화",
-        source: "전자신문",
-        time: "5시간 전",
-        content:
-          "신한금융그룹이 생성형 AI를 활용한 초개인화 자산관리 서비스를 출시했다. 고객의 투자 성향과 목표를 분석하여 최적의 포트폴리오를 제안하며, 시장 변동성에 실시간으로 대응하는 리밸런싱 알림 기능도 탑재했다.",
-      },
-    ],
+    news: [],
   },
   semicon: {
     id: "semicon",
@@ -254,22 +230,7 @@ const industryDB: Record<IndustryKey, IndustryData> = {
       },
       ...createMockCompanies("반도체", 25000, 3),
     ],
-    news: [
-      {
-        id: 101,
-        title: "삼성전자, HBM3E 12단 양산 임박... 엔비디아 공급 기대",
-        source: "전자신문",
-        time: "2시간 전",
-        content: "...",
-      },
-      {
-        id: 102,
-        title: "반도체 수출 5개월 연속 플러스, 완연한 회복세",
-        source: "연합뉴스",
-        time: "4시간 전",
-        content: "...",
-      },
-    ],
+    news: [],
   },
   auto: {
     id: "auto",
@@ -579,9 +540,34 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedIndustry, setSelectedIndustry] =
     useState<IndustryKey>("finance");
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
-  const [selectedNews, setSelectedNews] = useState<NewsItem_industry | null>(
+  const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
+
+  // 뉴스 데이터 state
+  const [industryNews, setIndustryNews] = useState<IndustryNewsItem[]>([]);
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
+
+  // 뉴스 데이터 API 호출
+  const fetchIndustryNews = useCallback(async () => {
+    try {
+      setIsNewsLoading(true);
+      const response = await getIndustryNews(selectedIndustry);
+      if (response?.items) {
+        setIndustryNews(response.items);
+      }
+    } catch (error) {
+      console.error("산업 뉴스 조회 실패:", error);
+      setIndustryNews([]);
+    } finally {
+      setIsNewsLoading(false);
+    }
+  }, [selectedIndustry]);
+
+  // 산업 변경 시 뉴스 데이터 로드
+  useEffect(() => {
+    fetchIndustryNews();
+  }, [fetchIndustryNews]);
 
   // Parallel Coordinates Chart State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -1038,8 +1024,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           뉴스 <ChevronRight size={18} />
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentData.news.length > 0 ? (
-            currentData.news.slice(0, 6).map((news) => (
+          {industryNews.length > 0 ? (
+            industryNews.slice(0, 6).map((news) => (
               <GlassCard
                 key={news.id}
                 className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"
