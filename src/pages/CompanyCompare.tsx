@@ -44,7 +44,6 @@ interface CompareProps {
 }
 
 type MetricType = "revenue" | "operating" | "net" | "marketCap";
-type TimeRange = "1M" | "3M" | "6M" | "1Y";
 type DetailMetricKey =
   | "eps"
   | "operatingMargin"

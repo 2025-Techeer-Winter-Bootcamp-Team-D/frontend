@@ -1,16 +1,5 @@
 import { http, HttpResponse, delay } from "msw";
-
-type User = {
-  id: number;
-  email: string;
-  password: string;
-  createdAt: string;
-};
-
-type LoginRequestBody = {
-  email: string;
-  password: string;
-};
+import type { User, LoginRequest } from "../../types";
 
 // In-Memory 사용자 데이터 저장소
 let nextUserId = 2;
@@ -38,7 +27,7 @@ export const authHandlers = [
   // 회원가입 (POST /users/signup)
   http.post("/users/signup", async ({ request }) => {
     await delay(300);
-    const { email, password } = (await request.json()) as LoginRequestBody;
+    const { email, password } = (await request.json()) as LoginRequest;
 
     // 필수 필드 누락
     if (!email || !password) {
@@ -100,7 +89,7 @@ export const authHandlers = [
   // 로그인 (POST /users/login)
   http.post("/users/login", async ({ request }) => {
     await delay(200);
-    const { email, password } = (await request.json()) as LoginRequestBody;
+    const { email, password } = (await request.json()) as LoginRequest;
 
     if (!email || !password) {
       return HttpResponse.json(
