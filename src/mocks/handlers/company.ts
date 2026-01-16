@@ -16,7 +16,6 @@ type CompanyInfo = {
   establishment_date: string;
   homepage_url: string;
 };
-
 // In-Memory 기업 데이터 저장소 (빈 상태로 시작)
 const companies = new Map<string, CompanyInfo>();
 
