@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -18,10 +18,12 @@ import type {
   AxisKey,
   BrushRange,
   IndustryNewsItem,
-  IndustryCompany,
-  IndustryAnalysisResponse,
+  IndustryData,
+  TimeRange,
+  IndustryKey,
 } from "../types";
 import { SAMPLE_STOCKS } from "../constants";
+import { getIndustryNews } from "../api/industry";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -46,46 +48,6 @@ interface AnalysisProps {
   setCompanyCode?: (code: string) => void;
 }
 
-type IndustryKey =
-  | "finance"
-  | "semicon"
-  | "auto"
-  | "bio"
-  | "battery"
-  | "internet"
-  | "ent"
-  | "steel"
-  | "ship"
-  | "const"
-  | "retail"
-  | "telecom";
-
-type TimeRange = "1M" | "3M" | "6M" | "1Y";
-
-const INDUSTRY_ID_BY_KEY: Record<IndustryKey, number> = {
-  finance: 1,
-  semicon: 2,
-  auto: 3,
-  bio: 4,
-  battery: 5,
-  internet: 6,
-  ent: 7,
-  steel: 8,
-  ship: 9,
-  const: 10,
-  retail: 11,
-  telecom: 12,
-};
-
-interface IndustryData {
-  id: IndustryKey;
-  name: string;
-  indexName: string;
-  indexValue: number;
-  changeValue: number;
-  changePercent: number;
-}
-
 // Generate random sparkline data for the mini chart
 const generateSparklineData = () => {
   return Array.from({ length: 20 }, (_, i) => ({
@@ -102,6 +64,93 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 765.42,
     changeValue: 12.5,
     changePercent: 1.66,
+    outlook:
+      "최근 고금리 기조 유지와 정부의 밸류업 프로그램 시행으로 인해 금융 섹터는 구조적인 재평가 국면에 진입했습니다. 은행주를 중심으로 주주환원율이 30%를 상회하며 배당 매력이 부각되고 있으며, 비이자 이익 부문의 성장도 가시화되고 있습니다. 다만, 하반기 부동산 PF 관련 충당금 이슈가 단기적인 변동성을 확대시킬 수 있으나, 기초 체력(Fundamentals)은 여전히 견고하다는 평가가 지배적입니다.",
+    insights: {
+      positive:
+        "정부의 기업 밸류업 프로그램 지속 추진으로 저PBR 금융주의 주주환원 확대 기대감이 지속되고 있습니다.",
+      risk: "부동산 PF 부실 우려에 따른 대손충당금 적립 부담이 하반기 실적의 주요 변수로 작용할 전망입니다.",
+    },
+    companies: [
+      {
+        name: "신한지주",
+        code: "055550",
+        price: "78,200",
+        change: "+0.51%",
+        per: 4.82,
+        pbr: 0.45,
+        roe: 10.2,
+        aiScore: 85,
+        marketCap: "40조 1,230억",
+      },
+      {
+        name: "KB금융",
+        code: "105560",
+        price: "72,100",
+        change: "+1.12%",
+        per: 5.1,
+        pbr: 0.48,
+        roe: 9.8,
+        aiScore: 82,
+        marketCap: "38조 5,400억",
+      },
+      {
+        name: "하나금융",
+        code: "086790",
+        price: "58,400",
+        change: "-0.32%",
+        per: 4.2,
+        pbr: 0.38,
+        roe: 9.5,
+        aiScore: 78,
+        marketCap: "28조 2,100억",
+      },
+      {
+        name: "우리금융",
+        code: "316140",
+        price: "14,800",
+        change: "+0.15%",
+        per: 3.95,
+        pbr: 0.35,
+        roe: 9.1,
+        aiScore: 75,
+        marketCap: "12조 4,500억",
+      },
+      {
+        name: "카카오뱅크",
+        code: "323410",
+        price: "25,300",
+        change: "-1.50%",
+        per: 35.2,
+        pbr: 2.1,
+        roe: 5.4,
+        aiScore: 68,
+        marketCap: "10조 8,000억",
+      },
+      {
+        name: "기업은행",
+        code: "024110",
+        price: "13,200",
+        change: "+0.40%",
+        per: 3.5,
+        pbr: 0.31,
+        roe: 9.2,
+        aiScore: 72,
+        marketCap: "9조 5,000억",
+      },
+      {
+        name: "BNK금융",
+        code: "138930",
+        price: "8,400",
+        change: "-0.20%",
+        per: 3.2,
+        pbr: 0.25,
+        roe: 8.5,
+        aiScore: 65,
+        marketCap: "2조 7,000억",
+      },
+    ],
+    news: [],
   },
   semicon: {
     id: "semicon",
@@ -110,6 +159,60 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     indexValue: 3420.5,
     changeValue: 45.2,
     changePercent: 1.34,
+    outlook:
+      "AI 반도체 수요의 폭발적인 증가와 메모리 반도체 가격 반등이 맞물려 본격적인 실적 개선 구간에 진입했습니다. HBM(고대역폭메모리) 시장 선점을 위한 경쟁이 치열해지는 가운데, 레거시 공정의 가동률 회복도 긍정적입니다. 다만, 글로벌 경기 둔화에 따른 스마트폰 및 PC 수요 회복 지연은 리스크 요인입니다.",
+    insights: {
+      positive: "AI 서버 투자 확대로 HBM 등 고부가가치 제품 수요 급증",
+      risk: "중국의 레거시 반도체 추격 및 지정학적 리스크",
+    },
+    companies: [
+      {
+        name: "삼성전자",
+        code: "005930",
+        price: "73,400",
+        change: "+0.96%",
+        per: 15.2,
+        pbr: 1.45,
+        roe: 8.5,
+        aiScore: 92,
+        marketCap: "430조 2,100억",
+      },
+      {
+        name: "SK하이닉스",
+        code: "000660",
+        price: "164,500",
+        change: "+2.10%",
+        per: -15.4,
+        pbr: 2.1,
+        roe: -5.2,
+        aiScore: 95,
+        marketCap: "119조 8,000억",
+      },
+      {
+        name: "한미반도체",
+        code: "042700",
+        price: "142,000",
+        change: "+5.40%",
+        per: 65.2,
+        pbr: 12.5,
+        roe: 35.4,
+        aiScore: 88,
+        marketCap: "13조 5,000억",
+      },
+      {
+        name: "DB하이텍",
+        code: "000990",
+        price: "45,200",
+        change: "-0.50%",
+        per: 8.5,
+        pbr: 1.2,
+        roe: 12.5,
+        aiScore: 70,
+        marketCap: "2조 100억",
+      },
+      ...createMockCompanies("반도체", 25000, 3),
+    ],
+    news: [],
   },
   auto: {
     id: "auto",
@@ -231,18 +334,34 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedIndustry, setSelectedIndustry] =
     useState<IndustryKey>(getInitialIndustry);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
-
-  // API state
-  const [newsItems, setNewsItems] = useState<IndustryNewsItem[]>([]);
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
-  const [analysis, setAnalysis] = useState<IndustryAnalysisResponse | null>(
-    null,
-  );
-  const [companies, setCompanies] = useState<IndustryCompany[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // 뉴스 데이터 state
+  const [industryNews, setIndustryNews] = useState<IndustryNewsItem[]>([]);
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
+
+  // 뉴스 데이터 API 호출
+  const fetchIndustryNews = useCallback(async () => {
+    try {
+      setIsNewsLoading(true);
+      const response = await getIndustryNews(selectedIndustry);
+      if (response?.items) {
+        setIndustryNews(response.items);
+      }
+    } catch (error) {
+      console.error("산업 뉴스 조회 실패:", error);
+      setIndustryNews([]);
+    } finally {
+      setIsNewsLoading(false);
+    }
+  }, [selectedIndustry]);
+
+  // 산업 변경 시 뉴스 데이터 로드
+  useEffect(() => {
+    fetchIndustryNews();
+  }, [fetchIndustryNews]);
 
   // Parallel Coordinates Chart State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -915,8 +1034,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           뉴스 <ChevronRight size={18} />
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {newsItems.length > 0 ? (
-            newsItems.slice(0, 6).map((news: IndustryNewsItem) => (
+          {industryNews.length > 0 ? (
+            industryNews.slice(0, 6).map((news) => (
               <GlassCard
                 key={news.newId}
                 className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"

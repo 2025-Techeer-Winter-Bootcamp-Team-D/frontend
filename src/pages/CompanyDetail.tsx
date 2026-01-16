@@ -1,48 +1,59 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { useParams } from "react-router-dom";
+import {
+  getCompanyDetail,
+  getStockOhlcv,
+  getCompanyNews,
+} from "../api/company";
+import { getIndustryCompanies } from "../api/industry";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
 import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
 import { ExpenseRanking } from "../components/Ranking/ExpenseRanking";
-import type { SankeyData, ExpenseItem } from "../types";
+import type {
+  SankeyData,
+  ExpenseItem,
+  OhlcvItem,
+  PeerCompanyItem,
+  FinancialData,
+  FinancialMetric,
+  NewsItem,
+  CompanyApiData,
+} from "../types";
 import {
   BarChart,
   Bar,
   XAxis,
-  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
   PieChart,
   Pie,
-  Legend,
   LabelList,
 } from "recharts";
 import {
-  ArrowLeft,
   Star,
-  Download,
-  Share2,
   TrendingUp,
   DollarSign,
-  Users,
   ChevronDown,
-  Check,
   Globe,
   MapPin,
-  Building,
-  Calendar,
   User,
   Quote,
   ChevronLeft,
   ChevronRight,
   X,
-  Link2,
-  ExternalLink,
   Tag,
   BarChart3,
   HelpCircle,
   ArrowDown,
+  Loader2,
 } from "lucide-react";
 import { PageView } from "../types";
 
@@ -56,145 +67,18 @@ interface DetailProps {
 
 const PIE_COLORS = ["#3B82F6", "#EF4444", "#F59E0B", "#10B981", "#94A3B8"];
 
-// Expanded Mock Data for Financial Analysis matching the image
-interface FinancialMetric {
-  current: string;
-  yoy: string;
-  industryAvg: string;
-  history: { year: string; value: number; label: string }[];
-}
-
-interface FinancialData {
-  business: { name: string; value: number; color: string }[];
-  revenue: FinancialMetric;
-  operating: FinancialMetric;
-  netIncome: FinancialMetric;
-}
-
-// Mock Database for Companies
-const COMPANY_DATA: Record<string, any> = {
-  "055550": {
-    name: "신한지주",
-    price: "78,200",
-    change: "+0.51%",
-    marketCap: "40조 1,230억",
-    ceo: "진옥동",
-    sales: "31조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "SH",
-  },
-  "105560": {
-    name: "KB금융",
-    price: "72,100",
-    change: "+1.12%",
-    marketCap: "38조 5,400억",
-    ceo: "양종희",
-    sales: "33조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "KB",
-  },
-  "086790": {
-    name: "하나금융",
-    price: "58,400",
-    change: "-0.32%",
-    marketCap: "28조 2,100억",
-    ceo: "함영주",
-    sales: "29조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "HN",
-  },
-  "138040": {
-    name: "메리츠금융",
-    price: "62,000",
-    change: "+2.40%",
-    marketCap: "24조 5,000억",
-    ceo: "김용범",
-    sales: "25조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "ME",
-  },
-  "316140": {
-    name: "우리금융",
-    price: "14,800",
-    change: "+0.15%",
-    marketCap: "12조 4,500억",
-    ceo: "임종룡",
-    sales: "22조원 (2023)",
-    industry: "금융업",
-    desc: "금융지주회사",
-    logo: "WO",
-  },
+// 기본 회사 데이터 (API 로딩 전 또는 실패 시 사용)
+const DEFAULT_COMPANY = {
+  name: "-",
+  price: "-",
+  change: "-",
+  marketCap: "-",
+  ceo: "-",
+  sales: "-",
+  industry: "-",
+  desc: "-",
+  logo: "--",
 };
-
-interface NewsItem {
-  id: number;
-  title: string;
-  summary: string;
-  source: string;
-  date: string;
-  author: string;
-  avatar: string;
-  content: string;
-  keywords: string[];
-}
-
-const companyNews: NewsItem[] = [
-  {
-    id: 1,
-    title: "신한금융, 1분기 당기순이익 1조 3천억원 달성... 시장 예상치 상회",
-    summary:
-      "이자 이익과 비이자 이익의 고른 성장이 실적을 견인했습니다. 특히 글로벌 부문의 성과가 돋보입니다.",
-    source: "한국경제",
-    date: "2024.04.25",
-    author: "김금융 기자",
-    avatar: "K",
-    content: `신한금융그룹이 올해 1분기 당기순이익 1조 3천억원을 기록하며 시장 컨센서스를 상회하는 '어닝 서프라이즈'를 달성했습니다. 이는 전년 동기 대비 0.5% 증가한 수치로, 고금리 장기화와 부동산 PF 부실 우려 등 어려운 대내외 환경 속에서도 견조한 이익 창출 능력을 입증했다는 평가입니다.\n\n주요 실적 요인을 살펴보면, 은행 부문의 이자 이익이 안정적인 흐름을 보인 가운데 증권, 카드, 라이프 등 비은행 계열사의 약진이 두드러졌습니다. 특히 글로벌 부문의 순이익 비중이 전년 대비 3.5%p 상승하며 그룹 전체 실적 방어에 기여했습니다.\n\n신한금융 관계자는 "철저한 리스크 관리와 함께 디지털 플랫폼 활성화를 통한 고객 기반 확대가 주효했다"며 "앞으로도 주주 환원 정책을 강화하고 지속 가능한 성장 동력을 확보하는 데 주력할 것"이라고 밝혔습니다.`,
-    keywords: ["실적발표", "어닝서프라이즈", "비은행", "글로벌"],
-  },
-  {
-    id: 2,
-    title: "진옥동 회장 'AI 신한' 선언... 디지털 전환 가속화",
-    summary:
-      "전사적 AI 도입을 통해 고객 경험을 혁신하고 업무 효율성을 극대화하겠다는 비전을 제시했습니다.",
-    source: "매일경제",
-    date: "2024.04.20",
-    author: "이디지털 기자",
-    avatar: "L",
-    content:
-      '진옥동 신한금융지주 회장이 그룹 창립기념식에서 \'AI 신한\'을 새로운 비전으로 선포했습니다. 진 회장은 임직원들에게 "AI는 이제 선택이 아닌 생존의 문제"라며 "모든 업무 영역에 AI 기술을 접목하여 고객에게 차별화된 경험을 제공해야 한다"고 강조했습니다.\n\n이를 위해 신한금융은 ▲AI 전문 인력 양성 ▲AI 인프라 확충 ▲AI 윤리 가이드라인 수립 등 3대 핵심 과제를 추진할 계획입니다. 특히 생성형 AI 기술을 활용한 초개인화 자산관리 서비스 고도화와 내부 통제 시스템 강화에 집중 투자가 이루어질 전망입니다.',
-    keywords: ["AI전환", "디지털혁신", "진옥동", "초개인화"],
-  },
-  {
-    id: 3,
-    title: "주주환원율 40% 목표... 밸류업 프로그램 적극 동참",
-    summary:
-      "자사주 소각 및 배당 확대를 통해 주주 가치를 제고하고 기업 가치를 높이는 데 주력할 것입니다.",
-    source: "서울경제",
-    date: "2024.04.15",
-    author: "박주주 기자",
-    avatar: "P",
-    content:
-      "신한금융지주가 정부의 '기업 밸류업 프로그램'에 발맞춰 2027년까지 주주환원율을 40% 수준으로 끌어올리겠다는 중장기 목표를 발표했습니다. 이는 국내 금융지주사 중 최고 수준으로, 저평가된 주가를 부양하고 주주 가치를 극대화하겠다는 강력한 의지로 해석됩니다.\n\n구체적인 실행 방안으로는 ▲분기 배당 정례화 ▲자사주 매입 및 소각 규모 확대 ▲ROE(자기자본이익률) 개선 등이 제시되었습니다. 시장 전문가들은 이번 발표가 외국인 투자자들의 매수세를 유입시키는 긍정적인 신호가 될 것으로 전망하고 있습니다.",
-    keywords: ["밸류업", "주주환원", "자사주소각", "배당확대"],
-  },
-  {
-    id: 4,
-    title: "글로벌 ESG 평가 최고 등급 획득",
-    summary:
-      "지속가능경영 노력을 인정받아 DJSI 월드 지수에 10년 연속 편입되었습니다.",
-    source: "이데일리",
-    date: "2024.04.10",
-    author: "최환경 기자",
-    avatar: "C",
-    content:
-      "신한금융그룹이 세계적인 지속가능경영 평가 지표인 '다우존스 지속가능경영지수(DJSI)' 월드 지수에 10년 연속 편입되는 쾌거를 이뤘습니다. 이는 국내 금융권 최초이자 최장 기록으로, 신한금융의 ESG(환경·사회·지배구조) 경영 성과가 글로벌 수준임을 입증한 결과입니다.\n\n특히 기후변화 대응 전략, 금융 포용성 확대, 이사회 다양성 확보 등에서 높은 점수를 받았습니다. 신한금융은 앞으로도 친환경 금융 지원을 확대하고 사회적 책임을 다하는 등 ESG 선도 기업으로서의 위상을 공고히 해나갈 계획입니다.",
-    keywords: ["ESG", "DJSI", "지속가능경영", "친환경"],
-  },
-];
 
 // Helper to generate dynamic financial data
 const generateFinancialData = (
@@ -280,15 +164,138 @@ const CompanyDetail: React.FC<DetailProps> = ({
   // URL 파라미터가 있으면 우선 사용, 없으면 props 사용
   const companyCode = id || propCompanyCode;
 
-  // 콘솔에 id 값 로그 출력
-  useEffect(() => {
-    if (id) {
-      console.log("URL 파라미터로 받은 기업 ID:", id);
+  // API에서 가져온 기업 데이터
+  const [apiCompanyData, setApiCompanyData] = useState<CompanyApiData | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 주가 데이터
+  const [stockData, setStockData] = useState<OhlcvItem[]>([]);
+  const [isStockLoading, setIsStockLoading] = useState(false);
+
+  // 동종업계 순위 데이터
+  const [peerCompanies, setPeerCompanies] = useState<PeerCompanyItem[]>([]);
+  const [isPeerLoading, setIsPeerLoading] = useState(false);
+
+  // 뉴스 데이터
+  const [companyNews, setCompanyNews] = useState<NewsItem[]>([]);
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
+
+  // 기업 정보 API 호출
+  const fetchCompanyData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await getCompanyDetail(companyCode);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseData = response.data as any;
+      if (responseData?.data) {
+        setApiCompanyData(responseData.data);
+      }
+    } catch (error) {
+      console.error("기업 정보 조회 실패:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [id]);
+  }, [companyCode]);
+
+  // 주가 데이터 API 호출
+  const fetchStockData = useCallback(
+    async (interval: string) => {
+      try {
+        setIsStockLoading(true);
+        const response = await getStockOhlcv(companyCode, interval);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const responseData = response.data as any;
+        if (responseData?.data) {
+          setStockData(responseData.data);
+        }
+      } catch (error) {
+        console.error("주가 데이터 조회 실패:", error);
+      } finally {
+        setIsStockLoading(false);
+      }
+    },
+    [companyCode],
+  );
+
+  // 동종업계 순위 API 호출
+  const fetchPeerCompanies = useCallback(async (industryId: number) => {
+    try {
+      setIsPeerLoading(true);
+      const response = await getIndustryCompanies(industryId);
+      if (response?.data?.companies) {
+        const peers = response.data.companies.map(
+          (
+            company: {
+              stockCode: string;
+              name: string;
+              rank: number;
+              marketCap: number;
+            },
+            index: number,
+          ) => ({
+            rank: company.rank || index + 1,
+            name: company.name,
+            code: company.stockCode,
+            price: "-",
+            change: "-",
+          }),
+        );
+        setPeerCompanies(peers);
+      }
+    } catch (error) {
+      console.error("동종업계 순위 조회 실패:", error);
+    } finally {
+      setIsPeerLoading(false);
+    }
+  }, []);
+
+  // 뉴스 데이터 API 호출
+  const fetchCompanyNews = useCallback(async () => {
+    try {
+      setIsNewsLoading(true);
+      const response = await getCompanyNews(companyCode);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseData = response.data as any;
+      if (responseData?.data) {
+        setCompanyNews(responseData.data);
+      }
+    } catch (error) {
+      console.error("뉴스 데이터 조회 실패:", error);
+    } finally {
+      setIsNewsLoading(false);
+    }
+  }, [companyCode]);
+
+  useEffect(() => {
+    fetchCompanyData();
+  }, [fetchCompanyData]);
+
+  // 뉴스 데이터 초기 로드
+  useEffect(() => {
+    fetchCompanyNews();
+  }, [fetchCompanyNews]);
+
+  // 기업 정보 로드 후 동종업계 순위 조회
+  useEffect(() => {
+    if (apiCompanyData?.industry?.industry_id) {
+      fetchPeerCompanies(apiCompanyData.industry.industry_id);
+    }
+  }, [apiCompanyData, fetchPeerCompanies]);
+
+  // 주가 데이터 초기 로드
+  useEffect(() => {
+    fetchStockData("1D");
+  }, [fetchStockData]);
 
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
+
+  // chartRange 변경 시 주가 데이터 재로드
+  useEffect(() => {
+    fetchStockData(chartRange);
+  }, [chartRange, fetchStockData]);
 
   // Year & Quarter State
   const [selectedYear, setSelectedYear] = useState("2024");
@@ -378,10 +385,23 @@ const CompanyDetail: React.FC<DetailProps> = ({
     }
   };
 
-  // Get current company data or fallback
-  const currentCompany = COMPANY_DATA[companyCode] || COMPANY_DATA["055550"];
+  // API 데이터가 있으면 변환하여 사용, 없으면 기본값
+  const currentCompany = apiCompanyData
+    ? {
+        name: apiCompanyData.company_name,
+        price: "-", // 주가는 별도 API에서 가져와야 함
+        change: "-",
+        marketCap: `${Math.floor(apiCompanyData.market_amount / 100000000).toLocaleString()}억`,
+        ceo: apiCompanyData.ceo_name,
+        sales: "-",
+        industry: apiCompanyData.industry.name,
+        desc: apiCompanyData.description,
+        logo: apiCompanyData.company_name.substring(0, 2),
+      }
+    : DEFAULT_COMPANY;
+
   const COMPANY_CODE = companyCode;
-  const COMPANY_URL = "http://www.shinhangroup.com";
+  const COMPANY_URL = apiCompanyData?.homepage_url || "";
 
   const isStarred = starred.has(COMPANY_CODE);
 
@@ -409,6 +429,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     return {
       nodes: [
         // 매출 원천 (왼쪽)
+        //types.ts/SankeyNode
         {
           id: "interest_income",
           name: "이자이익",
@@ -604,10 +625,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
-      {/* URL 파라미터 확인용 알림 */}
-      {id && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-          URL 파라미터로 받은 기업 ID: <span className="font-bold">{id}</span>
+      {/* 로딩 상태 UI */}
+      {isLoading && (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 size={48} className="animate-spin text-shinhan-blue" />
+            <p className="text-slate-500">기업 정보를 불러오는 중...</p>
+          </div>
         </div>
       )}
 
@@ -819,127 +843,82 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-800">동종업계 순위</h3>
                 <span className="text-xs font-bold text-shinhan-blue bg-blue-50 px-2 py-1 rounded">
-                  금융업
+                  {currentCompany.industry || "-"}
                 </span>
               </div>
 
-              {/* Compact Medal Graphic */}
-              <div className="flex justify-center mb-6 gap-4 items-end shrink-0">
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold border-4 border-white shadow-sm mb-1 relative top-2">
-                    2
-                  </div>
-                  <div className="h-12 w-10 bg-gray-100 rounded-t-lg"></div>
-                  <span className="text-[10px] font-bold mt-1 text-slate-600">
-                    KB금융
-                  </span>
+              {/* 로딩 상태 */}
+              {isPeerLoading ? (
+                <div className="flex items-center justify-center flex-1">
+                  <Loader2
+                    size={24}
+                    className="animate-spin text-shinhan-blue"
+                  />
                 </div>
-                <div className="flex flex-col items-center z-10">
-                  <div className="w-14 h-14 rounded-full bg-shinhan-gold flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-md mb-1">
-                    1
-                  </div>
-                  <div className="h-20 w-14 bg-gradient-to-b from-shinhan-gold to-yellow-600/20 rounded-t-lg"></div>
-                  <span className="text-[10px] font-bold mt-1 text-shinhan-blue">
-                    신한지주
-                  </span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-bold border-4 border-white shadow-sm mb-1 relative top-4">
-                    3
-                  </div>
-                  <div className="h-8 w-10 bg-orange-50 rounded-t-lg"></div>
-                  <span className="text-[10px] font-bold mt-1 text-slate-600">
-                    하나금융
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
-                {[
-                  {
-                    rank: 1,
-                    name: "신한지주",
-                    code: "055550",
-                    price: "78,200",
-                    change: "+0.5%",
-                  },
-                  {
-                    rank: 2,
-                    name: "KB금융",
-                    code: "105560",
-                    price: "72,100",
-                    change: "+1.1%",
-                  },
-                  {
-                    rank: 3,
-                    name: "하나금융",
-                    code: "086790",
-                    price: "58,400",
-                    change: "-0.3%",
-                  },
-                  {
-                    rank: 4,
-                    name: "메리츠금융",
-                    code: "138040",
-                    price: "62,000",
-                    change: "+2.4%",
-                  },
-                  {
-                    rank: 5,
-                    name: "우리금융",
-                    code: "316140",
-                    price: "14,800",
-                    change: "+0.1%",
-                  },
-                  {
-                    rank: 6,
-                    name: "카카오뱅크",
-                    code: "323410",
-                    price: "25,300",
-                    change: "-1.5%",
-                  },
-                  {
-                    rank: 7,
-                    name: "기업은행",
-                    code: "024110",
-                    price: "13,200",
-                    change: "+0.4%",
-                  },
-                  {
-                    rank: 8,
-                    name: "BNK금융",
-                    code: "138930",
-                    price: "8,400",
-                    change: "-0.2%",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.name}
-                    onClick={() => handleCompanyClick(item.code)}
-                    className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
-                      currentCompany.name === item.name
-                        ? "bg-blue-50 border-blue-200 shadow-sm"
-                        : "bg-white border-transparent hover:bg-gray-50 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`text-sm font-bold w-4 ${item.rank === 1 ? "text-shinhan-blue" : "text-gray-400"}`}
-                      >
-                        {item.rank}
-                      </span>
-                      <span className="text-sm font-bold text-slate-700">
-                        {item.name}
+              ) : (
+                <>
+                  {/* Compact Medal Graphic */}
+                  <div className="flex justify-center mb-6 gap-4 items-end shrink-0">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold border-4 border-white shadow-sm mb-1 relative top-2">
+                        2
+                      </div>
+                      <div className="h-12 w-10 bg-gray-100 rounded-t-lg"></div>
+                      <span className="text-[10px] font-bold mt-1 text-slate-600">
+                        {peerCompanies[1]?.name || "-"}
                       </span>
                     </div>
-                    <span
-                      className={`text-xs font-medium ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
-                    >
-                      {item.change}
-                    </span>
+                    <div className="flex flex-col items-center z-10">
+                      <div className="w-14 h-14 rounded-full bg-shinhan-gold flex items-center justify-center text-white text-lg font-bold border-4 border-white shadow-md mb-1">
+                        1
+                      </div>
+                      <div className="h-20 w-14 bg-gradient-to-b from-shinhan-gold to-yellow-600/20 rounded-t-lg"></div>
+                      <span className="text-[10px] font-bold mt-1 text-shinhan-blue">
+                        {peerCompanies[0]?.name || "-"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-bold border-4 border-white shadow-sm mb-1 relative top-4">
+                        3
+                      </div>
+                      <div className="h-8 w-10 bg-orange-50 rounded-t-lg"></div>
+                      <span className="text-[10px] font-bold mt-1 text-slate-600">
+                        {peerCompanies[2]?.name || "-"}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                    {peerCompanies.map((item) => (
+                      <div
+                        key={item.name}
+                        onClick={() => handleCompanyClick(item.code)}
+                        className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                          currentCompany.name === item.name
+                            ? "bg-blue-50 border-blue-200 shadow-sm"
+                            : "bg-white border-transparent hover:bg-gray-50 hover:shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-sm font-bold w-4 ${item.rank === 1 ? "text-shinhan-blue" : "text-gray-400"}`}
+                          >
+                            {item.rank}
+                          </span>
+                          <span className="text-sm font-bold text-slate-700">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-xs font-medium ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                        >
+                          {item.change}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </GlassCard>
           </div>
         </div>
@@ -1501,7 +1480,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   <Tag size={16} className="text-gray-400" /> 관련 키워드
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {selectedNews.keywords.map((keyword) => (
+                  {selectedNews.keywords?.map((keyword) => (
                     <span
                       key={keyword}
                       className="px-3 py-1.5 bg-blue-50 rounded-md text-xs font-bold text-shinhan-blue"
