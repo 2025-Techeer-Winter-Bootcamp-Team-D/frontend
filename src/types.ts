@@ -25,15 +25,6 @@ export interface Company {
 }
 
 //분석 및 트랜드 기능
-/*
-export interface NewsItem {
-  id: string;
-  title: string;
-  source: string;
-  time: string;
-  sentiment: "positive" | "negative" | "neutral";
-}
-  */
 export interface NewsItem {
   id: number; //
   title: string;
@@ -123,26 +114,19 @@ export interface ExpenseItem {
 export interface IndustryNewsItem extends NewsItem {}
 
 export interface IndustryNewsResponse {
-  status: number;
-  message: string;
-  data: IndustryNewsItem[];
+  industryId: string;
+  items: IndustryNewsItem[];
 }
 
 // GET /industries/{industry_id}/companies
-export interface IndustryCompany {
-  stockCode: string;
+// 산업 내 기업 정보 타입
+export type IndustryCompany = {
+  companyId: number | string;
   name: string;
   rank: number;
-  marketCap: number;
-  revenue: number;
-  price?: string;
-  change?: string;
-  per?: number;
-  pbr?: number;
-  roe?: number;
-  aiScore?: number;
-  logo?: string;
-}
+  marketCap: number | string;
+  logoUrl: string;
+};
 
 export interface IndustryCompaniesResponse {
   industryId: string;
@@ -153,13 +137,8 @@ export interface IndustryCompaniesResponse {
 export interface IndustryAnalysisResponse {
   industryId: string;
   summary: string;
-  outlook?: string;
   keywords: string[];
   sentiment: "positive" | "negative" | "neutral";
-  insights?: {
-    positive: string;
-    risk: string;
-  };
 }
 
 // ============================================
@@ -220,6 +199,13 @@ export interface DeleteComparisonResponse {
 // User API Types
 // ============================================
 
+export type User = {
+  id: number;
+  email: string;
+  password: string;
+  createdAt: string;
+};
+
 // POST /users/signup, /users/login - Request
 export interface LoginRequest {
   email: string;
@@ -258,24 +244,6 @@ export interface ApiResponse<T> {
   message?: string;
   success: boolean;
 }
-
-// Company API Response Data
-export interface CompanyApiData {
-  stock_code: string;
-  corp_code: string;
-  company_name: string;
-  industry: {
-    industry_id: number;
-    name: string;
-  };
-  description: string;
-  logo_url: string;
-  market_amount: number;
-  ceo_name: string;
-  establishment_date: string;
-  homepage_url: string;
-}
-
 // GET /companies/{companyId}/ohlcv - OHLCV Data
 export interface OhlcvData {
   date: string;
@@ -311,6 +279,18 @@ export interface RankingItem {
   change: string;
   changeVal: number;
   marketCap: string;
+}
+export interface CompanyApiData {
+  stock_code: string;
+  corp_code: string;
+  company_name: string;
+  industry: { industry_id: number; name: string };
+  description: string;
+  logo_url: string;
+  market_amount: number;
+  ceo_name: string;
+  establishment_date: string;
+  homepage_url: string;
 }
 // Expanded Mock Data for Financial Analysis matching the image
 export interface FinancialMetric {
@@ -369,3 +349,29 @@ export interface IndustryData {
   }[];
   news: IndustryNewsItem[]; // New field for News
 }
+// 기업 순위 타입
+export type CompanyRank = {
+  rank: number;
+  name: string;
+  code: string;
+  sector: string;
+  price: string;
+  change: string;
+  changeVal: number;
+  marketCap: string;
+};
+
+// 산업 순위 타입
+export type IndustryRank = {
+  rank: number;
+  name: string;
+  change: string;
+  marketCap: string;
+};
+
+// 키워드 순위 타입
+export type KeywordRank = {
+  rank: number;
+  keyword: string;
+  count: number;
+};
