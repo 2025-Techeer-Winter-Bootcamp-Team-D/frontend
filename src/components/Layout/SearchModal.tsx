@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PageView } from "../../types";
 import { Search, X, ChevronRight, TrendingUp } from "lucide-react";
+import GlassCard from "./GlassCard";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -64,126 +65,148 @@ const SearchModal: React.FC<SearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[40] flex items-start justify-center pt-32 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed top-[57px] left-0 right-0 bottom-0 bg-white/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-
-      <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-lg shadow-2xl border border-white/50 animate-fade-in-up overflow-hidden flex flex-col max-h-[60vh]">
-        <div className="flex items-center gap-4 p-6 border-b border-gray-100">
-          <Search size={24} className="text-shinhan-blue" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="기업명, 종목코드 또는 산업을 입력하세요"
-            className="flex-1 bg-transparent text-xl font-bold text-slate-800 placeholder:text-gray-300 outline-none"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      <GlassCard className="w-full max-w-lg relative z-10 p-6 animate-fade-in">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-slate-800">기업 검색</h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-md text-gray-400 transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <X size={24} />
+            <X size={20} className="text-gray-500" />
           </button>
         </div>
 
-        <div className="overflow-y-auto custom-scrollbar bg-white/50">
-          {searchQuery ? (
-            filteredCompanies.length > 0 ? (
-              <div className="py-2">
-                <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  검색 결과 ({filteredCompanies.length})
-                </div>
-                {filteredCompanies.map((company) => (
-                  <button
-                    key={company.code}
-                    onClick={() => handleCompanyClick(company.code)}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-blue-50/50 transition-colors group border-b border-gray-50 last:border-0"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-md bg-white border border-gray-100 flex items-center justify-center font-bold text-slate-700 shadow-sm group-hover:border-blue-200 group-hover:text-shinhan-blue transition-colors">
-                        {company.name[0]}
-                      </div>
-                      <div className="text-left">
-                        <div className="font-bold text-slate-800 text-lg group-hover:text-shinhan-blue transition-colors">
-                          {company.name}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
-                          <span>{company.code}</span>
-                          <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                          <span>{company.type}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-sm text-slate-800">
-                        {company.change}
-                      </div>
-                      <ChevronRight
-                        size={16}
-                        className="text-gray-300 ml-auto mt-1 group-hover:text-shinhan-blue group-hover:translate-x-1 transition-all"
-                      />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="py-12 text-center text-gray-400">
-                <p className="text-lg font-medium mb-1">검색 결과가 없습니다</p>
-                <p className="text-sm">다른 키워드로 검색해보세요</p>
-              </div>
-            )
-          ) : (
-            <div className="p-6">
-              <div className="mb-6">
+        <div className="relative mb-6">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="기업명 또는 종목코드를 입력하세요"
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all"
+            autoFocus
+          />
+          <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
+        </div>
+
+        <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+          {searchQuery === "" ? (
+            <div className="space-y-6">
+              {/* 최근 검색어 */}
+              <div>
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
                   최근 검색어
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {["신한지주", "2차전지", "삼성전자"].map((tag) => (
+                  {["신한지주", "2차전지", "삼성전자", "반도체"].map((tag) => (
                     <button
                       key={tag}
                       onClick={() => setSearchQuery(tag)}
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm text-slate-600 font-medium transition-colors"
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-slate-600 font-medium transition-colors"
                     >
                       {tag}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* 인기 종목 TOP 4 */}
               <div>
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                  인기 종목
+                  인기 종목 TOP 4
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleCompanyClick("055550")}
-                    className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all text-left"
-                  >
-                    <span className="text-red-500 font-bold text-sm">1</span>
-                    <span className="font-bold text-slate-700 text-sm">
-                      신한지주
-                    </span>
-                    <TrendingUp size={14} className="text-red-500 ml-auto" />
-                  </button>
-                  <button
-                    onClick={() => handleCompanyClick("005930")}
-                    className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all text-left"
-                  >
-                    <span className="text-red-500 font-bold text-sm">2</span>
-                    <span className="font-bold text-slate-700 text-sm">
-                      삼성전자
-                    </span>
-                    <TrendingUp size={14} className="text-red-500 ml-auto" />
-                  </button>
+                <div className="space-y-1">
+                  {[
+                    { name: "삼성전자", code: "005930", change: "+0.96%" },
+                    { name: "SK하이닉스", code: "000660", change: "+2.10%" },
+                    { name: "신한지주", code: "055550", change: "+0.51%" },
+                    {
+                      name: "LG에너지솔루션",
+                      code: "373220",
+                      change: "-1.50%",
+                    },
+                  ].map((company, index) => (
+                    <button
+                      key={company.code}
+                      onClick={() => handleCompanyClick(company.code)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors group text-left"
+                    >
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gray-200 text-gray-600">
+                        {index + 1}
+                      </span>
+                      <div className="flex-1">
+                        <span className="font-bold text-slate-700 group-hover:text-shinhan-blue transition-colors">
+                          {company.name}
+                        </span>
+                        <span className="ml-2 text-xs text-gray-400 font-mono">
+                          {company.code}
+                        </span>
+                      </div>
+                      <span
+                        className={`font-bold text-sm ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                      >
+                        {company.change}
+                      </span>
+                      <TrendingUp
+                        size={14}
+                        className={
+                          company.change.startsWith("+")
+                            ? "text-red-500"
+                            : "text-blue-500"
+                        }
+                      />
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
+          ) : filteredCompanies.length > 0 ? (
+            filteredCompanies.map((company) => (
+              <button
+                key={company.code}
+                onClick={() => handleCompanyClick(company.code)}
+                className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-600 group-hover:bg-blue-100 group-hover:text-shinhan-blue transition-colors">
+                    {company.name[0]}
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-700 group-hover:text-shinhan-blue transition-colors">
+                      {company.name}
+                    </span>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <span className="font-mono">{company.code}</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                      <span>{company.type}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right flex items-center gap-2">
+                  <span
+                    className={`font-bold text-sm ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                  >
+                    {company.change}
+                  </span>
+                  <ChevronRight
+                    size={18}
+                    className="text-gray-400 group-hover:text-shinhan-blue"
+                  />
+                </div>
+              </button>
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-400 text-sm">
+              검색 결과가 없습니다.
+            </div>
           )}
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };

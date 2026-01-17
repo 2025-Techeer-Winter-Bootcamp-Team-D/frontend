@@ -288,9 +288,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     <div
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className="p-4 hover:bg-blue-50 transition-colors cursor-pointer group flex items-center justify-between"
+                      className="relative p-4 hover:bg-blue-50 transition-colors cursor-pointer group flex items-center justify-between overflow-hidden"
                     >
-                      <div className="flex items-center gap-3">
+                      {/* 광택 효과 오버레이 */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
+                      <div className="relative flex items-center gap-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -309,7 +311,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="relative text-right">
                         <div className="font-bold text-slate-700 text-sm">
                           {item.price}
                         </div>
