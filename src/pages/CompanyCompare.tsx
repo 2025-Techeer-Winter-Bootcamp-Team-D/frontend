@@ -263,25 +263,27 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
             const rawData = response.data?.data ?? [];
 
             // [핵심 수정] OhlcvData(문자열 날짜) -> OhlcvItem(숫자 시간) 변환
-            results[company.companyName] = rawData.map((item: any) => {
-              // 1. 날짜 문자열을 숫자로 변환 (예: "2024-01-01" -> 1704067200)
-              // item.date가 "20240101" 형식이면 포맷에 맞게, "2024-01-01"이면 바로 변환됩니다.
-              // 만약 날짜 파싱이 안 되면 0으로 처리합니다.
-              const dateObj = new Date(item.date);
-              const timeStamp = isNaN(dateObj.getTime())
-                ? 0
-                : Math.floor(dateObj.getTime() / 1000);
+            results[company.companyName] = rawData
+              .map((item: OhlcvData) => {
+                // 1. 날짜 문자열을 숫자로 변환 (예: "2024-01-01" -> 1704067200)
+                // item.date가 "20240101" 형식이면 포맷에 맞게, "2024-01-01"이면 바로 변환됩니다.
+                // 만약 날짜 파싱이 안 되면 0으로 처리합니다.
+                const dateObj = new Date(item.date);
+                const timeStamp = isNaN(dateObj.getTime())
+                  ? 0
+                  : Math.floor(dateObj.getTime() / 1000);
 
-              return {
-                time: timeStamp, // date(string) -> time(number) 변환 적용
-                open: Number(item.open),
-                high: Number(item.high),
-                low: Number(item.low),
-                close: Number(item.close),
-                volume: Number(item.volume),
-                amount: 0, // 데이터에 없으므로 0으로 기본값 설정
-              };
-            });
+                return {
+                  time: timeStamp, // date(string) -> time(number) 변환 적용
+                  open: Number(item.open),
+                  high: Number(item.high),
+                  low: Number(item.low),
+                  close: Number(item.close),
+                  volume: Number(item.volume),
+                  amount: 0, // 데이터에 없으므로 0으로 기본값 설정
+                };
+              })
+              .filter((item) => item.time !== 0);
           } catch (innerError) {
             console.warn(`${company.companyName} 데이터 변환 실패`, innerError);
             results[company.companyName] = [];
