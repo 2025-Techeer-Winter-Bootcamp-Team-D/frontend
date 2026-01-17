@@ -16,7 +16,9 @@ function App() {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("finance");
   const [selectedCompanyCode, setSelectedCompanyCode] =
     useState<string>("055550");
-  const [starred, setStarred] = useState<Set<string>>(new Set());
+  const [starred, setStarred] = useState<Set<string>>(
+    new Set(["005930", "000660", "055550"]),
+  );
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);

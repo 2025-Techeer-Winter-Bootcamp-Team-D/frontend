@@ -1,8 +1,114 @@
 import { http, HttpResponse, delay } from "msw";
 import type { CompanyRank, IndustryRank, KeywordRank } from "../../types";
 
-// In-Memory 기업 순위 데이터 저장소 (빈 상태로 시작)
-const companyRankings = new Map<string, CompanyRank>();
+// 초기 기업 순위 목데이터
+const initialCompanyRankings: CompanyRank[] = [
+  {
+    rank: 1,
+    name: "삼성전자",
+    code: "005930",
+    sector: "반도체",
+    price: "71,800",
+    change: "+0.96%",
+    changeVal: 700,
+    marketCap: "428조",
+  },
+  {
+    rank: 2,
+    name: "SK하이닉스",
+    code: "000660",
+    sector: "반도체",
+    price: "178,500",
+    change: "+2.10%",
+    changeVal: 3700,
+    marketCap: "130조",
+  },
+  {
+    rank: 3,
+    name: "LG에너지솔루션",
+    code: "373220",
+    sector: "2차전지",
+    price: "371,000",
+    change: "-1.50%",
+    changeVal: -5500,
+    marketCap: "86조",
+  },
+  {
+    rank: 4,
+    name: "현대차",
+    code: "005380",
+    sector: "자동차",
+    price: "245,000",
+    change: "-1.20%",
+    changeVal: -3000,
+    marketCap: "52조",
+  },
+  {
+    rank: 5,
+    name: "신한지주",
+    code: "055550",
+    sector: "금융",
+    price: "51,200",
+    change: "+0.51%",
+    changeVal: 260,
+    marketCap: "26조",
+  },
+  {
+    rank: 6,
+    name: "KB금융",
+    code: "105560",
+    sector: "금융",
+    price: "78,900",
+    change: "+1.12%",
+    changeVal: 880,
+    marketCap: "32조",
+  },
+  {
+    rank: 7,
+    name: "카카오",
+    code: "035720",
+    sector: "IT",
+    price: "42,350",
+    change: "-2.30%",
+    changeVal: -1000,
+    marketCap: "18조",
+  },
+  {
+    rank: 8,
+    name: "NAVER",
+    code: "035420",
+    sector: "IT",
+    price: "185,200",
+    change: "+0.82%",
+    changeVal: 1500,
+    marketCap: "30조",
+  },
+  {
+    rank: 9,
+    name: "하나금융",
+    code: "086790",
+    sector: "금융",
+    price: "62,100",
+    change: "-0.32%",
+    changeVal: -200,
+    marketCap: "18조",
+  },
+  {
+    rank: 10,
+    name: "카카오뱅크",
+    code: "323410",
+    sector: "금융",
+    price: "28,450",
+    change: "-1.50%",
+    changeVal: -430,
+    marketCap: "13조",
+  },
+];
+
+// In-Memory 기업 순위 데이터 저장소
+const companyRankings = new Map<string, CompanyRank>(
+  initialCompanyRankings.map((item) => [item.code, item]),
+);
 
 // In-Memory 산업 순위 데이터 저장소 (빈 상태로 시작)
 const industryRankings = new Map<string, IndustryRank>();
