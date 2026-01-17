@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { PageView } from "../types";
 import { Mail, Lock, Eye, EyeOff, X, Loader2 } from "lucide-react";
 import { login } from "../api/users";
+import { useMutation } from "@tanstack/react-query";
 
 interface LoginProps {
   setPage: (page: PageView) => void;
@@ -13,10 +14,26 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const { mutate, isPending } = useMutation({
+    mutationFn: login,
+    onSuccess: (response) => {
+      if (response.data.accessToken) {
+        localStorage.setItem("accessToken", response.data.accessToken);
+        onLogin?.();
+        onClose();
+        setPage(PageView.DASHBOARD);
+      }
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
+      const message = err.response?.data?.message || "로그인에 실패했습니다.";
+      setError(message);
+    },
+  });
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -25,34 +42,17 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      const response = await login({ email, password });
-
-      if (response.data.accessToken) {
-        localStorage.setItem("accessToken", response.data.accessToken);
-        onLogin?.();
-        onClose();
-        setPage(PageView.DASHBOARD);
-      }
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "로그인에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+    mutate({ email, password });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Blur Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
         <div className="p-8 md:p-10 bg-white border border-gray-200 shadow-2xl rounded-3xl relative">
-          {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
@@ -60,7 +60,6 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
             <X size={24} />
           </button>
 
-          {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">로그인</h1>
             <p className="text-slate-500 text-sm">
@@ -69,14 +68,12 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
           </div>
 
           <form className="space-y-6" onSubmit={handleLogin}>
-            {/* Error Message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
                 {error}
               </div>
             )}
 
-            {/* Email Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">
                 이메일
@@ -98,7 +95,6 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
               </div>
             </div>
 
-            {/* Password Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">
                 비밀번호
@@ -127,13 +123,12 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
               </div>
             </div>
 
-            {/* Login Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="w-full py-4 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {isPending ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
                   로그인 중...
@@ -144,7 +139,6 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
             </button>
           </form>
 
-          {/* SignUp Link */}
           <div className="mt-8 text-center">
             <p className="text-sm text-slate-500">
               계정이 없으신가요?{" "}

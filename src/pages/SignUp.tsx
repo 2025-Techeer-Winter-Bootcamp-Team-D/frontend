@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { PageView } from "../types";
 import { Mail, Lock, Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { signup } from "../api/users";
+import { useMutation } from "@tanstack/react-query";
 
 interface SignUpProps {
   setPage: (page: PageView) => void;
@@ -15,13 +16,27 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const { mutate, isPending } = useMutation({
+    mutationFn: signup,
+    onSuccess: () => {
+      // 회원가입 성공 시 로그인 페이지로 이동
+      setPage(PageView.LOGIN);
+      onClose();
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
+      const message = err.response?.data?.message || "회원가입에 실패했습니다.";
+      setError(message);
+    },
+  });
+
+  const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    // 클라이언트 측 유효성 검사
     if (!email || !password || !confirmPassword) {
       setError("모든 필드를 입력해주세요.");
       return;
@@ -37,29 +52,17 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      await signup({ email, password });
-      setPage(PageView.LOGIN);
-      onClose();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "회원가입에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+    mutate({ email, password });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pt-12 pb-4 px-4 overflow-y-auto">
-      {/* Blur Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
         <div className="p-6 md:p-7 bg-white border border-gray-200 shadow-2xl rounded-3xl relative max-h-[80vh] overflow-y-auto">
-          {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
@@ -67,7 +70,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             <X size={24} />
           </button>
 
-          {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">회원가입</h1>
             <p className="text-slate-500 text-sm">
@@ -76,14 +78,12 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
           </div>
 
           <form className="space-y-4" onSubmit={handleSignUp}>
-            {/* Error Message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
                 {error}
               </div>
             )}
 
-            {/* Email Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">
                 이메일
@@ -105,7 +105,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               </div>
             </div>
 
-            {/* Password Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">
                 비밀번호
@@ -134,7 +133,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               </div>
             </div>
 
-            {/* Confirm Password Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">
                 비밀번호 확인
@@ -167,7 +165,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               </div>
             </div>
 
-            {/* Terms Checkbox */}
             <div className="pt-2">
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div
@@ -196,13 +193,12 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               </label>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="w-full py-2 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {isPending ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
                   가입 중...
@@ -213,7 +209,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             </button>
           </form>
 
-          {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-slate-500">
               이미 계정이 있으신가요?{" "}

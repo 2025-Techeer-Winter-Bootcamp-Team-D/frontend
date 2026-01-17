@@ -590,7 +590,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   const filteredIds = useMemo(() => {
     const ids = new Set<string>();
-    stocksFromApi.forEach((stock) => {
+    SAMPLE_STOCKS.forEach((stock) => {
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
@@ -863,14 +863,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       {company.code}
                     </div>
                     <button
-                      onClick={(e) =>
-                        handleToggleStar(e, String(company.companyId))
-                      }
+                      onClick={(e) => handleToggleStar(e, company.code)}
                       className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                      <StarIcon
-                        isActive={starred.has(String(company.companyId))}
-                      />
+                      <StarIcon isActive={starred.has(company.code)} />
                     </button>
                   </div>
                 </div>
@@ -1013,7 +1009,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       {company.roe}%
                     </td>
                     <td className="px-6 py-4 text-center text-slate-600 font-medium">
-                      {company.marketAmount}
+                      {company.marketCap}
                     </td>
                   </tr>
                 ))}
@@ -1032,7 +1028,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
         </p>
         <ParallelCoordinatesChart
-          data={stocksFromApi}
+          data={SAMPLE_STOCKS}
           onFilterChange={setFilters}
           filters={filters}
           filteredIds={filteredIds}
