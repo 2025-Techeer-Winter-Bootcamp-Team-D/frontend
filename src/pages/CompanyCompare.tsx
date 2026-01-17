@@ -14,7 +14,13 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { PageView } from "../types";
-import type { Comparison, CompareCompany, ComparisonListItem } from "../types";
+import type {
+  Comparison,
+  CompareCompany,
+  ComparisonListItem,
+  TimeRange,
+  OhlcvData,
+} from "../types";
 import {
   BarChart,
   Bar,
@@ -42,7 +48,6 @@ import type { Company, OhlcvItem } from "../types";
 interface CompareProps {
   setPage: (page: PageView) => void;
 }
-
 type MetricType = "revenue" | "operating" | "net" | "marketCap";
 type DetailMetricKey =
   | "eps"
@@ -225,6 +230,9 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   }, [searchQuery]);
 
   // OHLCV 데이터 조회 (주가 추이용)
+  // CompanyCompare.tsx 내부의 fetchOhlcvData 함수 수정
+
+  // OHLCV 데이터 조회 (주가 추이용)
   const fetchOhlcvData = useCallback(async () => {
     if (!activeComparison?.companies?.length) {
       setOhlcvData({});
@@ -239,22 +247,53 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     };
 
     setOhlcvLoading(true);
-    setOhlcvData({}); // 조회 시작 시 이전 데이터 초기화
+    setOhlcvData({});
     try {
       const results: Record<string, OhlcvItem[]> = {};
+
       await Promise.all(
         activeComparison.companies.map(async (company) => {
-          const response = await getStockOhlcv(
-            company.stock_code,
-            intervalMap[timeRange],
-          );
-          results[company.companyName] = response.data?.data ?? [];
+          try {
+            const response = await getStockOhlcv(
+              company.stock_code,
+              intervalMap[timeRange],
+            );
+
+            // API가 주는 데이터 (OhlcvData 타입으로 가정)
+            const rawData = response.data?.data ?? [];
+
+            // [핵심 수정] OhlcvData(문자열 날짜) -> OhlcvItem(숫자 시간) 변환
+            results[company.companyName] = rawData
+              .map((item: OhlcvData) => {
+                // 1. 날짜 문자열을 숫자로 변환 (예: "2024-01-01" -> 1704067200)
+                // item.date가 "20240101" 형식이면 포맷에 맞게, "2024-01-01"이면 바로 변환됩니다.
+                // 만약 날짜 파싱이 안 되면 0으로 처리합니다.
+                const dateObj = new Date(item.date);
+                const timeStamp = isNaN(dateObj.getTime())
+                  ? 0
+                  : Math.floor(dateObj.getTime() / 1000);
+
+                return {
+                  time: timeStamp, // date(string) -> time(number) 변환 적용
+                  open: Number(item.open),
+                  high: Number(item.high),
+                  low: Number(item.low),
+                  close: Number(item.close),
+                  volume: Number(item.volume),
+                  amount: 0, // 데이터에 없으므로 0으로 기본값 설정
+                };
+              })
+              .filter((item) => item.time !== 0);
+          } catch (innerError) {
+            console.warn(`${company.companyName} 데이터 변환 실패`, innerError);
+            results[company.companyName] = [];
+          }
         }),
       );
       setOhlcvData(results);
     } catch (e) {
       console.error("OHLCV 데이터 조회 실패:", e);
-      setOhlcvData({}); // 실패 시에도 초기화하여 이전 데이터가 남지 않도록 함
+      setOhlcvData({});
     } finally {
       setOhlcvLoading(false);
     }
