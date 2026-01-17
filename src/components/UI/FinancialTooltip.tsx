@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { HelpCircle } from "lucide-react";
 
 interface TooltipData {
@@ -69,33 +69,35 @@ const FinancialTooltip: React.FC<FinancialTooltipProps> = ({
   size = 14,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState<"top" | "bottom">("bottom");
+  const [iconRect, setIconRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLDivElement>(null);
 
   const data = FINANCIAL_TOOLTIPS[type];
 
-  useEffect(() => {
-    if (isVisible && iconRef.current) {
-      const rect = iconRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
+  const TOOLTIP_HEIGHT = 250;
+  const position = useMemo(() => {
+    if (!iconRect) return "bottom";
+    const spaceBelow = window.innerHeight - iconRect.bottom;
+    const spaceAbove = iconRect.top;
+    return spaceBelow < TOOLTIP_HEIGHT && spaceAbove > spaceBelow
+      ? "top"
+      : "bottom";
+  }, [iconRect]);
 
-      // 아래 공간이 부족하면 위로 표시
-      if (spaceBelow < 250 && spaceAbove > spaceBelow) {
-        setPosition("top");
-      } else {
-        setPosition("bottom");
-      }
+  const handleMouseEnter = () => {
+    if (iconRef.current) {
+      setIconRect(iconRef.current.getBoundingClientRect());
     }
-  }, [isVisible]);
+    setIsVisible(true);
+  };
 
   if (!data) return null;
 
   return (
     <div
       className="relative inline-flex items-center"
-      onMouseEnter={() => setIsVisible(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsVisible(false)}
     >
       <div ref={iconRef} className="cursor-help">
