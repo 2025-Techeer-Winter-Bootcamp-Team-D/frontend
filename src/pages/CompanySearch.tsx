@@ -87,7 +87,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     return rankingData;
   }, [debouncedQuery, searchResults, rankingData]);
 
-  const isLoading = isRankingLoading || (!!debouncedQuery && isSearching);
+  const hasQuery = debouncedQuery.trim().length > 0;
+  const isLoading = hasQuery ? isSearching : isRankingLoading;
 
   const starredList = useMemo(() => {
     return rankingData.filter((item) => starred.has(item.code));
