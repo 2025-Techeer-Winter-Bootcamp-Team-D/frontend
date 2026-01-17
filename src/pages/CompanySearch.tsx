@@ -204,7 +204,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right font-bold text-slate-700">
-                          {item.price}원
+                          {item.price === "-" ? "-" : `${item.price}원`}
                         </td>
                         <td
                           className={`px-6 py-4 text-right font-bold ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
