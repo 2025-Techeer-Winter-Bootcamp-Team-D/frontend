@@ -16,6 +16,136 @@ interface DashboardProps {
   onShowNavbar: (show: boolean) => void;
 }
 
+// AI 속보 브리핑 컴포넌트
+const aiNewsData = [
+  {
+    tag: "방산수출",
+    time: "방금 전",
+    title: '"60조 잠수함 따자"... 한화와 정부, 캐나다 합동 방문 추진',
+    source: "국방일보",
+  },
+  {
+    tag: "삼성전자",
+    time: "1시간 전",
+    title: "삼성전자, 'HBM3E' 12단 업계 최초 양산... AI 반도체 주도권 잡나",
+    source: "테크M",
+  },
+  {
+    tag: "에코프로비엠",
+    time: "2시간 전",
+    title: "에코프로비엠, 44조원 규모 양극재 공급 계약 체결... 잭팟 터졌다",
+    source: "에너지경제",
+  },
+  {
+    tag: "현대차",
+    time: "3시간 전",
+    title: "현대차, 美 전기차 공장 가동 본격화... 테슬라 추격 시작",
+    source: "조선비즈",
+  },
+  {
+    tag: "카카오",
+    time: "4시간 전",
+    title: "카카오, AI 챗봇 '카나나' 출시... 네이버와 경쟁 본격화",
+    source: "IT조선",
+  },
+];
+
+const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
+  visibleSections,
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const newsContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToIndex = (index: number) => {
+    setCurrentIndex(index);
+    if (newsContainerRef.current) {
+      const scrollAmount =
+        index * (newsContainerRef.current.scrollHeight / aiNewsData.length);
+      newsContainerRef.current.scrollTo({
+        top: scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const handleScroll = () => {
+    if (newsContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } =
+        newsContainerRef.current;
+      const scrollableHeight = scrollHeight - clientHeight;
+      if (scrollableHeight > 0) {
+        const scrollRatio = scrollTop / scrollableHeight;
+        const newIndex = Math.round(scrollRatio * (aiNewsData.length - 1));
+        setCurrentIndex(newIndex);
+      }
+    }
+  };
+
+  return (
+    <div
+      className={`bg-shinhan-dark text-white rounded-2xl p-8 lg:p-12 shadow-2xl relative overflow-hidden min-h-[600px] transition-all duration-300 delay-75 ${
+        visibleSections.has("ai-issue")
+          ? "opacity-100 translate-x-0 scale-100"
+          : "opacity-0 translate-x-10 scale-95"
+      }`}
+    >
+      {/* Decorative dot */}
+      <div className="absolute top-6 right-6 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+
+      <div className="mb-10">
+        <span className="text-xs font-bold text-blue-300 tracking-widest uppercase mb-2 block">
+          Market Signals
+        </span>
+        <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+      </div>
+
+      <div
+        ref={newsContainerRef}
+        onScroll={handleScroll}
+        className="space-y-4 max-h-[400px] overflow-y-auto pr-6 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(255,255,255,0.2) transparent",
+        }}
+      >
+        {aiNewsData.map((news, i) => (
+          <div
+            key={i}
+            className="bg-white/15 backdrop-blur-md rounded-xl p-6 text-white cursor-pointer hover:bg-white/25 transition-all border border-white/20 shadow-lg group"
+          >
+            <div className="flex justify-between items-start mb-3">
+              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded backdrop-blur-sm">
+                {news.tag}
+              </span>
+              <span className="text-xs text-white/60">{news.time}</span>
+            </div>
+            <h4 className="font-bold text-lg mb-4 leading-snug group-hover:text-blue-200 transition-colors">
+              {news.title}
+            </h4>
+            <div className="text-xs text-white/50 font-medium">
+              {news.source}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination Dots - Clickable */}
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+        {aiNewsData.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => scrollToIndex(i)}
+            className={`w-1.5 h-1.5 rounded-full transition-all duration-200 hover:scale-150 ${
+              currentIndex === i ? "bg-white" : "bg-white/30 hover:bg-white/50"
+            }`}
+            aria-label={`뉴스 ${i + 1}로 이동`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Dashboard: React.FC<DashboardProps> = ({
   setPage,
   onIndustryClick,
@@ -508,75 +638,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            <div
-              className={`bg-shinhan-dark text-white rounded-2xl p-8 lg:p-12 shadow-2xl relative overflow-hidden min-h-[600px] transition-all duration-300 delay-75 ${
-                visibleSections.has("ai-issue")
-                  ? "opacity-100 translate-x-0 scale-100"
-                  : "opacity-0 translate-x-10 scale-95"
-              }`}
-            >
-              {/* Decorative dot */}
-              <div className="absolute top-6 right-6 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-
-              <div className="mb-10">
-                <span className="text-xs font-bold text-blue-300 tracking-widest uppercase mb-2 block">
-                  Market Signals
-                </span>
-                <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
-              </div>
-
-              <div className="space-y-4">
-                {[
-                  {
-                    tag: "방산수출",
-                    time: "방금 전",
-                    title:
-                      '"60조 잠수함 따자"... 한화와 정부, 캐나다 합동 방문 추진',
-                    source: "국방일보",
-                  },
-                  {
-                    tag: "삼성전자",
-                    time: "1시간 전",
-                    title:
-                      "삼성전자, 'HBM3E' 12단 업계 최초 양산... AI 반도체 주도권 잡나",
-                    source: "테크M",
-                  },
-                  {
-                    tag: "에코프로비엠",
-                    time: "2시간 전",
-                    title:
-                      "에코프로비엠, 44조원 규모 양극재 공급 계약 체결... 잭팟 터졌다",
-                    source: "에너지경제",
-                  },
-                ].map((news, i) => (
-                  <div
-                    key={i}
-                    className="bg-white rounded-xl p-6 text-slate-800 cursor-pointer hover:bg-blue-50 transition-colors group"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="bg-blue-100 text-shinhan-blue text-xs font-bold px-2 py-1 rounded">
-                        {news.tag}
-                      </span>
-                      <span className="text-xs text-gray-400">{news.time}</span>
-                    </div>
-                    <h4 className="font-bold text-lg mb-4 leading-snug group-hover:text-shinhan-blue transition-colors">
-                      {news.title}
-                    </h4>
-                    <div className="text-xs text-gray-400 font-medium">
-                      {news.source}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pagination Dots */}
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-white/30"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-white/30"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-white/30"></div>
-              </div>
-            </div>
+            <AINewsBriefing visibleSections={visibleSections} />
           </div>
         </div>
       </section>
