@@ -193,7 +193,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
       marketCap: `${Math.floor(apiCompanyData.market_amount / 100000000).toLocaleString()}억`,
       ceo: apiCompanyData.ceo_name,
       sales: "-",
-      industry: apiCompanyData.industry.name,
+      industry: apiCompanyData.industry?.name || "-",
       desc: apiCompanyData.description,
       logo: apiCompanyData.company_name.substring(0, 2),
     };
