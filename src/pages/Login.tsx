@@ -55,6 +55,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
       <GlassCard className="w-full max-w-md relative z-10 p-8 md:p-10 animate-fade-in">
         {/* Close Button */}
         <button
+          aria-label="닫기"
           onClick={onClose}
           className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
         >
@@ -112,6 +113,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
                 />
               </div>
               <input
+                id="password-input"
                 type={showPassword ? "text" : "password"}
                 placeholder="비밀번호 입력"
                 value={password}
@@ -121,6 +123,9 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                aria-pressed={showPassword}
+                aria-controls="password-input"
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600 cursor-pointer"
               >
                 {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
