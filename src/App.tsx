@@ -1,3 +1,5 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
@@ -10,6 +12,67 @@ import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import SearchModal from "./components/Layout/SearchModal";
 import { PageView } from "./types";
+
+const queryClient = new QueryClient();
+
+function CompanyDetailPage() {
+  const [starred, setStarred] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
+
+  const toggleStar = (code: string) => {
+    setStarred((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) {
+        next.delete(code);
+      } else {
+        next.add(code);
+      }
+      return next;
+    });
+  };
+
+  const setPage = (page: PageView) => {
+    if (page === PageView.DASHBOARD) {
+      navigate("/");
+    }
+  };
+
+  return (
+    <div className="font-sans text-slate-800 min-h-screen pb-10 bg-white">
+      <div className="sticky top-0 z-50">
+        <Navbar currentPage={PageView.COMPANY_DETAIL} setPage={setPage} />
+      </div>
+      <main className="container mx-auto px-4 pt-6 max-w-7xl">
+        <CompanyDetail
+          setPage={setPage}
+          starred={starred}
+          onToggleStar={toggleStar}
+        />
+      </main>
+      <footer className="mt-12 border-t border-slate-200 py-8 bg-white">
+        <div className="container mx-auto px-4 text-center">
+          <div className="flex justify-center items-center gap-6 mb-4 text-sm text-slate-500">
+            <a href="#" className="hover:text-shinhan-blue">
+              개인정보처리방침
+            </a>
+            <a href="#" className="hover:text-shinhan-blue">
+              이용약관
+            </a>
+            <a href="#" className="hover:text-shinhan-blue">
+              고객센터
+            </a>
+            <a href="#" className="hover:text-shinhan-blue">
+              신한은행 바로가기
+            </a>
+          </div>
+          <p className="text-xs text-slate-400">
+            Copyright © SHINHAN FINANCIAL GROUP. All Rights Reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
 
 function App() {
   const [page, setPage] = useState<PageView>(PageView.DASHBOARD);
@@ -211,71 +274,16 @@ function App() {
 
 function AppWrapper() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/company/:id" element={<CompanyDetailPage />} />
-        <Route path="/*" element={<App />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-function CompanyDetailPage() {
-  const [starred, setStarred] = useState<Set<string>>(new Set());
-  const navigate = useNavigate();
-
-  const toggleStar = (code: string) => {
-    setStarred((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) {
-        next.delete(code);
-      } else {
-        next.add(code);
-      }
-      return next;
-    });
-  };
-
-  const setPage = (page: PageView) => {
-    if (page === PageView.DASHBOARD) {
-      navigate("/");
-    }
-  };
-
-  return (
-    <div className="font-sans text-slate-800 min-h-screen pb-10 bg-white">
-      <div className="sticky top-0 z-50">
-        <Navbar currentPage={PageView.COMPANY_DETAIL} setPage={setPage} />
-      </div>
-      <main className="container mx-auto px-4 pt-6 max-w-7xl">
-        <CompanyDetail
-          setPage={setPage}
-          starred={starred}
-          onToggleStar={toggleStar}
-        />
-      </main>
-      <footer className="mt-12 border-t border-slate-200 py-8 bg-white">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex justify-center items-center gap-6 mb-4 text-sm text-slate-500">
-            <a href="#" className="hover:text-shinhan-blue">
-              개인정보처리방침
-            </a>
-            <a href="#" className="hover:text-shinhan-blue">
-              이용약관
-            </a>
-            <a href="#" className="hover:text-shinhan-blue">
-              고객센터
-            </a>
-            <a href="#" className="hover:text-shinhan-blue">
-              신한은행 바로가기
-            </a>
-          </div>
-          <p className="text-xs text-slate-400">
-            Copyright © SHINHAN FINANCIAL GROUP. All Rights Reserved.
-          </p>
-        </div>
-      </footer>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          {/* 이제 CompanyDetailPage와 App 모두 Provider 내부에 있게 됩니다 */}
+          <Route path="/company/:id" element={<CompanyDetailPage />} />
+          <Route path="/*" element={<App />} />
+        </Routes>
+      </BrowserRouter>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
 
