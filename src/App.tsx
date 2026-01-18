@@ -1,7 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
 import Dashboard from "./pages/Dashboard";
 import CompanyDetail from "./pages/CompanyDetail";
@@ -16,30 +22,42 @@ import { StarredProvider, useStarred } from "./context/StarredContext";
 
 const queryClient = new QueryClient();
 
+/**
+ * 기업 상세 페이지 (독립 라우트용)
+ */
 function CompanyDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
 
-  const setPage = (page: PageView) => {
+  // 네비게이션 처리 함수
+  const handlePageChange = (page: PageView) => {
     if (page === PageView.DASHBOARD) {
       navigate("/");
+    } else if (page === PageView.COMPANY_SEARCH) {
+      navigate("/search");
     }
   };
 
   return (
     <div className="font-sans text-slate-800 min-h-screen pb-10 bg-white">
       <div className="sticky top-0 z-50">
-        <Navbar currentPage={PageView.COMPANY_DETAIL} setPage={setPage} />
+        <Navbar
+          currentPage={PageView.COMPANY_DETAIL}
+          setPage={handlePageChange}
+        />
       </div>
       <main className="container mx-auto px-4 pt-6 max-w-7xl">
+        {/* URL 파라미터 id를 우선적으로 사용 */}
         <CompanyDetail
-          setPage={setPage}
+          setPage={handlePageChange}
           starred={starred}
           onToggleStar={toggleStar}
+          companyCode={id}
         />
       </main>
-      <footer className="mt-12 border-t border-slate-200 py-8 bg-white">
-        <div className="container mx-auto px-4 text-center">
+      <footer className="mt-12 border-t border-slate-200 py-8 bg-white text-center">
+        <div className="container mx-auto px-4">
           <div className="flex justify-center items-center gap-6 mb-4 text-sm text-slate-500">
             <a href="#" className="hover:text-shinhan-blue">
               개인정보처리방침
@@ -50,12 +68,9 @@ function CompanyDetailPage() {
             <a href="#" className="hover:text-shinhan-blue">
               고객센터
             </a>
-            <a href="#" className="hover:text-shinhan-blue">
-              신한은행 바로가기
-            </a>
           </div>
           <p className="text-xs text-slate-400">
-            Copyright © SHINHAN FINANCIAL GROUP. All Rights Reserved.
+            Copyright © BIZSCOPE. All Rights Reserved.
           </p>
         </div>
       </footer>
@@ -68,7 +83,11 @@ function App() {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("finance");
   const [selectedCompanyCode, setSelectedCompanyCode] =
     useState<string>("055550");
+
   const { starred, toggleStar } = useStarred();
+  const navigate = useNavigate();
+
+  // UI 상태 관리
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
@@ -80,10 +99,11 @@ function App() {
   const handlePageChange = (newPage: PageView) => {
     if (newPage === PageView.LOGIN) {
       setShowLogin(true);
-      setShowSignUp(false);
     } else if (newPage === PageView.SIGN_UP) {
       setShowSignUp(true);
-      setShowLogin(false);
+    } else if (newPage === PageView.COMPANY_DETAIL) {
+      // 상세 페이지 이동 시 URL 기반 라우팅으로 전환
+      navigate(`/company/${selectedCompanyCode}`);
     } else {
       setShowLogin(false);
       setShowSignUp(false);
@@ -91,19 +111,11 @@ function App() {
     }
   };
 
-  const handleCloseAuth = () => {
-    setShowLogin(false);
-    setShowSignUp(false);
-  };
-
   const handleIndustryClick = (industryId: string) => {
     setSelectedIndustry(industryId);
     setPage(PageView.INDUSTRY_ANALYSIS);
   };
 
-  // Logic to show/hide navbar:
-  // If we are NOT on dashboard, always show it.
-  // If we are on dashboard, respect the isNavbarVisible state (controlled by scroll).
   const showNavbar = !isDashboard || isNavbarVisible;
 
   const renderPage = () => {
@@ -122,17 +134,10 @@ function App() {
             setPage={handlePageChange}
             starred={starred}
             onToggleStar={toggleStar}
-            setCompanyCode={setSelectedCompanyCode}
-          />
-        );
-      case PageView.COMPANY_DETAIL:
-        return (
-          <CompanyDetail
-            setPage={handlePageChange}
-            starred={starred}
-            onToggleStar={toggleStar}
-            companyCode={selectedCompanyCode}
-            setCompanyCode={setSelectedCompanyCode}
+            setCompanyCode={(code) => {
+              setSelectedCompanyCode(code);
+              navigate(`/company/${code}`);
+            }}
           />
         );
       case PageView.INDUSTRY_ANALYSIS:
@@ -162,17 +167,8 @@ function App() {
     <div
       className={`font-sans text-slate-800 transition-all duration-500 ${isDashboard ? "h-screen flex flex-col overflow-hidden bg-[#002C9C]" : "min-h-screen pb-10 bg-white"}`}
     >
-      {/*
-          Navbar Container Logic:
-          - Dashboard Mode: Fixed position (overlay), transitions Y-axis to hide/show.
-          - Other Modes: Sticky position, always visible.
-      */}
       <div
-        className={`
-          z-50 transition-all duration-500 ease-in-out
-          ${isDashboard ? "fixed top-0 left-0 right-0" : "sticky top-0"}
-          ${!showNavbar ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}
-      `}
+        className={`z-50 transition-all duration-500 ease-in-out ${isDashboard ? "fixed top-0 left-0 right-0" : "sticky top-0"} ${!showNavbar ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
       >
         <Navbar
           currentPage={page}
@@ -183,11 +179,6 @@ function App() {
         />
       </div>
 
-      {/*
-          Main Content:
-          - Dashboard: Full screen height (h-screen), handled internally by its scroll container.
-          - Others: Standard container layout.
-      */}
       <main
         className={
           isDashboard
@@ -199,49 +190,36 @@ function App() {
       </main>
 
       {!isDashboard && (
-        <footer className="mt-12 border-t border-slate-200 py-8 bg-white">
-          <div className="container mx-auto px-4 text-center">
-            <div className="flex justify-center items-center gap-6 mb-4 text-sm text-slate-500">
-              <a href="#" className="hover:text-shinhan-blue">
-                개인정보처리방침
-              </a>
-              <a href="#" className="hover:text-shinhan-blue">
-                이용약관
-              </a>
-              <a href="#" className="hover:text-shinhan-blue">
-                고객센터
-              </a>
-              <a href="#" className="hover:text-shinhan-blue">
-                신한은행 바로가기
-              </a>
-            </div>
-            <p className="text-xs text-slate-400">
-              Copyright © SHINHAN FINANCIAL GROUP. All Rights Reserved.
-            </p>
-          </div>
+        <footer className="mt-12 border-t border-slate-200 py-8 bg-white text-center">
+          <p className="text-xs text-slate-400">
+            Copyright © BIZSCOPE. All Rights Reserved.
+          </p>
         </footer>
       )}
 
-      {/* Login Popup */}
       {showLogin && (
         <Login
           setPage={handlePageChange}
-          onClose={handleCloseAuth}
+          onClose={() => setShowLogin(false)}
           onLogin={() => setIsLoggedIn(true)}
         />
       )}
-
-      {/* SignUp Popup */}
       {showSignUp && (
-        <SignUp setPage={handlePageChange} onClose={handleCloseAuth} />
+        <SignUp
+          setPage={handlePageChange}
+          onClose={() => setShowSignUp(false)}
+        />
       )}
 
-      {/* Search Modal */}
       <SearchModal
         isOpen={showSearch}
         onClose={() => setShowSearch(false)}
         setPage={handlePageChange}
-        onSearchSelect={setSelectedCompanyCode}
+        onSearchSelect={(code) => {
+          setSelectedCompanyCode(code);
+          setShowSearch(false);
+          navigate(`/company/${code}`);
+        }}
       />
     </div>
   );

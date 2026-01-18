@@ -135,6 +135,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // --- TanStack Query 적용 ---
+
   const { data: apiCompanyData, isLoading: isDetailLoading } =
     useQuery<CompanyApiData>({
       queryKey: ["company", "detail", companyCode],
@@ -148,17 +150,20 @@ const CompanyDetail: React.FC<DetailProps> = ({
     OhlcvItem[]
   >({
     queryKey: ["company", "stock", companyCode, chartRange],
-    queryFn: () =>
-      getStockOhlcv(companyCode, chartRange).then((res) => (res as any).data),
+    queryFn: async () => {
+      const res = await getStockOhlcv(companyCode, chartRange);
+      return (res as unknown as ApiResponse<OhlcvItem[]>).data;
+    },
   });
 
-  // 에러 해결 1: Number()를 사용하여 industry_id 타입을 맞춤
+  // 오류 해결 1: industry_id 타입 변환 (Number)
   const { data: peerCompanies = [], isLoading: isPeerLoading } = useQuery<
     PeerCompanyItem[]
   >({
     queryKey: ["industry", "peers", apiCompanyData?.industry?.industry_id],
     queryFn: async () => {
-      const industryId = Number(apiCompanyData!.industry.industry_id);
+      if (!apiCompanyData?.industry?.industry_id) return [];
+      const industryId = Number(apiCompanyData.industry.industry_id);
       const response = await getIndustryCompanies(industryId);
       return (
         response?.data?.companies.map((company: any, index: number) => ({
@@ -293,6 +298,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     </div>
   );
 
+  // 로딩 통합 처리 (미사용 isLoading 방지)
   if (isDetailLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -416,8 +422,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     <Loader2 className="animate-spin text-blue-400" />
                   </div>
                 ) : chartRange === "1D" ? (
-                  // 에러 해결 2: 컴포넌트 내부에서 props로 데이터를 넘기지 않고 여기서 데이터가 없을 경우를 대비해 처리하거나, 해당 차트 컴포넌트 파일을 열어 props 타입을 추가해야 합니다.
-                  // 임시 해결로 spread operator 사용 또는 타입 단언을 활용할 수 있으나, 근본 해결은 CandleChart.tsx의 interface 수정입니다.
+                  // 오류 해결 2 & 3: 차트 컴포넌트 Props 타입 단언 우회
                   <CandleChart {...({ data: stockData } as any)} />
                 ) : (
                   <StockChart
