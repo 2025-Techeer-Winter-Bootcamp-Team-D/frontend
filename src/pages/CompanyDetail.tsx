@@ -19,7 +19,6 @@ import type {
   CompanyApiData,
   PageView,
   OhlcvItem,
-  ApiResponse,
 } from "../types";
 
 import {
@@ -30,7 +29,7 @@ import {
   Cell,
   LabelList,
 } from "recharts";
-import { Star, Globe, User, X, HelpCircle, Loader2 } from "lucide-react";
+import { Star, User, X, HelpCircle, Loader2 } from "lucide-react";
 
 interface DetailProps {
   setPage: (page: PageView) => void;
@@ -79,17 +78,11 @@ const generateFinancialData = (
   const historyYears = [y - 3, y - 2, y - 1, y];
 
   return {
-    business: [
-      { name: "도금재", value: 34 + (q % 2), color: "#3B82F6" },
-      { name: "Bonding Wire", value: 24 - (q % 2), color: "#EF4444" },
-      { name: "접점", value: 16, color: "#F59E0B" },
-      { name: "증착재", value: 16, color: "#10B981" },
-      { name: "기타", value: 10, color: "#94A3B8" },
-    ],
+    business: [{ name: "기타", value: 10, color: "#94A3B8" }],
     revenue: {
       current: formatMoney(baseRevenue),
-      yoy: `${(15 + q * 2).toFixed(1)}%`,
-      industryAvg: `${(2000 + q * 50).toFixed(0)}%`,
+      yoy: "15.0%",
+      industryAvg: "2000%",
       history: historyYears.map((hy) => ({
         year: hy.toString(),
         value: 8000 + (hy - 2020) * 800,
@@ -98,7 +91,7 @@ const generateFinancialData = (
     },
     operating: {
       current: formatMoney(baseOperating),
-      yoy: `${(25 + q * 5).toFixed(1)}%`,
+      yoy: "25.0%",
       industryAvg: "2058%",
       history: historyYears.map((hy) => ({
         year: hy.toString(),
@@ -108,7 +101,7 @@ const generateFinancialData = (
     },
     netIncome: {
       current: formatMoney(baseNet),
-      yoy: `${(30 + q * 3).toFixed(1)}%`,
+      yoy: "30.0%",
       industryAvg: "909%",
       history: historyYears.map((hy) => ({
         year: hy.toString(),
@@ -120,6 +113,7 @@ const generateFinancialData = (
 };
 
 const CompanyDetail: React.FC<DetailProps> = ({
+  setPage,
   starred,
   onToggleStar,
   companyCode: propCompanyCode = "055550",
@@ -135,64 +129,54 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // --- TanStack Query 적용 ---
+  // --- API Fetching (수정된 섹션) ---
 
-  const { data: apiCompanyData, isLoading: isDetailLoading } =
-    useQuery<CompanyApiData>({
-      queryKey: ["company", "detail", companyCode],
-      queryFn: () =>
-        getCompanyDetail(companyCode).then(
-          (res) => (res as unknown as ApiResponse<CompanyApiData>).data,
-        ),
-    });
-
-  const { data: stockData = [], isLoading: isStockLoading } = useQuery<
-    OhlcvItem[]
-  >({
-    queryKey: ["company", "stock", companyCode, chartRange],
+  const { data: apiCompanyData, isLoading: isDetailLoading } = useQuery({
+    queryKey: ["company", "detail", companyCode],
     queryFn: async () => {
-      const res = await getStockOhlcv(companyCode, chartRange);
-      return (res as unknown as ApiResponse<OhlcvItem[]>).data;
+      const response = await getCompanyDetail(companyCode);
+      return response.data.data as unknown as CompanyApiData;
     },
   });
 
-  // 오류 해결 1: industry_id 타입 변환 (Number)
-  const { data: peerCompanies = [], isLoading: isPeerLoading } = useQuery<
-    PeerCompanyItem[]
-  >({
+  const { data: stockData = [], isLoading: isStockLoading } = useQuery({
+    queryKey: ["company", "stock", companyCode, chartRange],
+    queryFn: async () => {
+      const response = await getStockOhlcv(companyCode, chartRange);
+      return response.data.data as unknown as OhlcvItem[];
+    },
+  });
+
+  const { data: peerCompanies = [], isLoading: isPeerLoading } = useQuery({
     queryKey: ["industry", "peers", apiCompanyData?.industry?.industry_id],
     queryFn: async () => {
-      if (!apiCompanyData?.industry?.industry_id) return [];
-      const industryId = Number(apiCompanyData.industry.industry_id);
-      const response = await getIndustryCompanies(industryId);
-      return (
-        response?.data?.companies.map((company: any, index: number) => ({
-          rank: company.rank || index + 1,
-          name: company.name,
-          code: company.stockCode,
-          price: "-",
-          change: "-",
-        })) || []
-      );
+      const industryId = apiCompanyData?.industry?.industry_id;
+      if (!industryId) return [];
+      const response = await getIndustryCompanies(Number(industryId));
+      const companies = response?.data?.data?.companies || [];
+      return companies.map((company: any, index: number) => ({
+        rank: company.rank || index + 1,
+        name: company.name,
+        code: company.stockCode,
+        price: "-",
+        change: "-",
+      })) as PeerCompanyItem[];
     },
     enabled: !!apiCompanyData?.industry?.industry_id,
   });
 
-  const { data: companyNews = [], isLoading: isNewsLoading } = useQuery<
-    NewsItem[]
-  >({
+  const { data: companyNews = [], isLoading: isNewsLoading } = useQuery({
     queryKey: ["company", "news", companyCode],
-    queryFn: () => getCompanyNews(companyCode).then((res) => (res as any).data),
+    queryFn: async () => {
+      const response = await getCompanyNews(companyCode);
+      return response.data.data as NewsItem[];
+    },
   });
 
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
-  const sankeyRef = useRef<HTMLDivElement>(null);
   const newsRef = useRef<HTMLDivElement>(null);
-  const disclosureRef = useRef<HTMLDivElement>(null);
-  const peerRef = useRef<HTMLDivElement>(null);
-  const aiRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -239,10 +223,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "info", label: "기업정보", ref: infoRef },
     { id: "price", label: "주가", ref: priceRef },
     { id: "financial", label: "재무분석", ref: financialRef },
-    { id: "sankey", label: "손익흐름도", ref: sankeyRef },
-    { id: "ai", label: "AI 전망 분석", ref: aiRef },
     { id: "news", label: "뉴스", ref: newsRef },
-    { id: "disclosure", label: "전자공시", ref: disclosureRef },
   ];
 
   const renderFinancialBarChart = (title: string, data: FinancialMetric) => (
@@ -298,14 +279,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
     </div>
   );
 
-  // 로딩 통합 처리 (미사용 isLoading 방지)
   if (isDetailLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 size={48} className="animate-spin text-blue-600" />
-          <p className="text-slate-500">기업 정보를 불러오는 중...</p>
-        </div>
+        <Loader2 size={48} className="animate-spin text-blue-600" />
       </div>
     );
   }
@@ -316,7 +293,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
         <div
           className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
         >
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center">
+          <div
+            className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center cursor-pointer"
+            onClick={() => setPage("DASHBOARD" as PageView)}
+          >
             <span className="font-bold text-blue-600 text-2xl">
               {currentCompany.logo}
             </span>
@@ -328,13 +308,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 {companyCode}
               </span>
             </h1>
-            <p className="text-slate-500 mt-1 flex items-center gap-2">
-              <span className="font-medium text-slate-700">
-                {currentCompany.industry}
-              </span>
-              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-              <span>KOSPI</span>
-            </p>
           </div>
           <div className="ml-auto flex gap-2">
             <button
@@ -345,9 +318,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 size={20}
                 fill={starred.has(companyCode) ? "currentColor" : "none"}
               />
-            </button>
-            <button className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-blue-600 transition-colors shadow-sm">
-              <Globe size={20} />
             </button>
           </div>
         </div>
@@ -370,7 +340,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
       <div className="space-y-8">
         <div ref={infoRef} className="scroll-mt-32">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-gray-100 pb-3">
               기업정보
             </h3>
@@ -394,18 +364,16 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 </span>
               </div>
             </div>
-          </div>
+          </GlassCard>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8" ref={priceRef}>
             <GlassCard className="p-6 h-full flex flex-col">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
-                <h3 className="text-lg font-bold text-slate-800 mb-1">
-                  주가 분석
-                </h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-slate-800">주가 분석</h3>
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                  {["1D", "1W", "3M", "1Y", "All"].map((p) => (
+                  {["1D", "1W", "3M", "1Y"].map((p) => (
                     <button
                       key={p}
                       onClick={() => setChartRange(p)}
@@ -419,10 +387,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <div className="flex-1 min-h-[300px]">
                 {isStockLoading ? (
                   <div className="flex h-full items-center justify-center">
-                    <Loader2 className="animate-spin text-blue-400" />
+                    <Loader2 className="animate-spin" />
                   </div>
                 ) : chartRange === "1D" ? (
-                  // 오류 해결 2 & 3: 차트 컴포넌트 Props 타입 단언 우회
                   <CandleChart {...({ data: stockData } as any)} />
                 ) : (
                   <StockChart
@@ -433,27 +400,22 @@ const CompanyDetail: React.FC<DetailProps> = ({
             </GlassCard>
           </div>
 
-          <div className="lg:col-span-4" ref={peerRef}>
-            <GlassCard className="p-6 h-full flex flex-col">
+          <div className="lg:col-span-4">
+            <GlassCard className="p-6 h-full">
               <h3 className="font-bold text-slate-800 mb-4">동종업계 순위</h3>
               {isPeerLoading ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-blue-400" />
+                <div className="flex justify-center py-8">
+                  <Loader2 className="animate-spin" />
                 </div>
               ) : (
-                <div className="space-y-2 overflow-y-auto flex-1 pr-1">
-                  {peerCompanies.map((item: PeerCompanyItem) => (
+                <div className="space-y-2 overflow-y-auto max-h-[300px]">
+                  {peerCompanies.map((item) => (
                     <div
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200 shadow-sm" : "bg-white border-transparent hover:bg-gray-50"}`}
+                      className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50"}`}
                     >
                       <div className="flex items-center gap-3">
-                        <span
-                          className={`text-sm font-bold w-4 ${item.rank === 1 ? "text-blue-600" : "text-gray-400"}`}
-                        >
-                          {item.rank}
-                        </span>
                         <span className="text-sm font-bold text-slate-700">
                           {item.name}
                         </span>
@@ -480,12 +442,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
         <div ref={newsRef} className="scroll-mt-32">
           <GlassCard className="p-6">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">
-              기업 관련 뉴스
-            </h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-4">기업 뉴스</h3>
             {isNewsLoading ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="animate-spin text-blue-600" />
+              <div className="flex justify-center py-8">
+                <Loader2 className="animate-spin" />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -493,12 +453,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   <div
                     key={idx}
                     onClick={() => setSelectedNews(news)}
-                    className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer"
                   >
-                    <h4 className="font-bold text-slate-800 line-clamp-1 mb-2">
+                    <h4 className="font-bold text-slate-800 line-clamp-1">
                       {news.title}
                     </h4>
-                    <p className="text-sm text-slate-500 line-clamp-2">
+                    <p className="text-sm text-slate-500 line-clamp-2 mt-2">
                       {news.summary}
                     </p>
                   </div>
@@ -512,10 +472,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
       {selectedNews && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setSelectedNews(null)}
           ></div>
-          <div className="bg-white w-full max-w-2xl rounded-lg shadow-2xl z-10 p-6">
+          <div className="bg-white w-full max-w-2xl rounded-lg z-10 p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold">뉴스 상세</h3>
               <X
