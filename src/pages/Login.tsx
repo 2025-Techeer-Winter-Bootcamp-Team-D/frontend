@@ -150,6 +150,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
           <p className="text-sm text-slate-500">
             계정이 없으신가요?{" "}
             <button
+              type="button"
               onClick={() => setPage(PageView.SIGN_UP)}
               className="font-bold text-shinhan-blue hover:text-blue-700 ml-1 hover:underline"
             >
