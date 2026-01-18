@@ -292,7 +292,7 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
       </div>
       <svg
         ref={svgRef}
-        className="w-full"
+        className="w-full select-none"
         style={{ aspectRatio: "16/9", maxHeight: "600px" }}
       ></svg>
       <div

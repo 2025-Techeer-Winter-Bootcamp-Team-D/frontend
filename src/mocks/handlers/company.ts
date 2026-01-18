@@ -1,5 +1,18 @@
 import { http, HttpResponse, delay } from "msw";
-import type { NewsItem } from "@/types";
+import type {
+  NewsItem,
+  SankeyData,
+  ExpenseItem,
+  FinancialData,
+  FinancialMetric,
+} from "@/types";
+
+// 공시 데이터 타입
+interface DisclosureItem {
+  date: string;
+  type: string;
+  title: string;
+}
 
 type CompanyInfo = {
   stock_code: string;

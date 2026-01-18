@@ -129,20 +129,22 @@ export interface IndustryNewsResponse {
 }
 
 // GET /industries/{industry_id}/companies
-export interface IndustryCompany {
-  companyId: number;
+// 산업 내 기업 정보 타입
+export type IndustryCompany = {
+  companyId: number | string;
+  stockCode: string;
   name: string;
   rank: number;
-  marketAmount: number;
-  revenue: number;
+  marketCap: number | string;
+  logoUrl: string;
+  logo?: string;
   price?: string;
   change?: string;
+  roe?: number;
   per?: number;
   pbr?: number;
-  roe?: number;
   aiScore?: number;
-  logo?: string;
-}
+};
 
 export interface IndustryCompaniesResponse {
   status: number;
@@ -154,6 +156,7 @@ export interface IndustryCompaniesResponse {
 export interface IndustryAnalysisResponse {
   industryId: string;
   summary: string;
+  outlook?: string;
   keywords: string[];
   sentiment: "positive" | "negative" | "neutral";
 }
@@ -281,7 +284,7 @@ export interface OhlcvData {
   close: number;
   volume: number;
 }
-// OHLCV API Response Item
+// 주가 데이터
 export interface OhlcvItem {
   time: number;
   open: number;
@@ -321,7 +324,7 @@ export interface CompanyApiData {
   establishment_date: string;
   homepage_url: string;
 }
-// Expanded Mock Data for Financial Analysis matching the image
+// 재무 데이터 타입
 export interface FinancialMetric {
   current: string;
   yoy: string;

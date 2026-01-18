@@ -14,10 +14,26 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const { mutate, isPending } = useMutation({
+    mutationFn: login,
+    onSuccess: (response) => {
+      if (response.data.accessToken) {
+        localStorage.setItem("accessToken", response.data.accessToken);
+        onLogin?.();
+        onClose();
+        setPage(PageView.DASHBOARD);
+      }
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
+      const message = err.response?.data?.message || "로그인에 실패했습니다.";
+      setError(message);
+    },
+  });
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -26,27 +42,11 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      const response = await login({ email, password });
-
-      if (response.data.accessToken) {
-        localStorage.setItem("accessToken", response.data.accessToken);
-        onLogin?.();
-        onClose();
-        setPage(PageView.DASHBOARD);
-      }
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "로그인에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+    mutate({ email, password });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Blur Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}

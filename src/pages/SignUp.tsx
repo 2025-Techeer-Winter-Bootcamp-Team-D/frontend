@@ -16,13 +16,27 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const { mutate, isPending } = useMutation({
+    mutationFn: signup,
+    onSuccess: () => {
+      // 회원가입 성공 시 로그인 페이지로 이동
+      setPage(PageView.LOGIN);
+      onClose();
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
+      const message = err.response?.data?.message || "회원가입에 실패했습니다.";
+      setError(message);
+    },
+  });
+
+  const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    // 클라이언트 측 유효성 검사
     if (!email || !password || !confirmPassword) {
       setError("모든 필드를 입력해주세요.");
       return;
@@ -38,22 +52,11 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      await signup({ email, password });
-      setPage(PageView.LOGIN);
-      onClose();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "회원가입에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+    mutate({ email, password });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pt-12 pb-4 px-4 overflow-y-auto">
-      {/* Blur Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
