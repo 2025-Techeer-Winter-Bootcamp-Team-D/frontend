@@ -531,7 +531,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* Sector Overview Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-        <GlassCard className="p-6 col-span-2">
+        <GlassCard className="p-6 col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -569,7 +569,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               ))}
             </div>
           </div>
-          <div className="h-48 w-full">
+          <div className="flex-1 w-full min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
                 <defs>
@@ -632,9 +632,37 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           ) : error ? (
             <p className="text-red-300 text-sm">{error}</p>
           ) : (
-            <p className="text-white/90 text-sm leading-relaxed">
-              {analysis?.outlook ?? "전망 정보가 없습니다."}
-            </p>
+            <div className="space-y-3">
+              {/* 분석 내용 글라스 카드 */}
+              <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-4">
+                <p className="text-white text-sm leading-relaxed">
+                  {analysis?.outlook ??
+                    currentData.outlook ??
+                    "전망 정보가 없습니다."}
+                </p>
+              </div>
+              {(analysis?.insights || currentData.insights) && (
+                <div className="space-y-2">
+                  <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex items-start gap-2">
+                    <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                      긍정
+                    </span>
+                    <p className="text-xs text-white leading-relaxed">
+                      {analysis?.insights?.positive ??
+                        currentData.insights?.positive}
+                    </p>
+                  </div>
+                  <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex items-start gap-2">
+                    <span className="px-2 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                      리스크
+                    </span>
+                    <p className="text-xs text-white leading-relaxed">
+                      {analysis?.insights?.risk ?? currentData.insights?.risk}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </GlassCard>
       </div>
