@@ -12,24 +12,13 @@ import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import SearchModal from "./components/Layout/SearchModal";
 import { PageView } from "./types";
+import { StarredProvider, useStarred } from "./context/StarredContext";
 
 const queryClient = new QueryClient();
 
 function CompanyDetailPage() {
-  const [starred, setStarred] = useState<Set<string>>(new Set());
+  const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
-
-  const toggleStar = (code: string) => {
-    setStarred((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) {
-        next.delete(code);
-      } else {
-        next.add(code);
-      }
-      return next;
-    });
-  };
 
   const setPage = (page: PageView) => {
     if (page === PageView.DASHBOARD) {
@@ -79,9 +68,7 @@ function App() {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("finance");
   const [selectedCompanyCode, setSelectedCompanyCode] =
     useState<string>("055550");
-  const [starred, setStarred] = useState<Set<string>>(
-    new Set(["005930", "000660", "055550"]),
-  );
+  const { starred, toggleStar } = useStarred();
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
@@ -112,18 +99,6 @@ function App() {
   const handleIndustryClick = (industryId: string) => {
     setSelectedIndustry(industryId);
     setPage(PageView.INDUSTRY_ANALYSIS);
-  };
-
-  const toggleStar = (code: string) => {
-    setStarred((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) {
-        next.delete(code);
-      } else {
-        next.add(code);
-      }
-      return next;
-    });
   };
 
   // Logic to show/hide navbar:
@@ -275,13 +250,14 @@ function App() {
 function AppWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* 이제 CompanyDetailPage와 App 모두 Provider 내부에 있게 됩니다 */}
-          <Route path="/company/:id" element={<CompanyDetailPage />} />
-          <Route path="/*" element={<App />} />
-        </Routes>
-      </BrowserRouter>
+      <StarredProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/company/:id" element={<CompanyDetailPage />} />
+            <Route path="/*" element={<App />} />
+          </Routes>
+        </BrowserRouter>
+      </StarredProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

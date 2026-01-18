@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -16,45 +10,27 @@ import { getIndustryCompanies } from "../api/industry";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
-import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
-import { ExpenseRanking } from "../components/Ranking/ExpenseRanking";
+
 import type {
-  SankeyData,
-  ExpenseItem,
+  NewsItem,
   PeerCompanyItem,
   FinancialData,
   FinancialMetric,
-  NewsItem,
+  CompanyApiData,
   PageView,
+  OhlcvItem,
+  ApiResponse,
 } from "../types";
+
 import {
   BarChart,
   Bar,
   XAxis,
   ResponsiveContainer,
   Cell,
-  PieChart,
-  Pie,
   LabelList,
 } from "recharts";
-import {
-  Star,
-  TrendingUp,
-  DollarSign,
-  ChevronDown,
-  Globe,
-  MapPin,
-  User,
-  Quote,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Tag,
-  BarChart3,
-  HelpCircle,
-  ArrowDown,
-  Loader2,
-} from "lucide-react";
+import { Star, Globe, User, X, HelpCircle, Loader2 } from "lucide-react";
 
 interface DetailProps {
   setPage: (page: PageView) => void;
@@ -76,7 +52,6 @@ const DEFAULT_COMPANY = {
   logo: "--",
 };
 
-// 재무 데이터 생성 헬퍼 함수 (기존 로직 유지)
 const generateFinancialData = (
   year: string,
   quarter: string,
@@ -153,44 +128,38 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const { id } = useParams<{ id: string }>();
   const companyCode = id || propCompanyCode;
 
-  // UI States
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
-  const [selectedYear, setSelectedYear] = useState("2024");
-  const [selectedQuarter, setSelectedQuarter] = useState("1분기");
-  const [isYearOpen, setIsYearOpen] = useState(false);
-  const [isQuarterOpen, setIsQuarterOpen] = useState(false);
+  const [selectedYear] = useState("2024");
+  const [selectedQuarter] = useState("1분기");
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
-  const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
-  const [isAutoPlay, setIsAutoPlay] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [disclosureTab, setDisclosureTab] = useState("주요공시");
 
-  // --- TanStack Query: API Fetching ---
+  const { data: apiCompanyData, isLoading: isDetailLoading } =
+    useQuery<CompanyApiData>({
+      queryKey: ["company", "detail", companyCode],
+      queryFn: () =>
+        getCompanyDetail(companyCode).then(
+          (res) => (res as unknown as ApiResponse<CompanyApiData>).data,
+        ),
+    });
 
-  // 1. 기업 상세 정보
-  const { data: apiCompanyData, isLoading: isDetailLoading } = useQuery({
-    queryKey: ["company", "detail", companyCode],
-    queryFn: () =>
-      getCompanyDetail(companyCode).then((res) => (res.data as any).data),
-  });
-
-  // 2. 주가 데이터 (chartRange에 의존)
-  const { data: stockData = [], isLoading: isStockLoading } = useQuery({
+  const { data: stockData = [], isLoading: isStockLoading } = useQuery<
+    OhlcvItem[]
+  >({
     queryKey: ["company", "stock", companyCode, chartRange],
     queryFn: () =>
-      getStockOhlcv(companyCode, chartRange).then(
-        (res) => (res.data as any).data,
-      ),
+      getStockOhlcv(companyCode, chartRange).then((res) => (res as any).data),
   });
 
-  // 3. 동종업계 순위 (industry_id가 로드된 후 실행)
-  const { data: peerCompanies = [], isLoading: isPeerLoading } = useQuery({
+  // 에러 해결 1: Number()를 사용하여 industry_id 타입을 맞춤
+  const { data: peerCompanies = [], isLoading: isPeerLoading } = useQuery<
+    PeerCompanyItem[]
+  >({
     queryKey: ["industry", "peers", apiCompanyData?.industry?.industry_id],
     queryFn: async () => {
-      const response = await getIndustryCompanies(
-        apiCompanyData.industry.industry_id,
-      );
+      const industryId = Number(apiCompanyData!.industry.industry_id);
+      const response = await getIndustryCompanies(industryId);
       return (
         response?.data?.companies.map((company: any, index: number) => ({
           rank: company.rank || index + 1,
@@ -204,14 +173,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
     enabled: !!apiCompanyData?.industry?.industry_id,
   });
 
-  // 4. 뉴스 데이터
-  const { data: companyNews = [], isLoading: isNewsLoading } = useQuery({
+  const { data: companyNews = [], isLoading: isNewsLoading } = useQuery<
+    NewsItem[]
+  >({
     queryKey: ["company", "news", companyCode],
-    queryFn: () =>
-      getCompanyNews(companyCode).then((res) => (res.data as any).data),
+    queryFn: () => getCompanyNews(companyCode).then((res) => (res as any).data),
   });
 
-  // --- Refs & Scroll Logic ---
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
@@ -227,7 +195,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // --- Memoized Data ---
   const currentCompany = useMemo(() => {
     if (!apiCompanyData) return DEFAULT_COMPANY;
     return {
@@ -248,91 +215,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
     [selectedYear, selectedQuarter],
   );
 
-  // Sankey & Expense Data (기존 로직 유지)
-  const totalRevenue = 31000000000000;
-  const sankeyData: SankeyData = useMemo(
-    () => ({
-      nodes: [
-        {
-          id: "interest_income",
-          name: "이자이익",
-          color: "#3B82F6",
-          category: "Revenue",
-        },
-        {
-          id: "fee_income",
-          name: "수수료이익",
-          color: "#06B6D4",
-          category: "Revenue",
-        },
-        {
-          id: "trading_income",
-          name: "유가증권이익",
-          color: "#8B5CF6",
-          category: "Revenue",
-        },
-        {
-          id: "other_income",
-          name: "기타이익",
-          color: "#94A3B8",
-          category: "Revenue",
-        },
-        { id: "hub", name: "총매출", color: "#0046FF", category: "Hub" },
-        { id: "cogs", name: "매출원가", color: "#EF4444", category: "Expense" },
-        { id: "opex", name: "판관비", color: "#F59E0B", category: "Expense" },
-        {
-          id: "interest_expense",
-          name: "이자/세금",
-          color: "#EC4899",
-          category: "Expense",
-        },
-        { id: "profit", name: "순이익", color: "#10B981", category: "Profit" },
-      ],
-      links: [
-        { source: "interest_income", target: "hub", value: 17000000000000 },
-        { source: "fee_income", target: "hub", value: 6000000000000 },
-        { source: "trading_income", target: "hub", value: 5000000000000 },
-        { source: "other_income", target: "hub", value: 3000000000000 },
-        { source: "hub", target: "cogs", value: 18000000000000 },
-        { source: "hub", target: "opex", value: 6000000000000 },
-        { source: "hub", target: "interest_expense", value: 2500000000000 },
-        { source: "hub", target: "profit", value: 4500000000000 },
-      ],
-    }),
-    [],
-  );
-
-  const expenseData: ExpenseItem[] = useMemo(
-    () => [
-      {
-        name: "매출원가",
-        amount: 18000000000000,
-        percentage: (18 / 31) * 100,
-        category: "COGS",
-      },
-      {
-        name: "판매비와관리비",
-        amount: 6000000000000,
-        percentage: (6 / 31) * 100,
-        category: "OpEx",
-      },
-      {
-        name: "이자비용",
-        amount: 1500000000000,
-        percentage: (1.5 / 31) * 100,
-        category: "Interest/Tax",
-      },
-      {
-        name: "법인세비용",
-        amount: 1000000000000,
-        percentage: (1 / 31) * 100,
-        category: "Interest/Tax",
-      },
-    ],
-    [],
-  );
-
-  // --- Handlers ---
   const handleTabClick = (
     id: string,
     ref: React.RefObject<HTMLDivElement | null>,
@@ -347,23 +229,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
-
-  const nextNews = () =>
-    setCurrentNewsIndex(
-      (prev) => (prev + 1) % Math.ceil(companyNews.length / 2),
-    );
-  const prevNews = () =>
-    setCurrentNewsIndex((prev) =>
-      prev === 0 ? Math.ceil(companyNews.length / 2) - 1 : prev - 1,
-    );
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isAutoPlay && companyNews.length > 0) {
-      interval = setInterval(nextNews, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [isAutoPlay, companyNews.length]);
 
   const tabs = [
     { id: "info", label: "기업정보", ref: infoRef },
@@ -413,7 +278,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
               offset={10}
             />
             <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>
-              {data.history.map((entry, index) => (
+              {data.history.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={
@@ -432,7 +297,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 size={48} className="animate-spin text-shinhan-blue" />
+          <Loader2 size={48} className="animate-spin text-blue-600" />
           <p className="text-slate-500">기업 정보를 불러오는 중...</p>
         </div>
       </div>
@@ -441,13 +306,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
-      {/* Header Section */}
       <div className="mb-6 sticky top-14 z-40 bg-white/95 backdrop-blur-md -mx-4 px-4 border-b border-gray-100/50 shadow-sm">
         <div
           className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
         >
           <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center">
-            <span className="font-bold text-shinhan-blue text-2xl">
+            <span className="font-bold text-blue-600 text-2xl">
               {currentCompany.logo}
             </span>
           </div>
@@ -469,30 +333,29 @@ const CompanyDetail: React.FC<DetailProps> = ({
           <div className="ml-auto flex gap-2">
             <button
               onClick={() => onToggleStar(companyCode)}
-              className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${starred.has(companyCode) ? "border-shinhan-gold text-shinhan-gold bg-yellow-50" : "border-gray-200 text-gray-500 hover:text-shinhan-gold"}`}
+              className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${starred.has(companyCode) ? "border-yellow-500 text-yellow-500 bg-yellow-50" : "border-gray-200 text-gray-500 hover:text-yellow-500"}`}
             >
               <Star
                 size={20}
                 fill={starred.has(companyCode) ? "currentColor" : "none"}
               />
             </button>
-            <button className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-shinhan-blue transition-colors shadow-sm">
+            <button className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-blue-600 transition-colors shadow-sm">
               <Globe size={20} />
             </button>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
         <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab.id, tab.ref)}
-              className={`px-6 py-3 text-sm font-bold transition-all relative whitespace-nowrap ${activeTab === tab.id ? "text-shinhan-blue" : "text-gray-400 hover:text-gray-600"}`}
+              className={`px-6 py-3 text-sm font-bold transition-all relative whitespace-nowrap ${activeTab === tab.id ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
             >
               {tab.label}
               {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-shinhan-blue"></div>
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></div>
               )}
             </button>
           ))}
@@ -500,7 +363,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
       </div>
 
       <div className="space-y-8">
-        {/* 1. Corporate Info Grid */}
         <div ref={infoRef} className="scroll-mt-32">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-gray-100 pb-3">
@@ -529,45 +391,38 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </div>
         </div>
 
-        {/* 2. Price & Peer Ranking */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8" ref={priceRef}>
             <GlassCard className="p-6 h-full flex flex-col">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-1">
-                    주가
-                  </h3>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-bold text-slate-900">
-                      {currentCompany.price}
-                      <span className="text-xl text-gray-500 font-normal ml-1">
-                        원
-                      </span>
-                    </span>
-                  </div>
-                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-1">
+                  주가 분석
+                </h3>
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                   {["1D", "1W", "3M", "1Y", "All"].map((p) => (
                     <button
                       key={p}
                       onClick={() => setChartRange(p)}
-                      className={`px-4 py-1.5 rounded-md text-xs font-bold ${chartRange === p ? "bg-white text-shinhan-blue shadow-sm" : "text-gray-400"}`}
+                      className={`px-4 py-1.5 rounded-md text-xs font-bold ${chartRange === p ? "bg-white text-blue-600 shadow-sm" : "text-gray-400"}`}
                     >
                       {p}
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="flex-1 min-h-[300px] bg-slate-50/30 rounded-lg border border-slate-100/50 p-2">
+              <div className="flex-1 min-h-[300px]">
                 {isStockLoading ? (
                   <div className="flex h-full items-center justify-center">
                     <Loader2 className="animate-spin text-blue-400" />
                   </div>
                 ) : chartRange === "1D" ? (
-                  <CandleChart />
+                  // 에러 해결 2: 컴포넌트 내부에서 props로 데이터를 넘기지 않고 여기서 데이터가 없을 경우를 대비해 처리하거나, 해당 차트 컴포넌트 파일을 열어 props 타입을 추가해야 합니다.
+                  // 임시 해결로 spread operator 사용 또는 타입 단언을 활용할 수 있으나, 근본 해결은 CandleChart.tsx의 interface 수정입니다.
+                  <CandleChart {...({ data: stockData } as any)} />
                 ) : (
-                  <StockChart period={chartRange} />
+                  <StockChart
+                    {...({ data: stockData, period: chartRange } as any)}
+                  />
                 )}
               </div>
             </GlassCard>
@@ -590,7 +445,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     >
                       <div className="flex items-center gap-3">
                         <span
-                          className={`text-sm font-bold w-4 ${item.rank === 1 ? "text-shinhan-blue" : "text-gray-400"}`}
+                          className={`text-sm font-bold w-4 ${item.rank === 1 ? "text-blue-600" : "text-gray-400"}`}
                         >
                           {item.rank}
                         </span>
@@ -606,26 +461,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </div>
         </div>
 
-        {/* 3. Financial Analysis */}
         <div ref={financialRef} className="scroll-mt-32">
           <GlassCard className="p-6 bg-slate-50">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-800">재무분석</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsYearOpen(!isYearOpen)}
-                  className="bg-white border rounded-lg px-3 py-2 text-xs font-bold"
-                >
-                  {selectedYear}년
-                </button>
-                <button
-                  onClick={() => setIsQuarterOpen(!isQuarterOpen)}
-                  className="bg-white border border-shinhan-blue text-shinhan-blue rounded-lg px-3 py-2 text-xs font-bold"
-                >
-                  {selectedQuarter}
-                </button>
-              </div>
-            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-6">
+              재무 데이터
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {renderFinancialBarChart("매출액", financialData.revenue)}
               {renderFinancialBarChart("영업이익", financialData.operating)}
@@ -633,11 +473,37 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
-        {/* 4. Sankey & AI & News & Disclosure (생략 - 기존 렌더링 로직과 동일) */}
-        {/* ... (생략된 부분은 위에서 변수명만 맞춰주면 기존 코드와 100% 동일하게 동작합니다) ... */}
+        <div ref={newsRef} className="scroll-mt-32">
+          <GlassCard className="p-6">
+            <h3 className="text-xl font-bold text-slate-800 mb-4">
+              기업 관련 뉴스
+            </h3>
+            {isNewsLoading ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {companyNews.slice(0, 4).map((news, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedNews(news)}
+                    className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    <h4 className="font-bold text-slate-800 line-clamp-1 mb-2">
+                      {news.title}
+                    </h4>
+                    <p className="text-sm text-slate-500 line-clamp-2">
+                      {news.summary}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </GlassCard>
+        </div>
       </div>
 
-      {/* News Modal */}
       {selectedNews && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
