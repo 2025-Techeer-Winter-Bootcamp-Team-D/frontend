@@ -97,6 +97,16 @@ const Navbar: React.FC<NavbarProps> = ({
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
+  const handleMarkAsRead = (id: number) => {
+    setNotifications(
+      notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+  };
+
+  const handleDeleteNotification = (id: number) => {
+    setNotifications(notifications.filter((n) => n.id !== id));
+  };
+
   const handleLogoClick = () => {
     if (currentPage === PageView.DASHBOARD) {
       window.dispatchEvent(new CustomEvent("dashboard-scroll-top"));
@@ -199,11 +209,11 @@ const Navbar: React.FC<NavbarProps> = ({
                     className="fixed inset-0 z-[55]"
                     onClick={() => setIsNotiOpen(false)}
                   ></div>
-                  <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 z-[60] animate-fade-in-up overflow-hidden flex flex-col origin-top-right">
+                  <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-[60] animate-fade-in-up overflow-hidden flex flex-col origin-top-right">
                     {/* Header */}
                     <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                       <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        알림 센터
+                        알림
                         {unreadCount > 0 && (
                           <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
                             {unreadCount}
@@ -229,36 +239,53 @@ const Navbar: React.FC<NavbarProps> = ({
 
                     {/* List */}
                     <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                      {notifications.map((note) => (
-                        <div
-                          key={note.id}
-                          className={`p-4 border-b border-gray-50 hover:bg-blue-50/50 transition-colors cursor-pointer flex gap-3 group relative ${!note.read ? "bg-blue-50/10" : ""}`}
-                        >
-                          {!note.read && (
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-shinhan-blue"></div>
-                          )}
-                          <div
-                            className={`mt-1 w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getNotiColor(note.type)}`}
-                          >
-                            {getNotiIcon(note.type)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start mb-1">
-                              <h4
-                                className={`text-sm ${!note.read ? "font-bold text-slate-800" : "font-medium text-slate-600"}`}
-                              >
-                                {note.title}
-                              </h4>
-                              <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">
-                                {note.time}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500 leading-snug line-clamp-2 group-hover:text-slate-700 transition-colors">
-                              {note.message}
-                            </p>
-                          </div>
+                      {notifications.length === 0 ? (
+                        <div className="py-12 text-center text-gray-400">
+                          <Bell size={32} className="mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">알림이 없습니다</p>
                         </div>
-                      ))}
+                      ) : (
+                        notifications.map((note) => (
+                          <div
+                            key={note.id}
+                            onClick={() => handleMarkAsRead(note.id)}
+                            className={`p-4 border-b border-gray-50 hover:bg-blue-50/50 transition-colors cursor-pointer flex gap-3 group relative ${!note.read ? "bg-blue-50/30" : ""}`}
+                          >
+                            {!note.read && (
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-shinhan-blue"></div>
+                            )}
+                            <div
+                              className={`mt-1 w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getNotiColor(note.type)}`}
+                            >
+                              {getNotiIcon(note.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start mb-1">
+                                <h4
+                                  className={`text-sm ${!note.read ? "font-bold text-slate-800" : "font-medium text-slate-600"}`}
+                                >
+                                  {note.title}
+                                </h4>
+                                <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">
+                                  {note.time}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 leading-snug line-clamp-2 group-hover:text-slate-700 transition-colors">
+                                {note.message}
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteNotification(note.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-gray-200 rounded-full text-gray-400 hover:text-gray-600 transition-all shrink-0 self-center"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </>

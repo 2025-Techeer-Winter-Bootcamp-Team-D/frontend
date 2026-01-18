@@ -468,7 +468,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
                       activeSetId === item.id
                         ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
-                        : "hover:bg-white text-slate-600"
+                        : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
                     }`}
                   >
                     <span className="font-medium text-sm truncate max-w-[150px]">
@@ -873,7 +873,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   )}
                 </GlassCard>
                 <p className="text-xs text-gray-400 text-center mt-3 px-2">
-                  지표를 클릭하여 차트를 추가/제거할 수 있습니다.
+                  지표를 클릭하여 차트를 추가 또는 제거할 수 있습니다.
                 </p>
               </div>
             </div>
