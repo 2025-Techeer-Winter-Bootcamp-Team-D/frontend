@@ -582,6 +582,14 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     null,
   );
 
+  // API 데이터 state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<{
+    outlook?: string;
+    insights?: { positive: string; risk: string };
+  } | null>(null);
+
   // Parallel Coordinates Chart State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
     {},
