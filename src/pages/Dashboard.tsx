@@ -360,7 +360,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
                       KOSDAQ
                     </h3>
-                    {kosdaqData && kospiData && (
+                    {kosdaqData && (
                       <span
                         className={`font-bold text-sm ${kosdaqData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
                       >
