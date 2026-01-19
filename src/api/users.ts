@@ -10,22 +10,16 @@ import type {
 // 즐겨찾기 관련 타입
 export interface FavoriteItem {
   favoriteId: number;
-  companyId: number;
+  companyId: string; // 종목코드 (예: "005930")
   companyName: string;
   logoUrl: string;
-  createdAt?: string;
 }
 
-export interface FavoritesListResponse {
+// 추가/삭제 응답 타입
+export interface FavoriteActionResponse {
   status: number;
   message: string;
-  data: FavoriteItem[];
-}
-
-export interface FavoriteAddResponse {
-  status: number;
-  message: string;
-  data: FavoriteItem;
+  data: FavoriteItem | null;
 }
 
 /**
@@ -54,23 +48,30 @@ export const logout = () => {
 /**
  * 즐겨찾기 목록 조회
  * GET /users/favorites/
+ * @returns 즐겨찾기 배열 (직접 반환)
  */
 export const getFavorites = () => {
-  return api.get<FavoritesListResponse>("/api/users/favorites/");
+  return api.get<FavoriteItem[]>("/api/users/favorites/");
 };
 
 /**
  * 즐겨찾기 추가
  * POST /users/favorites/
+ * @param companyId 종목코드 (예: "005930")
  */
-export const addFavorite = (companyId: number) => {
-  return api.post<FavoriteAddResponse>("/api/users/favorites/", { companyId });
+export const addFavorite = (companyId: string) => {
+  return api.post<FavoriteActionResponse>("/api/users/favorites/", {
+    companyId,
+  });
 };
 
 /**
  * 즐겨찾기 삭제
- * DELETE /users/favorites/:favoriteId
+ * DELETE /users/favorites/{favoriteId}/
+ * @param favoriteId 즐겨찾기 ID
  */
 export const removeFavorite = (favoriteId: number) => {
-  return api.delete(`/api/users/favorites/${favoriteId}`);
+  return api.delete<FavoriteActionResponse>(
+    `/api/users/favorites/${favoriteId}/`,
+  );
 };

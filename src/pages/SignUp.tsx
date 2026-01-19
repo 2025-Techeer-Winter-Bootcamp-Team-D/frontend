@@ -3,7 +3,6 @@ import { PageView } from "../types";
 import { Mail, Lock, Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { signup } from "../api/users";
 import GlassCard from "../components/Layout/GlassCard";
-import { useMutation } from "@tanstack/react-query";
 
 interface SignUpProps {
   setPage: (page: PageView) => void;
@@ -199,13 +198,13 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             </label>
           </div>
 
-          {/* Submit Button - isPending으로 수정됨 */}
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isLoading}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isPending ? (
+            {isLoading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
                 가입 중...

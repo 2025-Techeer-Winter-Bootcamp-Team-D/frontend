@@ -9,6 +9,8 @@ import {
   X,
   ChevronRight,
   Trophy,
+  RotateCcw,
+  Filter,
 } from "lucide-react";
 import { PageView } from "../types";
 import type {
@@ -20,7 +22,7 @@ import type {
   TimeRange,
   IndustryKey,
 } from "../types";
-import { SAMPLE_STOCKS } from "../constants";
+import { SAMPLE_STOCKS, AXES } from "../constants";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -30,6 +32,13 @@ import {
   Tooltip,
   LineChart,
   Line,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  CartesianGrid,
+  Cell,
+  ReferenceArea,
+  ReferenceLine,
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -568,6 +577,16 @@ const industryDB: Record<IndustryKey, IndustryData> = {
     companies: createMockCompanies("통신", 40000, 7),
     news: [],
   },
+};
+
+//시가총액 파싱(억, 조)
+const parseMarketCap = (marketCap: string): number => {
+  let value = 0;
+  const joMatch = marketCap.match(/(\d+(?:\.\d+)?)\s*조/);
+  const ukMatch = marketCap.match(/(\d+(?:,\d+)?)\s*억/);
+  if (joMatch) value += parseFloat(joMatch[1]) * 10000;
+  if (ukMatch) value += parseFloat(ukMatch[1].replace(/,/g, ""));
+  return value || 10;
 };
 
 // -- Mini Sparkline Component --
@@ -1122,6 +1141,483 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           onStockSelect={setSelectedStock}
           selectedStockId={selectedStock?.id ?? null}
         />
+
+        {/* Filter Info & Filtered Stocks List - Side by Side */}
+        {Object.keys(filters).length > 0 && (
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Left: Filtered Stocks List (세로 스크롤) */}
+            {filteredIds.size > 0 && (
+              <div className="lg:col-span-2 p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
+                <h3 className="font-bold text-slate-700 text-sm mb-3">
+                  조건 충족 종목 리스트
+                </h3>
+                <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-2">
+                  {SAMPLE_STOCKS.filter((stock) =>
+                    filteredIds.has(stock.id),
+                  ).map((stock) => (
+                    <div
+                      key={stock.id}
+                      onClick={() => setSelectedStock(stock)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                        selectedStock?.id === stock.id
+                          ? "border-shinhan-blue bg-blue-50"
+                          : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {/* Company Logo */}
+                          <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {stock.logo ? (
+                              <img
+                                src={stock.logo}
+                                alt={stock.name}
+                                className="w-8 h-8 object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                }}
+                              />
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400">
+                                {stock.name.slice(0, 2)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-800 text-sm">
+                              {stock.name}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {stock.sector}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6 text-xs">
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-slate-400">PER</span>
+                            <div className="font-bold text-slate-700">
+                              {stock.per.toFixed(1)}
+                            </div>
+                          </div>
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-slate-400">PBR</span>
+                            <div className="font-bold text-slate-700">
+                              {stock.pbr.toFixed(2)}
+                            </div>
+                          </div>
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-slate-400">ROE</span>
+                            <div className="font-bold text-shinhan-blue">
+                              {stock.roe.toFixed(1)}%
+                            </div>
+                          </div>
+                          <div className="text-center min-w-[50px]">
+                            <span className="text-slate-400">부채비율</span>
+                            <div className="font-bold text-slate-700">
+                              {stock.debtRatio}%
+                            </div>
+                          </div>
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-slate-400">배당률</span>
+                            <div className="font-bold text-emerald-600">
+                              {stock.divYield.toFixed(1)}%
+                            </div>
+                          </div>
+                          {selectedStock?.id === stock.id && (
+                            <span className="px-2 py-0.5 bg-shinhan-blue text-white text-[10px] rounded-full font-bold">
+                              선택됨
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Right: Filter Info & Reset Button */}
+            <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Filter size={16} className="text-shinhan-blue" />
+                  <span className="font-bold text-slate-700 text-sm">
+                    적용된 필터 ({Object.keys(filters).length}개)
+                  </span>
+                </div>
+                <button
+                  onClick={() => setFilters({})}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  <RotateCcw size={14} />
+                  초기화
+                </button>
+              </div>
+              {/* 필터 세로 배치 */}
+              <div className="flex flex-col gap-2 mb-4">
+                {Object.entries(filters).map(([key, range]) => {
+                  const axisInfo = AXES.find((a) => a.key === key);
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-shinhan-blue">
+                          {axisInfo?.label || key}
+                        </span>
+                        <span className="text-slate-600">
+                          {range.min.toFixed(1)} ~ {range.max.toFixed(1)}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newFilters = { ...filters };
+                          delete newFilters[key as AxisKey];
+                          setFilters(newFilters);
+                        }}
+                        className="text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="pt-3 border-t border-slate-100">
+                <div className="text-xs text-slate-500">
+                  조건 충족 종목:{" "}
+                  <span className="font-bold text-shinhan-blue text-lg">
+                    {filteredIds.size}개
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* --- Valuation Position Map --- */}
+      <div className="mb-10">
+        <div className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-[#0046FF]">
+              산업 내 밸류에이션 포지셔닝
+            </h2>
+            <p className="text-sm text-slate-500">
+              X축: 수익성(ROE) / Y축: 저평가(PBR) / 크기: 시가총액
+            </p>
+          </div>
+          <div className="h-[500px] w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart
+                margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  opacity={0.1}
+                  stroke="#334155"
+                />
+                <XAxis
+                  type="number"
+                  dataKey="x"
+                  name="ROE"
+                  unit="%"
+                  domain={["auto", "auto"]}
+                  tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                  stroke="#94a3b8"
+                  axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="y"
+                  name="PBR"
+                  unit="배"
+                  domain={["auto", "auto"]}
+                  tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                  stroke="#94a3b8"
+                  axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
+                />
+                <ZAxis
+                  type="number"
+                  dataKey="z"
+                  range={[100, 1000]}
+                  name="시가총액"
+                />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3" }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs">
+                          <div className="font-bold mb-1 text-slate-800 text-sm">
+                            {data.name}
+                          </div>
+                          <div className="space-y-0.5">
+                            <div>
+                              ROE:{" "}
+                              <span className="text-shinhan-blue font-bold">
+                                {data.x}%
+                              </span>
+                            </div>
+                            <div>
+                              PBR:{" "}
+                              <span className="text-shinhan-blue font-bold">
+                                {data.y}배
+                              </span>
+                            </div>
+                            <div className="text-gray-500 mt-1">
+                              시가총액 비례 크기
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+
+                {/* Highlight the 'Target' Quadrant (High ROE, Low PBR) */}
+                <ReferenceArea
+                  x1={10}
+                  y2={1}
+                  fill="#0046FF"
+                  fillOpacity={0.08}
+                />
+
+                <Scatter
+                  name="Companies"
+                  data={currentData.companies.map((company) => ({
+                    name: company.name,
+                    x: company.roe,
+                    y: company.pbr,
+                    z: parseMarketCap(company.marketCap),
+                  }))}
+                >
+                  {currentData.companies.map((company, index) => {
+                    const isTarget = company.roe >= 10 && company.pbr <= 1;
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={isTarget ? "#0046FF" : "#CBD5E1"}
+                        fillOpacity={isTarget ? 0.9 : 0.5}
+                        stroke={isTarget ? "#0033CC" : "#94A3B8"}
+                        strokeWidth={1}
+                      />
+                    );
+                  })}
+                </Scatter>
+
+                {/* Quadrant Lines */}
+                <ReferenceLine
+                  x={10}
+                  stroke="#334155"
+                  strokeWidth={1}
+                  label={{
+                    value: "ROE 10%",
+                    position: "insideTopRight",
+                    fill: "#334155",
+                    fontSize: 11,
+                    fontWeight: "bold",
+                  }}
+                />
+                <ReferenceLine
+                  y={1}
+                  stroke="#334155"
+                  strokeWidth={1}
+                  label={{
+                    value: "PBR 1배",
+                    position: "insideTopRight",
+                    fill: "#334155",
+                    fontSize: 11,
+                    fontWeight: "bold",
+                  }}
+                />
+
+                {/* Quadrant Labels */}
+                <ReferenceLine
+                  x={12}
+                  y={0.5}
+                  stroke="none"
+                  label={{
+                    value: "저평가·고수익 (Target)",
+                    position: "center",
+                    fill: "#0046FF",
+                    fontSize: 13,
+                    fontWeight: "bold",
+                  }}
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* --- Efficiency vs Leverage (ROE vs Debt) --- */}
+      <div className="mb-10">
+        <div className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
+              <div className="text-shinhan-blue" />
+              기업 성격 분류 (ROE vs 부채비율)
+            </h2>
+            <p className="text-sm text-slate-500">
+              X축: 부채비율 (안전성) / Y축: ROE (수익성)
+            </p>
+          </div>
+          <div className="h-[500px] w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart
+                margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  opacity={0.1}
+                  stroke="#334155"
+                />
+                <XAxis
+                  type="number"
+                  dataKey="debt"
+                  name="부채비율"
+                  unit="%"
+                  label={{
+                    value: "부채비율 (%)",
+                    position: "insideBottom",
+                    offset: -5,
+                    fontSize: 11,
+                    fill: "#475569",
+                    fontWeight: 600,
+                  }}
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                  domain={[0, "auto"]}
+                  axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="roe"
+                  name="ROE"
+                  unit="%"
+                  label={{
+                    value: "ROE (%)",
+                    angle: -90,
+                    position: "insideLeft",
+                    fontSize: 11,
+                    fill: "#475569",
+                    fontWeight: 600,
+                  }}
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                  axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
+                />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3" }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs">
+                          <div className="font-bold mb-1 text-slate-800 text-sm">
+                            {data.name}
+                          </div>
+                          <div className="space-y-0.5">
+                            <div>
+                              ROE:{" "}
+                              <span className="text-shinhan-blue font-bold">
+                                {data.roe}%
+                              </span>
+                            </div>
+                            <div>
+                              부채비율:{" "}
+                              <span className="font-bold text-slate-600">
+                                {data.debt}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+
+                {/* Highlight High Efficiency (High ROE, Low Debt) */}
+                <ReferenceArea
+                  x1={0}
+                  x2={150}
+                  y1={10}
+                  fill="#10B981"
+                  fillOpacity={0.08}
+                />
+
+                <Scatter
+                  name="Companies"
+                  data={currentData.companies.map((company, idx) => ({
+                    name: company.name,
+                    roe: company.roe,
+                    debt: Math.round(50 + ((idx * 37 + company.roe * 5) % 200)),
+                  }))}
+                  shape="circle"
+                >
+                  {currentData.companies.map((company, index) => {
+                    const debt = Math.round(
+                      50 + ((index * 37 + company.roe * 5) % 200),
+                    );
+                    const isQuality = company.roe >= 10 && debt <= 150;
+                    return (
+                      <Cell
+                        key={`cell-leverage-${index}`}
+                        fill={isQuality ? "#10B981" : "#CBD5E1"}
+                        fillOpacity={isQuality ? 0.9 : 0.5}
+                        stroke={isQuality ? "#059669" : "#94A3B8"}
+                        strokeWidth={1}
+                      />
+                    );
+                  })}
+                </Scatter>
+
+                <ReferenceLine
+                  x={150}
+                  stroke="#334155"
+                  strokeWidth={1}
+                  label={{
+                    value: "부채비율 150%",
+                    position: "insideTop",
+                    fontSize: 10,
+                    fill: "#334155",
+                    fontWeight: "bold",
+                  }}
+                />
+                <ReferenceLine
+                  y={10}
+                  stroke="#334155"
+                  strokeWidth={1}
+                  label={{
+                    value: "ROE 10%",
+                    position: "insideRight",
+                    fontSize: 10,
+                    fill: "#334155",
+                    fontWeight: "bold",
+                  }}
+                />
+
+                {/* Label */}
+                <ReferenceLine
+                  x={50}
+                  y={15}
+                  stroke="none"
+                  label={{
+                    value: "고효율 우량형",
+                    position: "top",
+                    fill: "#10B981",
+                    fontSize: 11,
+                    fontWeight: "bold",
+                  }}
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* --- News Section --- */}
