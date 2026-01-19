@@ -154,7 +154,14 @@ export const companyHandlers = [
   /* 기업 뉴스 */
   http.get("/companies/:company_id/news", async ({ params }) => {
     await delay(150);
-    const news = companyNews.get(params.company_id as string) ?? [];
+    const companyId = params.company_id as string;
+    if (!companies.has(companyId)) {
+      return HttpResponse.json(
+        { message: "기업을 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
+    const news = companyNews.get(companyId) ?? [];
 
     return HttpResponse.json({
       message: "기업 뉴스 조회 성공",
