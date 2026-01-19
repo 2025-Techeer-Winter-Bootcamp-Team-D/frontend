@@ -131,7 +131,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   // --- API Fetching (수정된 섹션) ---
 
-  const { data: apiCompanyData, isLoading: isDetailLoading } = useQuery({
+  const {
+    data: apiCompanyData,
+    isLoading: isDetailLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["company", "detail", companyCode],
     queryFn: async () => {
       const response = await getCompanyDetail(companyCode);
@@ -283,6 +288,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 size={48} className="animate-spin text-blue-600" />
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-red-500">
+        <p>데이터를 불러오는데 실패했습니다.</p>
+        <p className="text-sm text-gray-500">{(error as Error)?.message}</p>
       </div>
     );
   }
