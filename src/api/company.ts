@@ -6,7 +6,7 @@ import type { Company, ApiResponse, OhlcvData, NewsItem } from "@/types";
  * GET /companies?keyword=
  */
 export const searchCompanies = (keyword: string) => {
-  return api.get<ApiResponse<Company[]>>("/api/companies", {
+  return api.get<ApiResponse<Company[]>>("/companies", {
     params: { keyword },
   });
 };
@@ -16,7 +16,7 @@ export const searchCompanies = (keyword: string) => {
  * GET /companies/{code}
  */
 export const getCompanyDetail = (code: string) => {
-  return api.get<ApiResponse<Company>>(`/api/companies/${code}`);
+  return api.get<ApiResponse<Company>>(`/companies/${code}`);
 };
 
 /**
@@ -24,12 +24,9 @@ export const getCompanyDetail = (code: string) => {
  * GET /companies/{companyId}/ohlcv?interval=
  */
 export const getStockOhlcv = (companyId: string, interval: string) => {
-  return api.get<ApiResponse<OhlcvData[]>>(
-    `/api/companies/${companyId}/ohlcv`,
-    {
-      params: { interval },
-    },
-  );
+  return api.get<ApiResponse<OhlcvData[]>>(`/companies/${companyId}/ohlcv`, {
+    params: { interval },
+  });
 };
 
 /**
@@ -37,5 +34,5 @@ export const getStockOhlcv = (companyId: string, interval: string) => {
  * GET /companies/{companyId}/news
  */
 export const getCompanyNews = (companyId: string) => {
-  return api.get<ApiResponse<NewsItem[]>>(`/api/companies/${companyId}/news`);
+  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news`);
 };
