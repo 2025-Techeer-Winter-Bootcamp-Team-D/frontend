@@ -16,27 +16,13 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: signup,
-    onSuccess: () => {
-      // 회원가입 성공 시 로그인 페이지로 이동
-      setPage(PageView.LOGIN);
-      onClose();
-    },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (err: any) => {
-      const message = err.response?.data?.message || "회원가입에 실패했습니다.";
-      setError(message);
-    },
-  });
-
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // 클라이언트 측 유효성 검사
     if (!email || !password || !confirmPassword) {
       setError("모든 필드를 입력해주세요.");
       return;
@@ -52,7 +38,17 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
       return;
     }
 
-    mutate({ email, password });
+    try {
+      setIsLoading(true);
+      await signup({ email, password });
+      setPage(PageView.LOGIN);
+      onClose();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "회원가입에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -64,6 +60,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
       <GlassCard className="w-full max-w-md relative z-10 p-6 md:p-7 animate-fade-in max-h-[80vh] overflow-y-auto">
         {/* Close Button */}
         <button
+          aria-label="닫기"
           onClick={onClose}
           className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
         >
@@ -121,6 +118,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 />
               </div>
               <input
+                id="signup-password-input"
                 type={showPassword ? "text" : "password"}
                 placeholder="영문, 숫자, 특수문자 포함 8자 이상"
                 value={password}
@@ -130,6 +128,9 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                aria-pressed={showPassword}
+                aria-controls="signup-password-input"
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600 cursor-pointer"
               >
                 {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -150,6 +151,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 />
               </div>
               <input
+                id="signup-confirm-password-input"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="비밀번호를 다시 입력해주세요"
                 value={confirmPassword}
@@ -159,6 +161,11 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={
+                  showConfirmPassword ? "비밀번호 숨기기" : "비밀번호 보기"
+                }
+                aria-pressed={showConfirmPassword}
+                aria-controls="signup-confirm-password-input"
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600 cursor-pointer"
               >
                 {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -217,6 +224,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
           <p className="text-sm text-slate-500">
             이미 계정이 있으신가요?{" "}
             <button
+              type="button"
               onClick={() => setPage(PageView.LOGIN)}
               className="font-bold text-shinhan-blue hover:text-blue-700 ml-1 hover:underline"
             >

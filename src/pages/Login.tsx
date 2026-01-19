@@ -3,7 +3,6 @@ import { PageView } from "../types";
 import { Mail, Lock, Eye, EyeOff, X, Loader2 } from "lucide-react";
 import { login } from "../api/users";
 import GlassCard from "../components/Layout/GlassCard";
-import { useMutation } from "@tanstack/react-query";
 
 interface LoginProps {
   setPage: (page: PageView) => void;
@@ -15,26 +14,10 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: login,
-    onSuccess: (response) => {
-      if (response.data.accessToken) {
-        localStorage.setItem("accessToken", response.data.accessToken);
-        onLogin?.();
-        onClose();
-        setPage(PageView.DASHBOARD);
-      }
-    },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (err: any) => {
-      const message = err.response?.data?.message || "로그인에 실패했습니다.";
-      setError(message);
-    },
-  });
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -43,7 +26,22 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
       return;
     }
 
-    mutate({ email, password });
+    try {
+      setIsLoading(true);
+      const response = await login({ email, password });
+
+      if (response.data.accessToken) {
+        localStorage.setItem("accessToken", response.data.accessToken);
+        onLogin?.();
+        onClose();
+        setPage(PageView.DASHBOARD);
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "로그인에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -136,10 +134,10 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
           {/* Login Button */}
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isLoading}
             className="w-full py-4 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isPending ? (
+            {isLoading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
                 로그인 중...

@@ -1063,12 +1063,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Parallel Coordinates Chart --- */}
       <div className="mb-10">
-        <h3 className="text-lg font-bold text-slate-700 mb-4 px-2">
-          나만의 저평가 우량주 발굴 (Parallel Coordinates)
-        </h3>
-        <p className="text-slate-500 mb-4 px-2">
-          각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요
-        </p>
         <ParallelCoordinatesChart
           data={SAMPLE_STOCKS}
           onFilterChange={setFilters}
