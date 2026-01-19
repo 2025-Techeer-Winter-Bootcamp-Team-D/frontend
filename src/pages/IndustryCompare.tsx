@@ -9,7 +9,6 @@ import {
   X,
   ChevronRight,
   Trophy,
-  PieChart,
   RotateCcw,
   Filter,
 } from "lucide-react";
