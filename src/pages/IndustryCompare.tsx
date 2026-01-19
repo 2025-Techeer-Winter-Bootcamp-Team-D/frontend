@@ -1453,7 +1453,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         <div className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative">
           <div className="mb-4">
             <h2 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
-              <PieChart size={20} className="text-shinhan-blue" />
+              <div className="text-shinhan-blue" />
               기업 성격 분류 (ROE vs 부채비율)
             </h2>
             <p className="text-sm text-slate-500">
