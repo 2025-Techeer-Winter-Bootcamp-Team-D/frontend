@@ -4,6 +4,11 @@ import { Mail, Lock, Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { signup } from "../api/users";
 import GlassCard from "../components/Layout/GlassCard";
 import { useMutation } from "@tanstack/react-query";
+import { AxiosError } from "axios";
+
+interface ApiErrorResponse {
+  message?: string;
+}
 
 interface SignUpProps {
   setPage: (page: PageView) => void;
@@ -26,7 +31,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
       setPage(PageView.LOGIN);
       onClose();
     },
-    onError: (err: any) => {
+    onError: (err: AxiosError<ApiErrorResponse>) => {
       setError(err.response?.data?.message || "회원가입에 실패했습니다.");
     },
   });
