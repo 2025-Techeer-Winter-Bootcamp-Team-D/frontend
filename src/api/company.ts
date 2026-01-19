@@ -1,5 +1,11 @@
 import { api } from "./axios";
-import type { Company, ApiResponse, OhlcvData, NewsItem } from "@/types";
+import type {
+  Company,
+  ApiResponse,
+  OhlcvData,
+  NewsItem,
+  CompanySearchResult,
+} from "@/types";
 
 /**
  * 기업 검색

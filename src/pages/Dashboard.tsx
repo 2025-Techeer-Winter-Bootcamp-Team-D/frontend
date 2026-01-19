@@ -160,9 +160,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
-        if (range && (stock[key] < range.min || stock[key] > range.max)) {
-          pass = false;
-          break;
+        if (range) {
+          // 1. undefined 방지 및 기본값 설정
+          const min = range.min ?? -Infinity;
+          const max = range.max ?? Infinity;
+
+          // 2. stock[key] 값을 숫자로 안전하게 변환하여 비교 (ts2365, ts2532 해결)
+          const value = Number(stock[key]);
+
+          if (isNaN(value) || value < min || value > max) {
+            pass = false;
+            break;
+          }
         }
       }
       if (pass) ids.add(stock.id);
