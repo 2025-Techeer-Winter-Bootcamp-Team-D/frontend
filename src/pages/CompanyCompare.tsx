@@ -12,6 +12,7 @@ import {
   Check,
   Edit2,
   CheckCircle2,
+  Radar,
 } from "lucide-react";
 import { PageView } from "../types";
 import type {
@@ -37,6 +38,11 @@ import {
   Scatter,
   ReferenceArea,
   ReferenceLine,
+  RadarChart,
+  Radar as RechartsRadar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import {
   getComparisons,
@@ -193,6 +199,9 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const [activeMetrics, setActiveMetrics] = useState<DetailMetricKey[]>([
     "roe",
   ]);
+
+  // State for Radar Chart
+  const [selectedRadarCompany, setSelectedRadarCompany] = useState<string>("");
 
   // -----------------------------
   // Search (debounce + query)
@@ -463,6 +472,55 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     const sum = perYoyChartData.reduce((acc, d) => acc + d.per, 0);
     return sum / perYoyChartData.length;
   }, [perYoyChartData]);
+
+  // Radar Chart: 선택된 기업 초기화
+  useEffect(() => {
+    if (activeComparison?.companies?.length && !selectedRadarCompany) {
+      setSelectedRadarCompany(activeComparison.companies[0].companyName);
+    }
+  }, [activeComparison?.companies, selectedRadarCompany]);
+
+  // Radar Chart 데이터 (산업 평균 대비)
+  const radarData = useMemo(() => {
+    if (!activeComparison?.companies?.length) return [];
+
+    const selectedCompany = activeComparison.companies.find(
+      (c) => c.companyName === selectedRadarCompany,
+    );
+    if (!selectedCompany) return [];
+
+    // 산업 평균 계산
+    const avgRoe =
+      activeComparison.companies.reduce((sum, c) => sum + (c.roe ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgPer =
+      activeComparison.companies.reduce((sum, c) => sum + (c.per ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgPbr =
+      activeComparison.companies.reduce((sum, c) => sum + (c.pbr ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgYoy =
+      activeComparison.companies.reduce((sum, c) => sum + (c.yoy ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgOperatingMargin =
+      activeComparison.companies.reduce(
+        (sum, c) => sum + (c.operatingMargin ?? 0),
+        0,
+      ) / activeComparison.companies.length;
+
+    return [
+      { subject: "ROE", A: selectedCompany.roe ?? 0, B: avgRoe, fullMark: 25 },
+      { subject: "PER", A: selectedCompany.per ?? 0, B: avgPer, fullMark: 50 },
+      { subject: "PBR", A: selectedCompany.pbr ?? 0, B: avgPbr, fullMark: 5 },
+      { subject: "YoY", A: selectedCompany.yoy ?? 0, B: avgYoy, fullMark: 30 },
+      {
+        subject: "영업이익률",
+        A: selectedCompany.operatingMargin ?? 0,
+        B: avgOperatingMargin,
+        fullMark: 25,
+      },
+    ];
+  }, [activeComparison?.companies, selectedRadarCompany]);
 
   // 주가 추이 차트 데이터 (OHLCV API 기반)
   const trendChartData = useMemo(() => {
@@ -961,6 +1019,69 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               </div>
             </GlassCard>
           </div>
+
+          {/* 2.5 Industry Deviation Radar */}
+          <GlassCard className="p-6 mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <Radar size={18} className="text-shinhan-blue" />
+                산업 평균 이탈 탐지
+              </h3>
+              <select
+                className="text-xs font-bold border border-gray-300 rounded-md p-1.5 text-slate-700 bg-white"
+                value={selectedRadarCompany}
+                onChange={(e) => setSelectedRadarCompany(e.target.value)}
+              >
+                {activeComparison?.companies?.map((c) => (
+                  <option key={c.stock_code} value={c.companyName}>
+                    {c.companyName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="80%"
+                  data={radarData}
+                >
+                  <PolarGrid stroke="#e2e8f0" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={30}
+                    domain={[0, 25]}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <RechartsRadar
+                    name={selectedRadarCompany}
+                    dataKey="A"
+                    stroke="#0046FF"
+                    strokeWidth={2}
+                    fill="#0046FF"
+                    fillOpacity={0.2}
+                  />
+                  <RechartsRadar
+                    name="비교 평균"
+                    dataKey="B"
+                    stroke="#94A3B8"
+                    strokeWidth={2}
+                    fill="#94A3B8"
+                    fillOpacity={0.1}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
+                  />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
 
           {/* 3. Detailed Financial Ratios (Redesigned Grid + Toggle Layout) */}
           <div className="mt-8">
