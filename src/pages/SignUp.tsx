@@ -17,10 +17,21 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  // useMutation을 사용하여 회원가입 로직 관리
+  const { mutate, isPending } = useMutation({
+    mutationFn: signup,
+    onSuccess: () => {
+      setPage(PageView.LOGIN);
+      onClose();
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || "회원가입에 실패했습니다.");
+    },
+  });
+
+  const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -39,17 +50,8 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      await signup({ email, password, password2: confirmPassword });
-      setPage(PageView.LOGIN);
-      onClose();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "회원가입에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+    // mutate 함수 호출
+    mutate({ email, password, password2: confirmPassword });
   };
 
   return (
@@ -59,7 +61,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
         onClick={onClose}
       />
       <GlassCard className="w-full max-w-md relative z-10 p-6 md:p-7 animate-fade-in max-h-[80vh] overflow-y-auto">
-        {/* Close Button */}
         <button
           aria-label="닫기"
           onClick={onClose}
@@ -68,7 +69,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
           <X size={24} />
         </button>
 
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-800 mb-2">회원가입</h1>
           <p className="text-slate-500 text-sm">
@@ -83,7 +83,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             </div>
           )}
 
-          {/* Email Field */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-600 ml-1">
               이메일
@@ -105,7 +104,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             </div>
           </div>
 
-          {/* Password Field */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-600 ml-1">
               비밀번호
@@ -118,7 +116,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 />
               </div>
               <input
-                id="signup-password-input"
                 type={showPassword ? "text" : "password"}
                 placeholder="8자 이상 입력"
                 value={password}
@@ -128,9 +125,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
-                aria-pressed={showPassword}
-                aria-controls="signup-password-input"
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600 cursor-pointer"
               >
                 {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -138,7 +132,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             </div>
           </div>
 
-          {/* Confirm Password Field */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-600 ml-1">
               비밀번호 확인
@@ -151,7 +144,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 />
               </div>
               <input
-                id="signup-confirm-password-input"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="비밀번호 재입력"
                 value={confirmPassword}
@@ -161,11 +153,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                aria-label={
-                  showConfirmPassword ? "비밀번호 숨기기" : "비밀번호 보기"
-                }
-                aria-pressed={showConfirmPassword}
-                aria-controls="signup-confirm-password-input"
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600 cursor-pointer"
               >
                 {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -173,14 +160,13 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
             </div>
           </div>
 
-          {/* Terms Checkbox */}
           <div className="pt-2">
             <label className="flex items-center gap-3 cursor-pointer group">
               <div
                 className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
                   agreed
                     ? "bg-blue-600 border-blue-600"
-                    : "bg-white border-gray-300 group-hover:border-blue-600"
+                    : "bg-white border-gray-300"
                 }`}
               >
                 {agreed && (
@@ -194,16 +180,15 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 />
               </div>
               <span className="text-sm text-slate-600 select-none">
-                이용약관 및 개인정보 처리방침에 동의합니다
+                이용약관에 동의합니다
               </span>
             </label>
           </div>
 
-          {/* Submit Button - isPending으로 수정됨 */}
           <button
             type="submit"
             disabled={isPending}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] mt-4 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isPending ? (
               <>

@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "./axios";
 
 /*기업 순위 조회 */
 

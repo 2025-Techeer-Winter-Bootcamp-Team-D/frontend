@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "./axios";
 
 /**
  * 산업 뉴스 목록 조회

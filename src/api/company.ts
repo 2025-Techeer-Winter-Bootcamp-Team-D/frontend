@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "./axios";
 import type { Company, ApiResponse, OhlcvData, NewsItem } from "@/types";
 
 /**

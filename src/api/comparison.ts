@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "./axios";
 
 /*기업 비교 생성*/
 
