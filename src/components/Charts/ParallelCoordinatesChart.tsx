@@ -287,7 +287,7 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
           나만의 저평가 우량주 발굴 (Parallel Coordinates)
         </h2>
         <p className="text-sm text-slate-500">
-          선을 클릭하면 해당 기업이 강조됩니다.
+          각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요.
         </p>
       </div>
       <svg

@@ -40,7 +40,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
 
     try {
       setIsLoading(true);
-      await signup({ email, password });
+      await signup({ email, password, password2: confirmPassword });
       setPage(PageView.LOGIN);
       onClose();
     } catch (err: unknown) {

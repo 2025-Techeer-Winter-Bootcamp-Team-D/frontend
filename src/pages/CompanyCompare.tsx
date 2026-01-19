@@ -187,7 +187,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
   // State for Detailed Metrics (Bottom Section)
   const [activeMetrics, setActiveMetrics] = useState<DetailMetricKey[]>([
-    "eps",
+    "roe",
   ]);
 
   // -----------------------------
@@ -286,8 +286,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
     onSuccess: async (res) => {
       await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
-      // MSW 응답: { status, message, data: { id, name, companies } }
-      setActiveSetId(res.data?.id ?? res.id);
+      setActiveSetId(res.id);
     },
   });
 

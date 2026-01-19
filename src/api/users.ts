@@ -1,6 +1,7 @@
 import { api } from "./client";
 import type {
   LoginRequest,
+  SignupRequest,
   SignupResponse,
   LoginResponse,
   LogoutResponse,
@@ -29,41 +30,41 @@ export interface FavoriteAddResponse {
 
 /**
  * 회원가입
- * POST /users/signup
+ * POST /users/signup/
  */
-export const signup = (data: LoginRequest) => {
-  return api.post<SignupResponse>("/users/signup", data);
+export const signup = (data: SignupRequest) => {
+  return api.post<SignupResponse>("/api/users/signup/", data);
 };
 
 /**
  * 로그인
- * POST /users/login
+ * POST /users/login/
  */
 export const login = (data: LoginRequest) => {
-  return api.post<LoginResponse>("/users/login", data);
+  return api.post<LoginResponse>("/api/users/login/", data);
 };
 /**
  * 로그아웃
- * POST /users/logout
+ * POST /users/logout/
  */
 export const logout = () => {
-  return api.post<LogoutResponse>("/users/logout");
+  return api.post<LogoutResponse>("/api/users/logout/");
 };
 
 /**
  * 즐겨찾기 목록 조회
- * GET /users/favorites
+ * GET /users/favorites/
  */
 export const getFavorites = () => {
-  return api.get<FavoritesListResponse>("/users/favorites");
+  return api.get<FavoritesListResponse>("/api/users/favorites/");
 };
 
 /**
  * 즐겨찾기 추가
- * POST /users/favorites
+ * POST /users/favorites/
  */
 export const addFavorite = (companyId: number) => {
-  return api.post<FavoriteAddResponse>("/users/favorites", { companyId });
+  return api.post<FavoriteAddResponse>("/api/users/favorites/", { companyId });
 };
 
 /**
@@ -71,5 +72,5 @@ export const addFavorite = (companyId: number) => {
  * DELETE /users/favorites/:favoriteId
  */
 export const removeFavorite = (favoriteId: number) => {
-  return api.delete(`/users/favorites/${favoriteId}`);
+  return api.delete(`/api/users/favorites/${favoriteId}`);
 };

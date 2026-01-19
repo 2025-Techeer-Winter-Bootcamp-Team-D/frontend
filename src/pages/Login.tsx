@@ -30,8 +30,8 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
       setIsLoading(true);
       const response = await login({ email, password });
 
-      if (response.data.accessToken) {
-        localStorage.setItem("accessToken", response.data.accessToken);
+      if (response.data.access) {
+        localStorage.setItem("accessToken", response.data.access);
         onLogin?.();
         onClose();
         setPage(PageView.DASHBOARD);
