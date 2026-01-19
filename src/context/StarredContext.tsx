@@ -35,6 +35,7 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
 };
 
 // 커스텀 훅 (App.tsx에서 useStarred를 쓰고 있으므로 필수)
+// eslint-disable-next-line react-refresh/only-export-components
 export const useStarred = () => {
   const context = useContext(StarredContext);
   if (!context) {

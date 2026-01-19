@@ -39,7 +39,9 @@ export const getMarketIndex = async (
     const latest = indices[indices.length - 1];
     const previous = indices[indices.length - 2];
     const change_rate =
-      ((latest.value - previous.value) / previous.value) * 100;
+      previous.value === 0
+        ? 0
+        : ((latest.value - previous.value) / previous.value) * 100;
 
     return {
       current_price: latest.value,
