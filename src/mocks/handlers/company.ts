@@ -167,6 +167,13 @@ export const companyHandlers = [
     await delay(150);
     const industryId = Number(params.industry_id);
 
+    if (!Number.isFinite(industryId)) {
+      return HttpResponse.json(
+        { message: "industry_id 파라미터가 올바르지 않습니다." },
+        { status: 400 },
+      );
+    }
+
     return HttpResponse.json({
       message: "산업 뉴스 조회 성공",
       data: industryNews.get(industryId) ?? [],
