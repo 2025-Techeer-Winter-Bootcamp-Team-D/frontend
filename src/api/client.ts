@@ -1,21 +1,15 @@
 import axios from "axios";
 
+// 환경 변수나 기본값을 모두 '/api'로 통일해야 프록시가 작동합니다.
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // 백엔드 전체 주소를 지우고 상대 경로인 '/api'만 사용하세요.
+  baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
   timeout: 10000,
-  headers: {},
 });
 
-// (선택 사항) 요청 인터셉터: 로그인 후 토큰이 있다면 자동으로 헤더에 넣어줌
+// 인터셉터는 확인용으로 그대로 두셔도 무방합니다.
 api.interceptors.request.use((config) => {
-  const isFormData =
-    typeof FormData !== "undefined" && config.data instanceof FormData;
-  if (!isFormData && config.headers && !config.headers["Content-Type"]) {
-    config.headers["Content-Type"] = "application/json";
-  }
-  const token = localStorage.getItem("accessToken"); // 예시
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  console.log(`🚀 실제 요청 주소: ${config.baseURL}${config.url}`);
+  // ... 나머지 로직
   return config;
 });

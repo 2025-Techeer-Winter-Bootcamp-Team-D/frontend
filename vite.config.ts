@@ -3,14 +3,21 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-// https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
 
   return {
     server: {
-      port: 3000,
-      host: "0.0.0.0",
+      port: 5173, // 프론트엔드 포트
+      host: "0.0.0.0", // 외부 접속 허용
+      proxy: {
+        // '/api'로 시작하는 요청을 백엔드(8000포트)로 전달
+        "/api": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
 
     plugins: [react(), tailwindcss()],
