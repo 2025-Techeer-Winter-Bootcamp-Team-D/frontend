@@ -299,7 +299,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
     onSuccess: async (res) => {
       await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
-      setActiveSetId(res.id);
+      // API 응답: { comparisonId: 1, ... }
+      setActiveSetId(res.comparisonId ?? res.id);
     },
   });
 
