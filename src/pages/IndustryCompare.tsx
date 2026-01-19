@@ -579,6 +579,16 @@ const industryDB: Record<IndustryKey, IndustryData> = {
   },
 };
 
+//시가총액 파싱(억, 조)
+const parseMarketCap = (marketCap: string): number => {
+  let value = 0;
+  const joMatch = marketCap.match(/(\d+(?:\.\d+)?)\s*조/);
+  const ukMatch = marketCap.match(/(\d+(?:,\d+)?)\s*억/);
+  if (joMatch) value += parseFloat(joMatch[1]) * 10000;
+  if (ukMatch) value += parseFloat(ukMatch[1].replace(/,/g, ""));
+  return value || 10;
+};
+
 // -- Mini Sparkline Component --
 const MiniChart = ({ color }: { color: string }) => {
   const data = generateSparklineData();
@@ -1383,9 +1393,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     name: company.name,
                     x: company.roe,
                     y: company.pbr,
-                    z:
-                      parseFloat(company.marketCap.replace(/[^0-9.]/g, "")) ||
-                      10,
+                    z: parseMarketCap(company.marketCap),
                   }))}
                 >
                   {currentData.companies.map((company, index) => {

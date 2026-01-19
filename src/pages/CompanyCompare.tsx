@@ -300,7 +300,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     onSuccess: async (res) => {
       await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
       // API 응답: { comparisonId: 1, ... }
-      setActiveSetId(res.comparisonId ?? res.id);
+      const newId = res.comparisonId ?? res.id;
+      if (newId != null) {
+        setActiveSetId(newId);
+      }
     },
   });
 
@@ -522,6 +525,13 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       },
     ];
   }, [activeComparison?.companies, selectedRadarCompany]);
+  //radarDada 선언
+  const radarMax = useMemo(() => {
+    const maxFull = radarData.length
+      ? Math.max(...radarData.map((d) => d.fullMark ?? 0))
+      : 0;
+    return Math.max(25, maxFull);
+  }, [radarData]);
 
   // 주가 추이 차트 데이터 (OHLCV API 기반)
   const trendChartData = useMemo(() => {
@@ -1055,7 +1065,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   />
                   <PolarRadiusAxis
                     angle={30}
-                    domain={[0, 25]}
+                    domain={[0, radarMax]}
                     tick={false}
                     axisLine={false}
                   />
