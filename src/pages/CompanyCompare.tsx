@@ -33,6 +33,10 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
+  ScatterChart,
+  Scatter,
+  ReferenceArea,
+  ReferenceLine,
 } from "recharts";
 import {
   getComparisons,
@@ -443,6 +447,23 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     return result;
   }, [activeComparison?.companies, activeMetrics]);
 
+  // PER-YoY Matrix 차트 데이터
+  const perYoyChartData = useMemo(() => {
+    if (!activeComparison?.companies?.length) return [];
+    return activeComparison.companies.map((company, index) => ({
+      name: company.companyName,
+      per: company.per ?? 0,
+      yoy: company.yoy ?? 0,
+      fill: CHART_COLORS[index % CHART_COLORS.length],
+    }));
+  }, [activeComparison?.companies]);
+
+  const avgPer = useMemo(() => {
+    if (!perYoyChartData.length) return 15;
+    const sum = perYoyChartData.reduce((acc, d) => acc + d.per, 0);
+    return sum / perYoyChartData.length;
+  }, [perYoyChartData]);
+
   // 주가 추이 차트 데이터 (OHLCV API 기반)
   const trendChartData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
@@ -794,6 +815,149 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     ))}
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            </GlassCard>
+
+            {/* Row 3: PER-YoY Matrix (Quadrant Style) */}
+            <GlassCard className="p-6">
+              <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                <BarChart3 size={18} className="text-shinhan-blue" />
+                이익 성장성 대비 저평가 분석
+              </h3>
+              <p className="text-sm text-slate-500 mb-4">
+                PER(주가수익비율)과 YoY(전년 대비 성장률)를 기준으로 기업의
+                가치와 성장성을 비교합니다.
+              </p>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart
+                    margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      type="number"
+                      dataKey="yoy"
+                      name="YoY"
+                      unit="%"
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={{ stroke: "#cbd5e1" }}
+                      label={{
+                        value: "YoY 성장률 (%)",
+                        position: "bottom",
+                        offset: 0,
+                        style: { fontSize: 12, fill: "#64748b" },
+                      }}
+                    />
+                    <YAxis
+                      type="number"
+                      dataKey="per"
+                      name="PER"
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={{ stroke: "#cbd5e1" }}
+                      label={{
+                        value: "PER (배)",
+                        angle: -90,
+                        position: "insideLeft",
+                        style: { fontSize: 12, fill: "#64748b" },
+                      }}
+                    />
+                    <Tooltip
+                      cursor={{ strokeDasharray: "3 3" }}
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "none",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                      formatter={(value, name) => {
+                        const numValue = typeof value === "number" ? value : 0;
+                        return [
+                          name === "PER"
+                            ? `${numValue.toFixed(1)}배`
+                            : `${numValue.toFixed(1)}%`,
+                          name,
+                        ];
+                      }}
+                      labelFormatter={(_, payload) =>
+                        payload?.[0]?.payload?.name ?? ""
+                      }
+                    />
+                    {/* 사분면 구분 */}
+                    <ReferenceArea
+                      x1={0}
+                      x2={100}
+                      y1={0}
+                      y2={avgPer}
+                      fill="#dcfce7"
+                      fillOpacity={0.4}
+                    />
+                    <ReferenceArea
+                      x1={-100}
+                      x2={0}
+                      y1={avgPer}
+                      y2={100}
+                      fill="#fef2f2"
+                      fillOpacity={0.4}
+                    />
+                    <ReferenceLine
+                      x={0}
+                      stroke="#94a3b8"
+                      strokeDasharray="5 5"
+                    />
+                    <ReferenceLine
+                      y={avgPer}
+                      stroke="#94a3b8"
+                      strokeDasharray="5 5"
+                      label={{
+                        value: `평균 PER: ${avgPer.toFixed(1)}`,
+                        position: "right",
+                        style: { fontSize: 10, fill: "#64748b" },
+                      }}
+                    />
+                    <Scatter
+                      name="기업"
+                      data={perYoyChartData}
+                      shape={(props: unknown) => {
+                        const { cx, cy, payload } = props as {
+                          cx: number;
+                          cy: number;
+                          payload: { fill: string; name: string };
+                        };
+                        return (
+                          <g>
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={8}
+                              fill={payload.fill}
+                              stroke="#fff"
+                              strokeWidth={2}
+                            />
+                            <text
+                              x={cx}
+                              y={cy - 14}
+                              textAnchor="middle"
+                              fontSize={11}
+                              fontWeight="bold"
+                              fill="#334155"
+                            >
+                              {payload.name}
+                            </text>
+                          </g>
+                        );
+                      }}
+                    />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-6 mt-4 text-xs text-slate-500">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
+                  <span>저평가 + 고성장 (매력적)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-red-50 border border-red-200"></div>
+                  <span>고평가 + 저성장 (주의)</span>
+                </div>
               </div>
             </GlassCard>
           </div>

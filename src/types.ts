@@ -60,6 +60,7 @@ export interface Stock {
   id: string;
   name: string;
   sector: string;
+  logo?: string; // Company logo URL
   per: number; // Price to Earnings Ratio
   pbr: number; // Price to Book Ratio
   roe: number; // Return on Equity (%)

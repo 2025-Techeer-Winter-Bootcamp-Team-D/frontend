@@ -1157,6 +1157,24 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {/* Company Logo */}
+                          <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {stock.logo ? (
+                              <img
+                                src={stock.logo}
+                                alt={stock.name}
+                                className="w-8 h-8 object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                }}
+                              />
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400">
+                                {stock.name.slice(0, 2)}
+                              </span>
+                            )}
+                          </div>
                           <div>
                             <div className="font-bold text-slate-800 text-sm">
                               {stock.name}
@@ -1166,23 +1184,35 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-xs">
-                          <div className="text-center">
+                        <div className="flex items-center gap-6 text-xs">
+                          <div className="text-center min-w-[40px]">
                             <span className="text-slate-400">PER</span>
                             <div className="font-bold text-slate-700">
                               {stock.per.toFixed(1)}
                             </div>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center min-w-[40px]">
                             <span className="text-slate-400">PBR</span>
                             <div className="font-bold text-slate-700">
                               {stock.pbr.toFixed(2)}
                             </div>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center min-w-[40px]">
                             <span className="text-slate-400">ROE</span>
                             <div className="font-bold text-shinhan-blue">
                               {stock.roe.toFixed(1)}%
+                            </div>
+                          </div>
+                          <div className="text-center min-w-[50px]">
+                            <span className="text-slate-400">부채비율</span>
+                            <div className="font-bold text-slate-700">
+                              {stock.debtRatio}%
+                            </div>
+                          </div>
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-slate-400">배당률</span>
+                            <div className="font-bold text-emerald-600">
+                              {stock.divYield.toFixed(1)}%
                             </div>
                           </div>
                           {selectedStock?.id === stock.id && (
@@ -1215,29 +1245,32 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   초기화
                 </button>
               </div>
-              <div className="flex flex-wrap gap-2 mb-4">
+              {/* 필터 세로 배치 */}
+              <div className="flex flex-col gap-2 mb-4">
                 {Object.entries(filters).map(([key, range]) => {
                   const axisInfo = AXES.find((a) => a.key === key);
                   return (
                     <div
                       key={key}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs"
+                      className="flex items-center justify-between px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-xs"
                     >
-                      <span className="font-bold text-shinhan-blue">
-                        {axisInfo?.label || key}
-                      </span>
-                      <span className="text-slate-600">
-                        {range.min.toFixed(1)} ~ {range.max.toFixed(1)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-shinhan-blue">
+                          {axisInfo?.label || key}
+                        </span>
+                        <span className="text-slate-600">
+                          {range.min.toFixed(1)} ~ {range.max.toFixed(1)}
+                        </span>
+                      </div>
                       <button
                         onClick={() => {
                           const newFilters = { ...filters };
                           delete newFilters[key as AxisKey];
                           setFilters(newFilters);
                         }}
-                        className="ml-1 text-slate-400 hover:text-red-500 transition-colors"
+                        className="text-slate-400 hover:text-red-500 transition-colors"
                       >
-                        <X size={12} />
+                        <X size={14} />
                       </button>
                     </div>
                   );
