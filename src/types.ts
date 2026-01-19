@@ -24,6 +24,13 @@ export interface Company {
   profit: number; // in billions
 }
 
+// 기업 검색 결과 타입
+export interface CompanySearchResult {
+  companyId: number;
+  name: string;
+  logo: string;
+}
+
 //분석 및 트랜드 기능
 export interface NewsItem {
   id: number; //

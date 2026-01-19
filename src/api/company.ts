@@ -1,12 +1,18 @@
 import { api } from "./client";
-import type { Company, ApiResponse, OhlcvData, NewsItem } from "@/types";
+import type {
+  Company,
+  ApiResponse,
+  OhlcvData,
+  NewsItem,
+  CompanySearchResult,
+} from "@/types";
 
 /**
  * 기업 검색
  * GET /companies?keyword=
  */
 export const searchCompanies = (keyword: string) => {
-  return api.get<ApiResponse<Company[]>>("/api/companies", {
+  return api.get<ApiResponse<CompanySearchResult[]>>("/api/companies", {
     params: { keyword },
   });
 };

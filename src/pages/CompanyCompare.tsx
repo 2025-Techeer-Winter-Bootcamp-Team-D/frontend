@@ -53,7 +53,7 @@ import {
   updateComparisonName,
 } from "../api/comparison";
 import { searchCompanies, getStockOhlcv } from "../api/company";
-import type { Company, OhlcvItem } from "../types";
+import type { CompanySearchResult, OhlcvItem } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface CompareProps {
@@ -216,7 +216,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     enabled: !!debouncedSearch.trim(),
     queryFn: async () => {
       const res = await searchCompanies(debouncedSearch);
-      return (res.data?.data ?? []) as Company[];
+      return (res.data?.data ?? []) as CompanySearchResult[];
     },
   });
 
@@ -1274,17 +1274,21 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               ) : searchResults.length > 0 ? (
                 searchResults.map((company) => (
                   <button
-                    key={company.code}
-                    onClick={() => handleAddCompany(company.code)}
+                    key={company.companyId}
+                    onClick={() => handleAddCompany(String(company.companyId))}
                     disabled={addCompanyMutation.isPending}
                     className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
                   >
-                    <div>
+                    <div className="flex items-center gap-3">
+                      {company.logo && (
+                        <img
+                          src={company.logo}
+                          alt={company.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      )}
                       <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
                         {company.name}
-                      </span>
-                      <span className="ml-2 text-xs text-gray-400">
-                        {company.code}
                       </span>
                     </div>
                     <Plus
