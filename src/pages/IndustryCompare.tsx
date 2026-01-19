@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -31,6 +31,28 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getIndustryNews,
+  getIndustryAnalysis,
+  getIndustryCompanies,
+} from "../api/industry";
+
+// 산업 ID 매핑 (IndustryKey -> API industryId)
+const INDUSTRY_ID_BY_KEY: Record<IndustryKey, number> = {
+  finance: 1,
+  semicon: 2,
+  auto: 3,
+  bio: 4,
+  battery: 5,
+  internet: 6,
+  ent: 7,
+  steel: 8,
+  ship: 9,
+  const: 10,
+  retail: 11,
+  telecom: 12,
+};
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -575,20 +597,54 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   onToggleStar,
   setCompanyCode,
 }) => {
+  // 초기 산업 설정: initialIndustryId가 유효하면 사용, 아니면 finance
+  const getInitialIndustry = (): IndustryKey => {
+    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
+      return initialIndustryId as IndustryKey;
+    }
+    return "finance";
+  };
+
   const [selectedIndustry, setSelectedIndustry] =
-    useState<IndustryKey>("finance");
+    useState<IndustryKey>(getInitialIndustry);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
 
-  // API 데이터 state
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<{
+  // 산업 ID
+  const industryId = INDUSTRY_ID_BY_KEY[selectedIndustry];
+
+  // -----------------------------
+  // TanStack Query - API 데이터 조회
+  // -----------------------------
+  const analysisQuery = useQuery({
+    queryKey: ["industryAnalysis", industryId],
+    queryFn: () => getIndustryAnalysis(industryId),
+    enabled: !!industryId,
+  });
+
+  const companiesQuery = useQuery({
+    queryKey: ["industryCompanies", industryId],
+    queryFn: () => getIndustryCompanies(industryId),
+    enabled: !!industryId,
+  });
+
+  const newsQuery = useQuery({
+    queryKey: ["industryNews", industryId],
+    queryFn: () => getIndustryNews(industryId),
+    enabled: !!industryId,
+  });
+
+  // 쿼리 상태 추출
+  const loading = analysisQuery.isLoading || companiesQuery.isLoading;
+  const error =
+    analysisQuery.error?.message || companiesQuery.error?.message || null;
+  const analysis = analysisQuery.data as {
     outlook?: string;
     insights?: { positive: string; risk: string };
-  } | null>(null);
+  } | null;
+  const industryNews = (newsQuery.data as IndustryNewsItem[]) ?? [];
 
   // Parallel Coordinates Chart State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -611,13 +667,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     });
     return ids;
   }, [filters]);
-
-  // Handle deep linking from dashboard
-  useEffect(() => {
-    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
-      setSelectedIndustry(initialIndustryId as IndustryKey);
-    }
-  }, [initialIndustryId]);
 
   // Use the selected industry data directly.
   // Since we populated all keys in industryDB, we don't need a fallback.
@@ -652,15 +701,17 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         break;
     }
 
+    // 고정된 변동폭 패턴 (Math.random 대신 deterministic 값 사용)
+    const changePattern = [0.02, -0.015, 0.025, -0.01, 0.018, -0.008];
     const result = [];
     let current = currentData.indexValue;
-    const volatility = currentData.indexValue * 0.05;
 
     for (let i = labels.length - 1; i >= 0; i--) {
       if (i === labels.length - 1) {
         result.unshift({ time: labels[i], value: current });
       } else {
-        const change = (Math.random() - 0.45) * volatility;
+        const patternIndex = i % changePattern.length;
+        const change = currentData.indexValue * changePattern[patternIndex];
         current -= change;
         result.unshift({ time: labels[i], value: Math.round(current) });
       }
