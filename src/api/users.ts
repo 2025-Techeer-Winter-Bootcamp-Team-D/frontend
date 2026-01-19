@@ -31,8 +31,9 @@ export interface FavoriteAddResponse {
  * 회원가입
  * POST /users/signup
  */
-export const signup = (data: LoginRequest) => {
-  return api.post<SignupResponse>("/users/signup", data);
+export const signup = async (data: LoginRequest) => {
+  const response = await api.post<SignupResponse>("/users/signup", data);
+  return response.data;
 };
 
 /**

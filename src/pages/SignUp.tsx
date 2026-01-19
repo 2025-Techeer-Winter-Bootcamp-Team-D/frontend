@@ -3,6 +3,7 @@ import { PageView } from "../types";
 import { Mail, Lock, Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { signup } from "../api/users";
 import GlassCard from "../components/Layout/GlassCard";
+import { useMutation } from "@tanstack/react-query";
 
 interface SignUpProps {
   setPage: (page: PageView) => void;
@@ -18,14 +19,13 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
+  // TanStack Query v5에서는 isLoading 대신 isPending을 사용합니다.
   const { mutate, isPending } = useMutation({
     mutationFn: signup,
     onSuccess: () => {
-      // 회원가입 성공 시 로그인 페이지로 이동
       setPage(PageView.LOGIN);
       onClose();
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       const message = err.response?.data?.message || "회원가입에 실패했습니다.";
       setError(message);
@@ -36,7 +36,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
     e.preventDefault();
     setError("");
 
-    // 클라이언트 측 유효성 검사
     if (!email || !password || !confirmPassword) {
       setError("모든 필드를 입력해주세요.");
       return;
@@ -79,7 +78,6 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
         </div>
 
         <form className="space-y-4" onSubmit={handleSignUp}>
-          {/* Error Message */}
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
               {error}
@@ -95,7 +93,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail
                   size={18}
-                  className="text-gray-400 group-focus-within:text-shinhan-blue transition-colors"
+                  className="text-gray-400 group-focus-within:text-blue-600 transition-colors"
                 />
               </div>
               <input
@@ -103,7 +101,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 placeholder="example@shinhan.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800"
               />
             </div>
           </div>
@@ -117,20 +115,20 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock
                   size={18}
-                  className="text-gray-400 group-focus-within:text-shinhan-blue transition-colors"
+                  className="text-gray-400 group-focus-within:text-blue-600 transition-colors"
                 />
               </div>
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="영문, 숫자, 특수문자 포함 8자 이상"
+                placeholder="8자 이상 입력"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
+                className="w-full pl-10 pr-12 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600 cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600"
               >
                 {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
               </button>
@@ -146,20 +144,20 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock
                   size={18}
-                  className="text-gray-400 group-focus-within:text-shinhan-blue transition-colors"
+                  className="text-gray-400 group-focus-within:text-blue-600 transition-colors"
                 />
               </div>
               <input
                 type={showConfirmPassword ? "text" : "password"}
-                placeholder="비밀번호를 다시 입력해주세요"
+                placeholder="비밀번호 재입력"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
+                className="w-full pl-10 pr-12 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600 cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-slate-600"
               >
                 {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
               </button>
@@ -170,7 +168,11 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
           <div className="pt-2">
             <label className="flex items-center gap-3 cursor-pointer group">
               <div
-                className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${agreed ? "bg-shinhan-blue border-shinhan-blue" : "bg-white border-gray-300 group-hover:border-shinhan-blue"}`}
+                className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                  agreed
+                    ? "bg-blue-600 border-blue-600"
+                    : "bg-white border-gray-300 group-hover:border-blue-600"
+                }`}
               >
                 {agreed && (
                   <Check size={14} className="text-white" strokeWidth={3} />
@@ -183,25 +185,18 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
                 />
               </div>
               <span className="text-sm text-slate-600 select-none">
-                <span className="text-shinhan-blue font-bold hover:underline">
-                  이용약관
-                </span>{" "}
-                및{" "}
-                <span className="text-shinhan-blue font-bold hover:underline">
-                  개인정보 처리방침
-                </span>
-                에 동의합니다
+                이용약관 및 개인정보 처리방침에 동의합니다
               </span>
             </label>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button - isPending으로 수정됨 */}
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full py-3 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={isPending}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isLoading ? (
+            {isPending ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
                 가입 중...
@@ -212,13 +207,12 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
           </button>
         </form>
 
-        {/* Login Link */}
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-500">
             이미 계정이 있으신가요?{" "}
             <button
               onClick={() => setPage(PageView.LOGIN)}
-              className="font-bold text-shinhan-blue hover:text-blue-700 ml-1 hover:underline"
+              className="font-bold text-blue-600 hover:underline ml-1"
             >
               로그인
             </button>
