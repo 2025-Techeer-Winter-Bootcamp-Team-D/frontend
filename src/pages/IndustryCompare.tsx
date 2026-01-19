@@ -677,9 +677,16 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
-        if (range && (stock[key] < range.min || stock[key] > range.max)) {
-          pass = false;
-          break;
+        if (range) {
+          // stock[key] 값을 숫자로 명시적 변환하여 비교 (ts2365 에러 해결)
+          const val = Number(stock[key]);
+          const min = range.min;
+          const max = range.max;
+
+          if (val < min || val > max) {
+            pass = false;
+            break;
+          }
         }
       }
       if (pass) ids.add(stock.id);

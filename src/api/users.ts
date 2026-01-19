@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "./axios";
 import type {
   LoginRequest,
   SignupRequest,
@@ -24,42 +24,40 @@ export interface FavoriteActionResponse {
 
 /**
  * 회원가입
- * POST /users/signup/
  */
 export const signup = (data: SignupRequest) => {
-  return api.post<SignupResponse>("/api/users/signup/", data);
+  return api.post<SignupResponse>("/users/signup/", data);
 };
 
 /**
  * 로그인
- * POST /users/login/
  */
 export const login = (data: LoginRequest) => {
-  return api.post<LoginResponse>("/api/users/login/", data);
+  return api.post<LoginResponse>("/users/login/", data);
 };
+
 /**
  * 로그아웃
- * POST /users/logout/
  */
 export const logout = () => {
-  return api.post<LogoutResponse>("/api/users/logout/");
+  return api.post<LogoutResponse>("/users/logout/");
 };
 
 /**
  * 즐겨찾기 목록 조회
  * GET /users/favorites/
- * @returns 즐겨찾기 배열 (직접 반환)
  */
 export const getFavorites = () => {
+  // 정의되지 않은 FavoritesListResponse 대신 FavoriteItem[] 사용
   return api.get<FavoriteItem[]>("/api/users/favorites/");
 };
 
 /**
  * 즐겨찾기 추가
  * POST /users/favorites/
- * @param companyId 종목코드 (예: "005930")
  */
 export const addFavorite = (companyId: string) => {
+  // 정의되지 않은 FavoriteAddResponse 대신 FavoriteActionResponse 사용
   return api.post<FavoriteActionResponse>("/api/users/favorites/", {
     companyId,
   });
@@ -67,8 +65,6 @@ export const addFavorite = (companyId: string) => {
 
 /**
  * 즐겨찾기 삭제
- * DELETE /users/favorites/{favoriteId}/
- * @param favoriteId 즐겨찾기 ID
  */
 export const removeFavorite = (favoriteId: number) => {
   return api.delete<FavoriteActionResponse>(

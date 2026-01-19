@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search, Loader2 } from "lucide-react";
+import { ArrowRight, Search, Loader2, TrendingUp, Bell } from "lucide-react";
 
 // Components
 import GlassCard from "../components/Layout/GlassCard";
@@ -22,10 +22,9 @@ interface DashboardProps {
 }
 
 /**
- * API Mock Functions (실제 API 호출로 대체 가능)
+ * API Mock Functions
  */
 const fetchAINews = async () => {
-  // 실제 환경에서는 axios.get('/api/news') 등으로 대체
   return [
     {
       tag: "방산수출",
@@ -71,98 +70,61 @@ const fetchStocks = async (): Promise<Stock[]> => {
 const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
   visibleSections,
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const newsContainerRef = useRef<HTMLDivElement>(null);
-
-  // TanStack Query: 뉴스 데이터 가져오기
   const { data: news = [], isLoading } = useQuery({
     queryKey: ["aiNews"],
     queryFn: fetchAINews,
-    refetchInterval: 60000, // 1분마다 자동 갱신
+    refetchInterval: 60000,
   });
-
-  const scrollToIndex = (index: number) => {
-    setCurrentIndex(index);
-    if (newsContainerRef.current) {
-      const scrollAmount =
-        index * (newsContainerRef.current.scrollHeight / news.length);
-      newsContainerRef.current.scrollTo({
-        top: scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  const handleScroll = () => {
-    if (newsContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } =
-        newsContainerRef.current;
-      const scrollableHeight = scrollHeight - clientHeight;
-      if (scrollableHeight > 0) {
-        const scrollRatio = scrollTop / scrollableHeight;
-        const newIndex = Math.round(scrollRatio * (news.length - 1));
-        setCurrentIndex(newIndex);
-      }
-    }
-  };
 
   return (
     <div
-      className={`bg-shinhan-dark text-white rounded-2xl p-8 lg:p-12 shadow-2xl relative overflow-hidden min-h-[600px] transition-all duration-300 delay-75 ${
+      className={`bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col h-[600px] transition-all duration-700 ${
         visibleSections.has("ai-issue")
-          ? "opacity-100 translate-x-0 scale-100"
-          : "opacity-0 translate-x-10 scale-95"
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-10"
       }`}
     >
-      <div className="absolute top-6 right-6 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-      <div className="mb-10">
-        <span className="text-xs font-bold text-blue-300 tracking-widest uppercase mb-2 block">
-          Market Signals
-        </span>
-        <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <span className="text-blue-400 text-xs font-bold tracking-widest uppercase mb-1 block">
+            Real-time Signals
+          </span>
+          <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+        </div>
+        <div className="p-2 bg-red-500/20 rounded-full">
+          <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
+        <div className="flex-1 flex items-center justify-center">
           <Loader2 className="animate-spin" />
         </div>
       ) : (
         <div
           ref={newsContainerRef}
-          onScroll={handleScroll}
-          className="space-y-4 max-h-[400px] overflow-y-auto pr-6 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+          className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar"
         >
           {news.map((item, i) => (
             <div
               key={i}
-              className="bg-white/15 backdrop-blur-md rounded-xl p-6 text-white cursor-pointer hover:bg-white/25 transition-all border border-white/20 shadow-lg group"
+              className="bg-white/5 hover:bg-white/10 border border-white/10 p-5 rounded-2xl transition-all cursor-pointer group"
             >
-              <div className="flex justify-between items-start mb-3">
-                <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded backdrop-blur-sm">
+              <div className="flex justify-between mb-2">
+                <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">
                   {item.tag}
                 </span>
-                <span className="text-xs text-white/60">{item.time}</span>
+                <span className="text-[10px] text-white/40">{item.time}</span>
               </div>
-              <h4 className="font-bold text-lg mb-4 leading-snug group-hover:text-blue-200 transition-colors">
+              <h4 className="text-base font-semibold leading-relaxed group-hover:text-blue-300 transition-colors">
                 {item.title}
               </h4>
-              <div className="text-xs text-white/50 font-medium">
-                {item.source}
-              </div>
+              <p className="text-[11px] text-white/30 mt-3">{item.source}</p>
             </div>
           ))}
         </div>
       )}
-
-      <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2">
-        {news.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => scrollToIndex(i)}
-            className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${currentIndex === i ? "bg-white" : "bg-white/30"}`}
-          />
-        ))}
-      </div>
     </div>
   );
 };
@@ -181,14 +143,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     new Set(["hero"]),
   );
 
-  // TanStack Query: 주식 데이터 관리
   const { data: stocks = [], isLoading: isStocksLoading } = useQuery({
     queryKey: ["stocks"],
     queryFn: fetchStocks,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Filtering State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
     {},
   );
@@ -200,9 +160,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
-        if (range && (stock[key] < range.min || stock[key] > range.max)) {
-          pass = false;
-          break;
+        if (range) {
+          // 1. undefined 방지 및 기본값 설정
+          const min = range.min ?? -Infinity;
+          const max = range.max ?? Infinity;
+
+          // 2. stock[key] 값을 숫자로 안전하게 변환하여 비교 (ts2365, ts2532 해결)
+          const value = Number(stock[key]);
+
+          if (isNaN(value) || value < min || value > max) {
+            pass = false;
+            break;
+          }
         }
       }
       if (pass) ids.add(stock.id);
@@ -210,7 +179,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     return ids;
   }, [filters, stocks]);
 
-  // Intersection Observer for scroll animations
   useEffect(() => {
     const sectionIds = [
       "hero",
@@ -226,7 +194,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           if (entry.isIntersecting)
             setVisibleSections((prev) => new Set([...prev, id]));
         },
-        { threshold: 0.15, rootMargin: "-50px 0px" },
+        { threshold: 0.1, rootMargin: "-10% 0px" },
       );
       observer.observe(element);
       return observer;
@@ -234,122 +202,135 @@ const Dashboard: React.FC<DashboardProps> = ({
     return () => observers.forEach((obs) => obs?.disconnect());
   }, []);
 
-  // Navbar visibility logic
   useEffect(() => {
     const handleScroll = () => {
       if (!scrollRef.current) return;
-      onShowNavbar(scrollRef.current.scrollTop > window.innerHeight * 0.8);
+      onShowNavbar(scrollRef.current.scrollTop > 100);
     };
     const div = scrollRef.current;
     div?.addEventListener("scroll", handleScroll);
     return () => div?.removeEventListener("scroll", handleScroll);
   }, [onShowNavbar]);
 
-  const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <div
       ref={scrollRef}
-      className="h-full overflow-y-auto no-scrollbar relative bg-white snap-y snap-proximity scroll-smooth"
+      className="h-full overflow-y-auto bg-slate-50 scroll-smooth snap-y snap-proximity"
     >
-      {/* 1. HERO SECTION */}
+      {/* 1. HERO SECTION - 비율 유지하되 깔끔하게 정리 */}
       <section
         id="hero"
-        className="h-screen w-full flex flex-col items-center justify-center relative bg-[#0046FF] px-6 text-center overflow-hidden snap-start"
+        className="h-screen w-full flex flex-col items-center justify-center relative bg-[#0046FF] px-6 snap-start"
       >
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div
-          className={`relative z-10 max-w-4xl transition-all duration-500 ${visibleSections.has("hero") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+          className={`relative z-10 max-w-4xl text-center transition-all duration-1000 ${visibleSections.has("hero") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
-          <div className="inline-block px-4 py-1.5 rounded-full border border-white/30 bg-white/10 text-blue-100 text-xs font-bold tracking-widest mb-8">
-            PROFESSIONAL QUANT ANALYSIS PLATFORM
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-bold mb-8">
+            <TrendingUp size={14} /> NEXT-GEN QUANT TERMINAL
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight">
-            흩어진 기업 정보를
+          <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-8 tracking-tight">
+            데이터로 읽는
             <br />
-            한눈에, <span className="text-blue-200">더 명확하게</span>
+            기업의 <span className="text-blue-300">미래 가치</span>
           </h1>
           <button
-            onClick={() => scrollToSection("market-dashboard")}
-            className="px-8 py-4 bg-white text-shinhan-blue font-bold rounded-xl hover:bg-blue-50 transition-all flex items-center gap-2 mx-auto"
+            onClick={() =>
+              document
+                .getElementById("parallel-coordinates")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            className="px-10 py-4 bg-white text-blue-600 font-bold rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center gap-3 mx-auto"
           >
-            대시보드 시작 <ArrowRight size={18} />
+            분석 도구 시작 <ArrowRight size={20} />
           </button>
         </div>
       </section>
 
-      {/* 2. PARALLEL COORDINATES SECTION */}
+      {/* 2. QUANT ANALYSIS SECTION - 시각적 여백 확보 */}
       <section
         id="parallel-coordinates"
-        className="min-h-screen w-full flex flex-col justify-center py-32 px-6 bg-white snap-start"
+        className="min-h-screen w-full py-24 px-6 bg-white snap-start flex flex-col justify-center"
       >
         <div
-          className={`max-w-7xl mx-auto w-full transition-all duration-500 ${visibleSections.has("parallel-coordinates") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"}`}
+          className={`max-w-7xl mx-auto w-full transition-all duration-700 ${visibleSections.has("parallel-coordinates") ? "opacity-100" : "opacity-0 translate-y-10"}`}
         >
-          <div className="text-center mb-12">
-            <span className="text-shinhan-blue font-bold tracking-widest text-sm uppercase">
-              Quant Analysis
-            </span>
-            <h2 className="text-4xl font-bold text-slate-900 mt-2">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
               나만의 저평가 우량주 발굴
             </h2>
+            <p className="text-slate-500 mt-2">
+              다차원 필터를 통해 원하는 조건의 기업을 실시간으로 필터링하세요.
+            </p>
           </div>
 
-          {isStocksLoading ? (
-            <div className="h-[400px] flex items-center justify-center">
-              <Loader2 className="animate-spin text-shinhan-blue" />
-            </div>
-          ) : (
-            <ParallelCoordinatesChart
-              data={stocks}
-              onFilterChange={setFilters}
-              filters={filters}
-              filteredIds={filteredIds}
-              onStockSelect={setSelectedStock}
-              selectedStockId={selectedStock?.id ?? null}
-            />
-          )}
+          <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100 shadow-sm">
+            {isStocksLoading ? (
+              <div className="h-[500px] flex items-center justify-center">
+                <Loader2 className="animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <ParallelCoordinatesChart
+                data={stocks}
+                onFilterChange={setFilters}
+                filters={filters}
+                filteredIds={filteredIds}
+                onStockSelect={setSelectedStock}
+                selectedStockId={selectedStock?.id ?? null}
+              />
+            )}
+          </div>
 
           {selectedStock && (
-            <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+            <div className="mt-8 p-6 bg-blue-600 rounded-3xl text-white flex items-center justify-between shadow-xl animate-in fade-in slide-in-from-bottom-4">
               <div>
-                <h3 className="text-2xl font-bold">{selectedStock.name}</h3>
-                <p className="text-slate-500">{selectedStock.sector}</p>
+                <span className="text-blue-100 text-sm font-medium">
+                  {selectedStock.sector}
+                </span>
+                <h3 className="text-2xl font-bold">
+                  {selectedStock.name}{" "}
+                  <span className="text-lg opacity-80 font-normal ml-2">
+                    {selectedStock.id}
+                  </span>
+                </h3>
               </div>
               <button
                 onClick={() => navigate(`/company/${selectedStock.id}`)}
-                className="px-6 py-3 bg-shinhan-blue text-white font-bold rounded-xl flex items-center gap-2"
+                className="px-6 py-3 bg-white text-blue-600 font-bold rounded-xl flex items-center gap-2 hover:bg-blue-50 transition-colors"
               >
-                상세 분석 <ArrowRight size={18} />
+                상세 리포트 보기 <ArrowRight size={18} />
               </button>
             </div>
           )}
         </div>
       </section>
 
-      {/* 3. MARKET DASHBOARD SECTION */}
+      {/* 3. MARKET DASHBOARD - 그리드 및 검색바 강조 */}
       <section
         id="market-dashboard"
-        className="min-h-screen w-full flex flex-col justify-center py-32 px-6 bg-slate-50 snap-start"
+        className="min-h-screen w-full py-24 px-6 bg-slate-50 snap-start"
       >
         <div
-          className={`max-w-7xl mx-auto w-full transition-all duration-500 ${visibleSections.has("market-dashboard") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"}`}
+          className={`max-w-7xl mx-auto w-full transition-all duration-700 ${visibleSections.has("market-dashboard") ? "opacity-100" : "opacity-0 translate-y-10"}`}
         >
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-slate-800 mb-8">
-              실시간 시장 대시보드
-            </h2>
-            <div className="max-w-2xl mx-auto relative group">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900">
+                실시간 시장 대시보드
+              </h2>
+              <p className="text-slate-500 mt-2">
+                주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
+              </p>
+            </div>
+            <div className="relative w-full md:w-96">
               <Search
-                className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"
-                size={24}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                size={20}
               />
               <input
                 type="text"
-                className="w-full pl-16 pr-6 py-5 rounded-2xl bg-white shadow-xl focus:ring-4 focus:ring-blue-100 transition-all"
-                placeholder="기업명 또는 종목번호를 입력하세요"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-none shadow-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                placeholder="기업명 혹은 종목코드"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -357,38 +338,73 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <GlassCard
-                className="p-6 bg-white"
-                onClick={() => onIndustryClick("finance")}
-              >
-                <h3 className="font-bold">KOSPI</h3>
-                <span className="text-3xl font-bold">2,755.02</span>
-                <StockChart color="#10B981" showAxes={false} />
-              </GlassCard>
-              <GlassCard className="p-6 bg-white">
-                <h3 className="font-bold">KOSDAQ</h3>
-                <span className="text-3xl font-bold">855.12</span>
-                <StockChart color="#EF4444" showAxes={false} />
-              </GlassCard>
-              <div className="md:col-span-2">
-                <IndustryRankingCard
-                  onCompanyClick={(id) => navigate(`/company/${id}`)}
-                />
+            <div className="lg:col-span-8 flex flex-col gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <GlassCard
+                  className="p-8 bg-white border border-slate-100"
+                  onClick={() => onIndustryClick("finance")}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
+                      KOSPI
+                    </h3>
+                    <span className="text-emerald-500 font-bold text-sm">
+                      +1.24%
+                    </span>
+                  </div>
+                  <span className="text-4xl font-extrabold text-slate-900">
+                    2,755.02
+                  </span>
+                  <div className="h-32 mt-4">
+                    <StockChart color="#10B981" showAxes={false} />
+                  </div>
+                </GlassCard>
+                <GlassCard className="p-8 bg-white border border-slate-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
+                      KOSDAQ
+                    </h3>
+                    <span className="text-red-500 font-bold text-sm">
+                      -0.45%
+                    </span>
+                  </div>
+                  <span className="text-4xl font-extrabold text-slate-900">
+                    855.12
+                  </span>
+                  <div className="h-32 mt-4">
+                    <StockChart color="#EF4444" showAxes={false} />
+                  </div>
+                </GlassCard>
               </div>
+              <IndustryRankingCard
+                onCompanyClick={(id) => navigate(`/company/${id}`)}
+              />
             </div>
 
             <div className="lg:col-span-4">
-              <div className="bg-white rounded-2xl p-6 h-full border border-slate-200">
-                <h3 className="text-sm font-bold mb-6 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-shinhan-blue animate-pulse"></span>
-                  자본시장 공시
+              <div className="bg-white rounded-3xl p-8 h-full border border-slate-100 shadow-sm">
+                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                  <Bell size={20} className="text-blue-600" /> 자본시장 공시
                 </h3>
-                <div className="space-y-3">
-                  {/* 정적 공시 데이터 생략 (상단과 동일 구조) */}
-                  <p className="text-xs text-slate-400 text-center">
-                    최신 공시 데이터를 불러오는 중...
-                  </p>
+                <div className="space-y-6">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="pb-4 border-b border-slate-50 last:border-0"
+                    >
+                      <span className="text-[10px] font-bold text-blue-600 uppercase">
+                        공시
+                      </span>
+                      <p className="text-sm font-semibold text-slate-800 mt-1 line-clamp-2 hover:text-blue-600 cursor-pointer">
+                        {i % 2 === 0
+                          ? "[기재정정] 사업보고서 (2025.12)"
+                          : "주요사항보고서 (유상증자 결정)"}
+                      </p>
+                      <span className="text-[11px] text-slate-400 mt-2 block">
+                        14:2{i} | 금융감독원
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -396,22 +412,31 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </section>
 
-      {/* 4. AI ISSUE TRACKING */}
+      {/* 4. AI ISSUE TRACKING - 레이아웃 균형 조정 */}
       <section
         id="ai-issue"
-        className="min-h-screen w-full flex flex-col justify-center py-32 px-6 bg-white"
+        className="min-h-screen w-full py-24 px-6 bg-white snap-start"
       >
         <div
-          className={`max-w-7xl mx-auto w-full transition-all duration-500 ${visibleSections.has("ai-issue") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"}`}
+          className={`max-w-7xl mx-auto w-full transition-all duration-700 ${visibleSections.has("ai-issue") ? "opacity-100" : "opacity-0 translate-y-10"}`}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-5xl font-bold mb-6">AI 이슈포착</h2>
-              <p className="text-lg text-slate-600 mb-12">
-                실시간 뉴스데이터와 검색량을 기반으로 시장 주도 섹터를
-                분석합니다.
-              </p>
-              <AIBubbleChart />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+                  AI 이슈포착
+                </h2>
+                <p className="text-xl text-slate-600 leading-relaxed">
+                  수만 개의 뉴스 데이터 속에서{" "}
+                  <span className="text-blue-600 font-bold">
+                    인공지능이 추출한
+                  </span>{" "}
+                  핵심 마켓 시그널을 확인하세요.
+                </p>
+              </div>
+              <div className="bg-slate-50 rounded-3xl p-4 border border-slate-100">
+                <AIBubbleChart />
+              </div>
             </div>
             <AINewsBriefing visibleSections={visibleSections} />
           </div>
