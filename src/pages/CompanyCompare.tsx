@@ -286,7 +286,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
     onSuccess: async (res) => {
       await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
-      setActiveSetId(res.id);
+      // MSW 응답: { status, message, data: { id, name, companies } }
+      setActiveSetId(res.data?.id ?? res.id);
     },
   });
 
