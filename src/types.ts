@@ -237,10 +237,17 @@ export type User = {
   createdAt: string;
 };
 
-// POST /users/signup, /users/login - Request
+// POST /users/login - Request
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+// POST /users/signup - Request
+export interface SignupRequest {
+  email: string;
+  password: string;
+  password2: string;
 }
 
 // POST /users/signup - Response
@@ -252,12 +259,9 @@ export interface SignupResponse {
 
 // POST /users/login - Response
 export interface LoginResponse {
-  accessToken: string;
-  refreshToken?: string;
-  user: {
-    id: number;
-    email: string;
-  };
+  access: string;
+  refresh: string;
+  email: string;
 }
 
 // POST /users/logout - Response

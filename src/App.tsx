@@ -78,7 +78,17 @@ function CompanyDetailPage() {
   );
 }
 
+import { api } from "./api/axios";
+import { useEffect } from "react";
+
 function App() {
+  useEffect(() => {
+    api
+      .get("/api/comparisons/")
+      .then((res) => console.log("연동 성공:", res.data))
+      .catch((err) => console.error("연동 실패:", err));
+  }, []);
+
   const [page, setPage] = useState<PageView>(PageView.DASHBOARD);
   const [selectedIndustry, setSelectedIndustry] = useState<string>("finance");
   const [selectedCompanyCode, setSelectedCompanyCode] =

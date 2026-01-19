@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import {
   ArrowLeft,
@@ -44,10 +44,12 @@ import {
 } from "../api/comparison";
 import { searchCompanies, getStockOhlcv } from "../api/company";
 import type { Company, OhlcvItem } from "../types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface CompareProps {
   setPage: (page: PageView) => void;
 }
+
 type MetricType = "revenue" | "operating" | "net" | "marketCap";
 type DetailMetricKey =
   | "eps"
@@ -126,21 +128,57 @@ const detailedMetricsInfo: Record<
 // -- Main Page Component --
 
 const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
-  // API State
-  const [comparisonList, setComparisonList] = useState<ComparisonListItem[]>(
-    [],
-  );
-  const [activeComparison, setActiveComparison] = useState<Comparison | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // -----------------------------
+  // Server state (TanStack Query)
+  // -----------------------------
+  const queryClient = useQueryClient();
 
   const [activeSetId, setActiveSetId] = useState<number | null>(null);
+
+  // 비교 세트 목록 조회
+  const comparisonsQuery = useQuery({
+    queryKey: ["comparisons"],
+    queryFn: async () => {
+      const res = await getComparisons();
+      return (res.data?.comparisons ?? []) as ComparisonListItem[];
+    },
+  });
+
+  const comparisonList = comparisonsQuery.data ?? [];
+
+  // 비교 세트 목록이 로드되면 첫 번째 세트를 기본 선택
+  useEffect(() => {
+    if (!activeSetId && comparisonList.length > 0) {
+      setActiveSetId(comparisonList[0].id);
+    }
+  }, [activeSetId, comparisonList]);
+
+  // 비교 세트 상세 조회
+  const comparisonDetailQuery = useQuery({
+    queryKey: ["comparison", activeSetId],
+    enabled: !!activeSetId,
+    queryFn: async () => {
+      return await getComparison(activeSetId as number);
+    },
+  });
+
+  const activeComparison = (comparisonDetailQuery.data ??
+    null) as Comparison | null;
+
+  // 이름 편집용 임시 값 동기화
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempSetName, setTempSetName] = useState("");
+  useEffect(() => {
+    if (activeComparison?.name) setTempSetName(activeComparison.name);
+    setIsEditingName(false);
+  }, [activeComparison?.name]);
+
+  // -----------------------------
+  // UI state (local)
+  // -----------------------------
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Company[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   // State for Metrics (Top Charts)
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("revenue");
@@ -152,157 +190,200 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     "roe",
   ]);
 
-  // State for Renaming
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [tempSetName, setTempSetName] = useState("");
-
-  // State for OHLCV data (주가 추이)
-  const [ohlcvData, setOhlcvData] = useState<Record<string, OhlcvItem[]>>({});
-  const [ohlcvLoading, setOhlcvLoading] = useState(false);
-
-  const currentMetricOption =
-    metricOptions.find((o) => o.id === selectedMetric) || metricOptions[0];
-
-  // 비교 세트 목록 조회
-  const fetchComparisonList = useCallback(async () => {
-    try {
-      const response = await getComparisons();
-      const comparisons = response.data?.comparisons ?? [];
-      setComparisonList(comparisons);
-      if (comparisons.length > 0 && !activeSetId) {
-        setActiveSetId(comparisons[0].id);
-      }
-    } catch (e) {
-      console.error("비교 목록 조회 실패:", e);
-    }
-  }, [activeSetId]);
-
-  // 선택된 비교 세트 상세 조회
-  const fetchComparisonDetail = useCallback(async (id: number) => {
-    try {
-      setLoading(true);
-      const response = await getComparison(id);
-      setActiveComparison(response);
-      setTempSetName(response.name);
-      setError(null);
-    } catch (e) {
-      setError((e as Error)?.message ?? "비교 데이터 로딩 실패");
-      setActiveComparison(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 초기 데이터 로드
+  // -----------------------------
+  // Search (debounce + query)
+  // -----------------------------
   useEffect(() => {
-    fetchComparisonList();
-  }, [fetchComparisonList]);
-
-  // 선택된 세트가 변경되면 상세 조회
-  useEffect(() => {
-    if (activeSetId) {
-      fetchComparisonDetail(activeSetId);
-      setIsEditingName(false);
-    }
-  }, [activeSetId, fetchComparisonDetail]);
-
-  // 기업 검색
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    const debounceTimer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const response = await searchCompanies(searchQuery);
-        setSearchResults(response.data?.data ?? []);
-      } catch (e) {
-        console.error("기업 검색 실패:", e);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
   }, [searchQuery]);
 
-  // OHLCV 데이터 조회 (주가 추이용)
-  // CompanyCompare.tsx 내부의 fetchOhlcvData 함수 수정
+  const searchQueryResult = useQuery({
+    queryKey: ["companySearch", debouncedSearch],
+    enabled: !!debouncedSearch.trim(),
+    queryFn: async () => {
+      const res = await searchCompanies(debouncedSearch);
+      return (res.data?.data ?? []) as Company[];
+    },
+  });
 
-  // OHLCV 데이터 조회 (주가 추이용)
-  const fetchOhlcvData = useCallback(async () => {
-    if (!activeComparison?.companies?.length) {
-      setOhlcvData({});
-      return;
-    }
+  const searchResults = searchQueryResult.data ?? [];
+  const isSearching = searchQueryResult.isFetching;
 
-    const intervalMap: Record<TimeRange, string> = {
-      "1M": "1d",
-      "3M": "1d",
-      "6M": "1d",
-      "1Y": "1d",
-    };
+  // -----------------------------
+  // OHLCV (주가 추이) query
+  // -----------------------------
+  const ohlcvQuery = useQuery({
+    queryKey: [
+      "ohlcv",
+      activeSetId,
+      timeRange,
+      activeComparison?.companies?.map((c) => c.stock_code).join(",") ?? "",
+    ],
+    enabled: !!activeComparison?.companies?.length,
+    queryFn: async () => {
+      const companies = activeComparison?.companies ?? [];
 
-    setOhlcvLoading(true);
-    setOhlcvData({});
-    try {
+      const intervalMap: Record<TimeRange, string> = {
+        "1M": "1d",
+        "3M": "1d",
+        "6M": "1d",
+        "1Y": "1d",
+      };
+
       const results: Record<string, OhlcvItem[]> = {};
 
       await Promise.all(
-        activeComparison.companies.map(async (company) => {
+        companies.map(async (company) => {
           try {
             const response = await getStockOhlcv(
               company.stock_code,
               intervalMap[timeRange],
             );
 
-            // API가 주는 데이터 (OhlcvData 타입으로 가정)
             const rawData = response.data?.data ?? [];
 
-            // [핵심 수정] OhlcvData(문자열 날짜) -> OhlcvItem(숫자 시간) 변환
-            results[company.companyName] = rawData
-              .map((item: OhlcvData) => {
-                // 1. 날짜 문자열을 숫자로 변환 (예: "2024-01-01" -> 1704067200)
-                // item.date가 "20240101" 형식이면 포맷에 맞게, "2024-01-01"이면 바로 변환됩니다.
-                // 만약 날짜 파싱이 안 되면 0으로 처리합니다.
+            results[company.companyName] = (rawData as OhlcvData[])
+              .map((item) => {
                 const dateObj = new Date(item.date);
                 const timeStamp = isNaN(dateObj.getTime())
                   ? 0
                   : Math.floor(dateObj.getTime() / 1000);
 
                 return {
-                  time: timeStamp, // date(string) -> time(number) 변환 적용
+                  time: timeStamp,
                   open: Number(item.open),
                   high: Number(item.high),
                   low: Number(item.low),
                   close: Number(item.close),
                   volume: Number(item.volume),
-                  amount: 0, // 데이터에 없으므로 0으로 기본값 설정
+                  amount: 0,
                 };
               })
               .filter((item) => item.time !== 0);
           } catch (innerError) {
-            console.warn(`${company.companyName} 데이터 변환 실패`, innerError);
+            console.warn(`${company.companyName} OHLCV 변환 실패`, innerError);
             results[company.companyName] = [];
           }
         }),
       );
-      setOhlcvData(results);
-    } catch (e) {
-      console.error("OHLCV 데이터 조회 실패:", e);
-      setOhlcvData({});
-    } finally {
-      setOhlcvLoading(false);
-    }
-  }, [activeComparison?.companies, timeRange]);
 
-  // timeRange 또는 companies가 변경되면 OHLCV 데이터 다시 조회
-  useEffect(() => {
-    fetchOhlcvData();
-  }, [fetchOhlcvData]);
+      return results;
+    },
+  });
+
+  const ohlcvData = ohlcvQuery.data ?? {};
+
+  const currentMetricOption =
+    metricOptions.find((o) => o.id === selectedMetric) || metricOptions[0];
+
+  // -----------------------------
+  // Mutations
+  // -----------------------------
+  const createSetMutation = useMutation({
+    mutationFn: async (name: string) => {
+      return await createComparison({ name, companies: [] });
+    },
+    onSuccess: async (res) => {
+      await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
+      setActiveSetId(res.id);
+    },
+  });
+
+  const addCompanyMutation = useMutation({
+    mutationFn: async (stockCode: string) => {
+      if (!activeSetId) throw new Error("activeSetId가 없습니다.");
+      await addCompany(activeSetId, { company: stockCode });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["comparison", activeSetId],
+      });
+      setIsSearchOpen(false);
+      setSearchQuery("");
+    },
+  });
+
+  const removeCompanyMutation = useMutation({
+    mutationFn: async (stockCode: string) => {
+      if (!activeSetId) throw new Error("activeSetId가 없습니다.");
+      await removeCompany(activeSetId, stockCode);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["comparison", activeSetId],
+      });
+    },
+  });
+
+  const updateNameMutation = useMutation({
+    mutationFn: async (name: string) => {
+      if (!activeSetId) throw new Error("activeSetId가 없습니다.");
+      await updateComparisonName(activeSetId, name);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["comparison", activeSetId],
+      });
+      setIsEditingName(false);
+    },
+  });
+
+  // -----------------------------
+  // Handlers
+  // -----------------------------
+  const handleAddSet = async () => {
+    const newSetName = `비교 세트 ${comparisonList.length + 1}`;
+    try {
+      await createSetMutation.mutateAsync(newSetName);
+    } catch (e) {
+      console.error("비교 세트 생성 실패:", e);
+    }
+  };
+
+  const handleRemoveCompany = async (stock_code: string) => {
+    try {
+      await removeCompanyMutation.mutateAsync(stock_code);
+    } catch (e) {
+      console.error("기업 제거 실패:", e);
+    }
+  };
+
+  const handleAddCompany = async (stockCode: string) => {
+    try {
+      await addCompanyMutation.mutateAsync(stockCode);
+    } catch (e) {
+      console.error("기업 추가 실패:", e);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!activeSetId || !tempSetName.trim()) {
+      setIsEditingName(false);
+      return;
+    }
+
+    try {
+      await updateNameMutation.mutateAsync(tempSetName.trim());
+    } catch (e) {
+      console.error("이름 변경 실패:", e);
+      setTempSetName(activeComparison?.name ?? "");
+      setIsEditingName(false);
+    }
+  };
+
+  const toggleMetric = (key: DetailMetricKey) => {
+    if (activeMetrics.includes(key)) {
+      setActiveMetrics(activeMetrics.filter((k) => k !== key));
+    } else {
+      setActiveMetrics([...activeMetrics, key]);
+    }
+  };
+
+  // -----------------------------
+  // Chart Data (Memoized)
+  // -----------------------------
 
   // 차트 데이터 생성 (API 데이터 기반)
   const financialChartData = useMemo(() => {
@@ -329,7 +410,15 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const dynamicDetails = useMemo(() => {
     if (!activeComparison?.companies?.length) return {};
 
-    const result: Record<string, any> = {};
+    const result: Record<
+      string,
+      {
+        title: string;
+        desc: string;
+        formula: string;
+        data: { name: string; value: number }[];
+      }
+    > = {};
     activeMetrics.forEach((key) => {
       const info = detailedMetricsInfo[key];
       const metricKeyMap: Partial<
@@ -347,7 +436,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
       const chartData = activeComparison.companies.map((company) => ({
         name: company.companyName,
-        value: apiKey ? (company[apiKey] ?? 0) : 0,
+        value: apiKey ? ((company[apiKey] as number) ?? 0) : 0,
       }));
       result[key] = { ...info, data: chartData };
     });
@@ -405,75 +494,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     return [];
   }, [activeComparison?.companies, timeRange, ohlcvData]);
 
-  // 새 비교 세트 생성
-  const handleAddSet = async () => {
-    try {
-      const newSetName = `비교 세트 ${comparisonList.length + 1}`;
-      const response = await createComparison({
-        name: newSetName,
-        companies: [],
-      });
-      await fetchComparisonList();
-      setActiveSetId(response.id);
-    } catch (e) {
-      console.error("비교 세트 생성 실패:", e);
-    }
-  };
-
-  // 기업 제거
-  const handleRemoveCompany = async (stock_code: string) => {
-    if (!activeSetId) return;
-    try {
-      await removeCompany(activeSetId, stock_code);
-      await fetchComparisonDetail(activeSetId);
-    } catch (e) {
-      console.error("기업 제거 실패:", e);
-    }
-  };
-
-  // 기업 추가
-  const handleAddCompany = async (stockCode: string) => {
-    if (!activeSetId) return;
-    try {
-      await addCompany(activeSetId, { company: stockCode });
-      await fetchComparisonDetail(activeSetId);
-      setIsSearchOpen(false);
-      setSearchQuery("");
-    } catch (e) {
-      console.error("기업 추가 실패:", e);
-    }
-  };
-
-  const handleSaveName = async () => {
-    if (!activeSetId || !tempSetName.trim()) {
-      setIsEditingName(false);
-      return;
-    }
-
-    try {
-      await updateComparisonName(activeSetId, tempSetName.trim());
-      // 목록과 상세 데이터 갱신
-      await fetchComparisonList();
-      if (activeComparison) {
-        setActiveComparison({ ...activeComparison, name: tempSetName.trim() });
-      }
-    } catch (e) {
-      console.error("이름 변경 실패:", e);
-      // 실패 시 원래 이름으로 복원
-      setTempSetName(activeComparison?.name ?? "");
-    } finally {
-      setIsEditingName(false);
-    }
-  };
-
-  const toggleMetric = (key: DetailMetricKey) => {
-    if (activeMetrics.includes(key)) {
-      setActiveMetrics(activeMetrics.filter((k) => k !== key));
-    } else {
-      setActiveMetrics([...activeMetrics, key]);
-    }
-  };
-
   return (
     <div className="animate-fade-in pb-12 relative">
       {/* Top Navigation */}
@@ -521,7 +541,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               </div>
               <button
                 onClick={handleAddSet}
-                className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-shinhan-blue hover:text-shinhan-blue hover:bg-blue-50 transition-all"
+                disabled={createSetMutation.isPending}
+                className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-shinhan-blue hover:text-shinhan-blue hover:bg-blue-50 transition-all disabled:opacity-50"
               >
                 <Plus size={16} />
                 세트 추가하기
@@ -580,7 +601,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   </span>
                   <button
                     onClick={() => handleRemoveCompany(company.stock_code)}
-                    className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                    disabled={removeCompanyMutation.isPending}
+                    className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                   >
                     <X size={14} />
                   </button>
@@ -862,7 +884,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                               radius={[6, 6, 0, 0]}
                               barSize={40}
                             >
-                              {info.data.map((entry: any, index: number) => (
+                              {info.data.map((_entry, index) => (
                                 <Cell
                                   key={`cell-${index}`}
                                   fill={
@@ -968,7 +990,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   <button
                     key={company.code}
                     onClick={() => handleAddCompany(company.code)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left"
+                    disabled={addCompanyMutation.isPending}
+                    className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
                   >
                     <div>
                       <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">

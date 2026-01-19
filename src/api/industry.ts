@@ -6,7 +6,7 @@ import { api } from "./client";
  */
 
 export const getIndustryNews = (industryId: number | string) => {
-  return api.get(`/industries/${industryId}/news`).then((res) => res.data);
+  return api.get(`/api/industries/${industryId}/news`).then((res) => res.data);
 };
 
 /**
@@ -15,7 +15,9 @@ export const getIndustryNews = (industryId: number | string) => {
  */
 
 export const getIndustryCompanies = (industryId: number) => {
-  return api.get(`/industries/${industryId}/companies`).then((res) => res.data);
+  return api
+    .get(`/api/industries/${industryId}/companies`)
+    .then((res) => res.data);
 };
 
 /**
@@ -24,5 +26,7 @@ export const getIndustryCompanies = (industryId: number) => {
  */
 
 export const getIndustryAnalysis = (industryId: number) => {
-  return api.get(`/industries/${industryId}/analysis`).then((res) => res.data);
+  return api
+    .get(`/api/industries/${industryId}/analysis`)
+    .then((res) => res.data);
 };
