@@ -162,7 +162,7 @@ export const companyHandlers = [
     });
   }),
 
-  /* 🔥 산업 뉴스 (명세서 그대로) */
+  /* 산업 뉴스 (명세서 그대로) */
   http.get("/industries/:industry_id/news", async ({ params }) => {
     await delay(150);
     const industryId = Number(params.industry_id);
