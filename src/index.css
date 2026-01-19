@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+/* Root height setup for h-full to work */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom colors */
+:root {
+  --color-shinhan-blue: #0046ff;
+  --color-shinhan-dark: #002c9c;
+  --color-shinhan-light: #e6f0ff;
+  --color-shinhan-gold: #ddbb66;
+}
