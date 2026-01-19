@@ -10,10 +10,13 @@ import AIBubbleChart from "../components/Charts/AIBubbleChart";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import IndustryRankingCard from "../components/Ranking/IndustryRankingCard";
 
-// Types & Constants
-import { PageView } from "../types";
-import type { Stock, AxisKey, BrushRange } from "../types";
+// Types
+import type { PageView, Stock, AxisKey, BrushRange } from "../types";
 import { SAMPLE_STOCKS } from "../constants";
+
+// API & 타입
+import { getKospi, getKosdaq } from "../api/indices";
+import type { MarketIndexData } from "../api/indices";
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
@@ -21,11 +24,12 @@ interface DashboardProps {
   onShowNavbar: (show: boolean) => void;
 }
 
-/**
- * API Mock Functions
- */
-const fetchAINews = async () => {
-  return [
+// --- Sub Components ---
+
+const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
+  visibleSections,
+}) => {
+  const fetchAINews = async () => [
     {
       tag: "방산수출",
       time: "방금 전",
@@ -44,33 +48,8 @@ const fetchAINews = async () => {
       title: "에코프로비엠, 44조원 규모 양극재 공급 계약 체결... 잭팟 터졌다",
       source: "에너지경제",
     },
-    {
-      tag: "현대차",
-      time: "3시간 전",
-      title: "현대차, 美 전기차 공장 가동 본격화... 테슬라 추격 시작",
-      source: "조선비즈",
-    },
-    {
-      tag: "카카오",
-      time: "4시간 전",
-      title: "카카오, AI 챗봇 '카나나' 출시... 네이버와 경쟁 본격화",
-      source: "IT조선",
-    },
   ];
-};
 
-const fetchStocks = async (): Promise<Stock[]> => {
-  return new Promise((resolve) =>
-    setTimeout(() => resolve(SAMPLE_STOCKS), 500),
-  );
-};
-
-// --- Sub Components ---
-
-const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
-  visibleSections,
-}) => {
-  const newsContainerRef = useRef<HTMLDivElement>(null);
   const { data: news = [], isLoading } = useQuery({
     queryKey: ["aiNews"],
     queryFn: fetchAINews,
@@ -79,11 +58,7 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
 
   return (
     <div
-      className={`bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col h-[600px] transition-all duration-700 ${
-        visibleSections.has("ai-issue")
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-10"
-      }`}
+      className={`bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col h-[600px] transition-all duration-700 ${visibleSections.has("ai-issue") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
     >
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -96,16 +71,12 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
           <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
         </div>
       </div>
-
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="animate-spin" />
         </div>
       ) : (
-        <div
-          ref={newsContainerRef}
-          className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar"
-        >
+        <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
           {news.map((item, i) => (
             <div
               key={i}
@@ -132,7 +103,6 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
 // --- Main Dashboard Component ---
 
 const Dashboard: React.FC<DashboardProps> = ({
-  setPage,
   onIndustryClick,
   onShowNavbar,
 }) => {
@@ -143,10 +113,33 @@ const Dashboard: React.FC<DashboardProps> = ({
     new Set(["hero"]),
   );
 
+  // 1. 시장 지수 데이터 (수정된 타입 적용)
+  const {
+    data: kospiData,
+    isLoading: isKospiLoading,
+    isError: isKospiError,
+  } = useQuery<MarketIndexData>({
+    queryKey: ["kospi"],
+    queryFn: getKospi,
+    refetchInterval: 60000,
+    retry: 2,
+  });
+
+  const {
+    data: kosdaqData,
+    isLoading: isKosdaqLoading,
+    isError: isKosdaqError,
+  } = useQuery<MarketIndexData>({
+    queryKey: ["kosdaq"],
+    queryFn: getKosdaq,
+    refetchInterval: 60000,
+    retry: 2,
+  });
+
+  // 2. 주식 데이터 및 필터 (평형좌표계용)
   const { data: stocks = [], isLoading: isStocksLoading } = useQuery({
     queryKey: ["stocks"],
-    queryFn: fetchStocks,
-    staleTime: 5 * 60 * 1000,
+    queryFn: async () => SAMPLE_STOCKS,
   });
 
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -161,13 +154,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
         if (range) {
-          // 1. undefined 방지 및 기본값 설정
           const min = range.min ?? -Infinity;
           const max = range.max ?? Infinity;
-
-          // 2. stock[key] 값을 숫자로 안전하게 변환하여 비교 (ts2365, ts2532 해결)
           const value = Number(stock[key]);
-
           if (isNaN(value) || value < min || value > max) {
             pass = false;
             break;
@@ -179,6 +168,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return ids;
   }, [filters, stocks]);
 
+  // 섹션 감지 및 스크롤 핸들러
   useEffect(() => {
     const sectionIds = [
       "hero",
@@ -194,22 +184,23 @@ const Dashboard: React.FC<DashboardProps> = ({
           if (entry.isIntersecting)
             setVisibleSections((prev) => new Set([...prev, id]));
         },
-        { threshold: 0.1, rootMargin: "-10% 0px" },
+        { threshold: 0.1 },
       );
       observer.observe(element);
       return observer;
     });
-    return () => observers.forEach((obs) => obs?.disconnect());
-  }, []);
 
-  useEffect(() => {
     const handleScroll = () => {
       if (!scrollRef.current) return;
       onShowNavbar(scrollRef.current.scrollTop > 100);
     };
+
     const div = scrollRef.current;
     div?.addEventListener("scroll", handleScroll);
-    return () => div?.removeEventListener("scroll", handleScroll);
+    return () => {
+      observers.forEach((obs) => obs?.disconnect());
+      div?.removeEventListener("scroll", handleScroll);
+    };
   }, [onShowNavbar]);
 
   return (
@@ -217,7 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       ref={scrollRef}
       className="h-full overflow-y-auto bg-slate-50 scroll-smooth snap-y snap-proximity"
     >
-      {/* 1. HERO SECTION - 비율 유지하되 깔끔하게 정리 */}
+      {/* 1. HERO SECTION */}
       <section
         id="hero"
         className="h-screen w-full flex flex-col items-center justify-center relative bg-[#0046FF] px-6 snap-start"
@@ -247,7 +238,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </section>
 
-      {/* 2. QUANT ANALYSIS SECTION - 시각적 여백 확보 */}
+      {/* 2. QUANT ANALYSIS (평형좌표계) SECTION */}
       <section
         id="parallel-coordinates"
         className="min-h-screen w-full py-24 px-6 bg-white snap-start flex flex-col justify-center"
@@ -280,32 +271,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               />
             )}
           </div>
-
-          {selectedStock && (
-            <div className="mt-8 p-6 bg-blue-600 rounded-3xl text-white flex items-center justify-between shadow-xl animate-in fade-in slide-in-from-bottom-4">
-              <div>
-                <span className="text-blue-100 text-sm font-medium">
-                  {selectedStock.sector}
-                </span>
-                <h3 className="text-2xl font-bold">
-                  {selectedStock.name}{" "}
-                  <span className="text-lg opacity-80 font-normal ml-2">
-                    {selectedStock.id}
-                  </span>
-                </h3>
-              </div>
-              <button
-                onClick={() => navigate(`/company/${selectedStock.id}`)}
-                className="px-6 py-3 bg-white text-blue-600 font-bold rounded-xl flex items-center gap-2 hover:bg-blue-50 transition-colors"
-              >
-                상세 리포트 보기 <ArrowRight size={18} />
-              </button>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* 3. MARKET DASHBOARD - 그리드 및 검색바 강조 */}
+      {/* 3. MARKET DASHBOARD SECTION */}
       <section
         id="market-dashboard"
         className="min-h-screen w-full py-24 px-6 bg-slate-50 snap-start"
@@ -339,40 +308,88 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-shrink-0">
+                {/* KOSPI CARD */}
                 <GlassCard
-                  className="p-8 bg-white border border-slate-100"
-                  onClick={() => onIndustryClick("finance")}
+                  className="p-8 bg-white border border-slate-100 cursor-pointer hover:shadow-md transition-shadow min-h-[280px]"
+                  onClick={() => onIndustryClick("kospi")}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
                       KOSPI
                     </h3>
-                    <span className="text-emerald-500 font-bold text-sm">
-                      +1.24%
-                    </span>
+                    {kospiData && (
+                      <span
+                        className={`font-bold text-sm ${kospiData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
+                      >
+                        {kospiData.change_rate >= 0 ? "▲" : "▼"}{" "}
+                        {Math.abs(kospiData.change_rate).toFixed(2)}%
+                      </span>
+                    )}
                   </div>
                   <span className="text-4xl font-extrabold text-slate-900">
-                    2,755.02
+                    {isKospiLoading ? (
+                      <Loader2
+                        className="animate-spin text-slate-400"
+                        size={24}
+                      />
+                    ) : isKospiError ? (
+                      <span className="text-red-400 text-lg">연결 실패</span>
+                    ) : (
+                      (kospiData?.current_price?.toLocaleString() ?? "---")
+                    )}
                   </span>
                   <div className="h-32 mt-4">
-                    <StockChart color="#10B981" showAxes={false} />
+                    <StockChart
+                      color={
+                        kospiData && kospiData.change_rate >= 0
+                          ? "#10B981"
+                          : "#EF4444"
+                      }
+                      showAxes={false}
+                    />
                   </div>
                 </GlassCard>
-                <GlassCard className="p-8 bg-white border border-slate-100">
+
+                {/* KOSDAQ CARD */}
+                <GlassCard
+                  className="p-8 bg-white border border-slate-100 cursor-pointer hover:shadow-md transition-shadow min-h-[280px]"
+                  onClick={() => onIndustryClick("kosdaq")}
+                >
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
                       KOSDAQ
                     </h3>
-                    <span className="text-red-500 font-bold text-sm">
-                      -0.45%
-                    </span>
+                    {kosdaqData && (
+                      <span
+                        className={`font-bold text-sm ${kosdaqData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
+                      >
+                        {kosdaqData.change_rate >= 0 ? "▲" : "▼"}{" "}
+                        {Math.abs(kosdaqData.change_rate).toFixed(2)}%
+                      </span>
+                    )}
                   </div>
                   <span className="text-4xl font-extrabold text-slate-900">
-                    855.12
+                    {isKosdaqLoading ? (
+                      <Loader2
+                        className="animate-spin text-slate-400"
+                        size={24}
+                      />
+                    ) : isKosdaqError ? (
+                      <span className="text-red-400 text-lg">연결 실패</span>
+                    ) : (
+                      (kosdaqData?.current_price?.toLocaleString() ?? "---")
+                    )}
                   </span>
                   <div className="h-32 mt-4">
-                    <StockChart color="#EF4444" showAxes={false} />
+                    <StockChart
+                      color={
+                        kosdaqData && kosdaqData.change_rate >= 0
+                          ? "#10B981"
+                          : "#EF4444"
+                      }
+                      showAxes={false}
+                    />
                   </div>
                 </GlassCard>
               </div>
@@ -412,7 +429,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </section>
 
-      {/* 4. AI ISSUE TRACKING - 레이아웃 균형 조정 */}
+      {/* 4. AI ISSUE TRACKING SECTION */}
       <section
         id="ai-issue"
         className="min-h-screen w-full py-24 px-6 bg-white snap-start"
@@ -429,9 +446,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <p className="text-xl text-slate-600 leading-relaxed">
                   수만 개의 뉴스 데이터 속에서{" "}
                   <span className="text-blue-600 font-bold">
-                    인공지능이 추출한
-                  </span>{" "}
-                  핵심 마켓 시그널을 확인하세요.
+                    인공지능이 추출한 핵심 마켓 시그널
+                  </span>
+                  을 확인하세요.
                 </p>
               </div>
               <div className="bg-slate-50 rounded-3xl p-4 border border-slate-100">
