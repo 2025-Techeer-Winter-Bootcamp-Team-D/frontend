@@ -292,7 +292,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
   });
 
-  const ohlcvData = ohlcvQuery.data ?? {};
+  const ohlcvData = useMemo(() => ohlcvQuery.data ?? {}, [ohlcvQuery.data]);
 
   const currentMetricOption =
     metricOptions.find((o) => o.id === selectedMetric) || metricOptions[0];
