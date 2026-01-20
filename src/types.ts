@@ -165,12 +165,8 @@ export type IndustryCompany = {
 };
 
 export interface IndustryCompaniesResponse {
-  status: number;
-  message: string;
-  data: {
-    indutyCode: string;
-    companies: IndustryCompany[];
-  };
+  indutyCode: string;
+  companies: IndustryCompany[];
 }
 
 // GET /industries/{induty_code}/analysis

@@ -7,6 +7,7 @@ import React, {
 
 // 즐겨찾기 데이터의 타입 정의 (프로젝트에 맞게 수정 가능)
 interface StarredContextType {
+  starred: Set<string>;
   starredItems: string[];
   toggleStar: (id: string) => void;
   isStarred: (id: string) => boolean;
@@ -16,6 +17,9 @@ const StarredContext = createContext<StarredContextType | undefined>(undefined);
 
 export const StarredProvider = ({ children }: { children: ReactNode }) => {
   const [starredItems, setStarredItems] = useState<string[]>([]);
+
+  // Set 형태로 변환
+  const starred = new Set(starredItems);
 
   // 즐겨찾기 추가/해제 함수
   const toggleStar = (id: string) => {
@@ -28,7 +32,9 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
   const isStarred = (id: string) => starredItems.includes(id);
 
   return (
-    <StarredContext.Provider value={{ starredItems, toggleStar, isStarred }}>
+    <StarredContext.Provider
+      value={{ starred, starredItems, toggleStar, isStarred }}
+    >
       {children}
     </StarredContext.Provider>
   );
