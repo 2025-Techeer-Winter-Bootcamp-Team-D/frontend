@@ -93,9 +93,9 @@ export const industryHandlers = [
   }),
 
   // 산업 뉴스 조회 (GET /industries/{industry_id}/news)
-  http.get("/industries/:industry_id/news", async ({ params }) => {
+  http.get("/industries/:induty_code/news", async ({ params }) => {
     await delay(200);
-    const indutyCode = String(params.industry_id);
+    const indutyCode = String(params.induty_code);
 
     const news = industryNews.get(indutyCode) ?? [];
 
@@ -151,7 +151,10 @@ export const industryHandlers = [
     const response: IndustryCompaniesResponse = {
       status: 200,
       message: "해당 산업 내 기업 순위 조회를 성공하였습니다.",
-      data: companies,
+      data:{
+        companies,
+        indutyCode,
+      },
     };
 
     return HttpResponse.json(response);

@@ -22,7 +22,7 @@ export const getIndustryCompanies = (indutyCode: number | string) => {
 
 /**
  * 산업 전망 분석 조회
- * @param indutyCode 산업코드
+ * @param indutyCode 산업아이디
  */
 
 export const getIndustryAnalysis = (indutyCode: number | string) => {
