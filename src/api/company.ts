@@ -6,6 +6,7 @@ import type {
   NewsItem,
   CompanySearchResponse,
   CompanyFinancialsData,
+  StockPricesResponse,
 } from "@/types";
 
 /*
@@ -31,9 +32,12 @@ export const getCompanyDetail = (code: string) => {
  * GET /companies/{stock_code}/prices?interval=
  */
 export const getStockOhlcv = (stock_code: string, interval: string) => {
-  return api.get<ApiResponse<OhlcvData[]>>(`/companies/${stock_code}/prices/`, {
-    params: { interval },
-  });
+  return api.get<ApiResponse<StockPricesResponse>>(
+    `/companies/${stock_code}/prices/`,
+    {
+      params: { interval },
+    },
+  );
 };
 
 /**

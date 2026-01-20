@@ -29,7 +29,6 @@ export interface CompanySearchItem {
   corp_code: string;
   company_name: string;
   market: string;
-  induty_code: string;
   industry: {
     name: string;
     induty_code: string;
