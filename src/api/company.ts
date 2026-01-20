@@ -31,7 +31,7 @@ export interface CompanySearchResponse {
   results: CompanySearchItem[];
 }
 
-/**
+/*
  * 기업 검색
  * GET /companies/search/?q=
  */
@@ -46,15 +46,15 @@ export const searchCompanies = (keyword: string) => {
  * GET /companies/{code}
  */
 export const getCompanyDetail = (code: string) => {
-  return api.get<ApiResponse<Company>>(`/companies/${code}/`);
+  return api.get<ApiResponse<Company>>(`/companies/${code}`);
 };
 
 /**
  * 주가 데이터 조회 (OHLCV)
- * GET /companies/{companyId}/prices/?interval=
+ * GET /companies/{companyId}/ohlcv?interval=
  */
 export const getStockOhlcv = (companyId: string, interval: string) => {
-  return api.get<ApiResponse<OhlcvData[]>>(`/companies/${companyId}/prices/`, {
+  return api.get<ApiResponse<OhlcvData[]>>(`/companies/${companyId}/ohlcv`, {
     params: { interval },
   });
 };

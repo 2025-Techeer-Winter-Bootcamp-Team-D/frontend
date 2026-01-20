@@ -26,6 +26,7 @@ type CompanyInfo = {
 const companies = new Map<string, CompanyInfo>();
 const companyNews = new Map<string, NewsItem[]>();
 const industryNews = new Map<string, NewsItem[]>();
+
 companies.set("055550", {
   stock_code: "055550",
   corp_code: "00126380",
@@ -38,28 +39,132 @@ companies.set("055550", {
   establishment_date: "2001-09-01",
   homepage_url: "https://www.shinhan.com",
 });
-
-companyNews.set("055550", [
+// 초기 기업 데이터
+const initialCompanies: CompanyInfo[] = [
   {
-    id: nextNewsId++,
-    title: "신한금융, 역대 최대 실적 달성",
-    summary: "신한금융지주가 사상 최대 실적을 기록했다.",
-    source: "연합뉴스",
-    date: "2024-12-01",
+    stock_code: "055550",
+    corp_code: "00126380",
+    company_name: "신한금융지주",
+    industry: { induty_code: "0021", name: "금융" },
+    description: "대한민국 대표 금융지주회사",
+    logo_url: "",
+    market_amount: 42000000000000,
+    ceo_name: "진옥동",
+    establishment_date: "2001-09-01",
+    homepage_url: "https://www.shinhan.com",
   },
-]);
-
-industryNews.set("0021", [
   {
-    id: nextNewsId++,
-    title: "금융업계, 금리 인하 기대감 확산",
-    summary: "금융 산업 전반에 긍정적인 전망이 나오고 있다.",
-    source: "한국경제",
-    date: "2024-12-02",
+    stock_code: "005930",
+    corp_code: "00126380",
+    company_name: "삼성전자",
+    industry: { induty_code: "0001", name: "반도체" },
+    description: "글로벌 반도체 및 전자제품 기업",
+    logo_url: "",
+    market_amount: 350000000000000,
+    ceo_name: "한종희",
+    establishment_date: "1969-01-13",
+    homepage_url: "https://www.samsung.com",
   },
-]);
+  {
+    stock_code: "000270",
+    corp_code: "00164742",
+    company_name: "기아",
+    industry: { induty_code: "0002", name: "자동차" },
+    description: "글로벌 자동차 제조 기업",
+    logo_url: "",
+    market_amount: 35000000000000,
+    ceo_name: "송호성",
+    establishment_date: "1944-12-11",
+    homepage_url: "https://www.kia.com",
+  },
+  {
+    stock_code: "005380",
+    corp_code: "00164779",
+    company_name: "현대자동차",
+    industry: { induty_code: "0002", name: "자동차" },
+    description: "대한민국 대표 자동차 제조 기업",
+    logo_url: "",
+    market_amount: 45000000000000,
+    ceo_name: "장재훈",
+    establishment_date: "1967-12-29",
+    homepage_url: "https://www.hyundai.com",
+  },
+  {
+    stock_code: "035420",
+    corp_code: "00401731",
+    company_name: "네이버",
+    industry: { induty_code: "0003", name: "IT" },
+    description: "대한민국 최대 인터넷 포털 기업",
+    logo_url: "",
+    market_amount: 55000000000000,
+    ceo_name: "최수연",
+    establishment_date: "1999-06-02",
+    homepage_url: "https://www.naver.com",
+  },
+  {
+    stock_code: "035720",
+    corp_code: "00258801",
+    company_name: "카카오",
+    industry: { induty_code: "0003", name: "IT" },
+    description: "메신저 및 플랫폼 서비스 기업",
+    logo_url: "",
+    market_amount: 25000000000000,
+    ceo_name: "홍은택",
+    establishment_date: "1995-02-16",
+    homepage_url: "https://www.kakaocorp.com",
+  },
+  {
+    stock_code: "006400",
+    corp_code: "00356361",
+    company_name: "삼성SDI",
+    industry: { induty_code: "0004", name: "배터리" },
+    description: "2차전지 및 에너지 솔루션 기업",
+    logo_url: "",
+    market_amount: 30000000000000,
+    ceo_name: "최윤호",
+    establishment_date: "1970-01-13",
+    homepage_url: "https://www.samsungsdi.co.kr",
+  },
+  {
+    stock_code: "051910",
+    corp_code: "00356370",
+    company_name: "LG화학",
+    industry: { induty_code: "0004", name: "배터리" },
+    description: "화학 및 배터리 소재 전문 기업",
+    logo_url: "",
+    market_amount: 28000000000000,
+    ceo_name: "신학철",
+    establishment_date: "2001-04-03",
+    homepage_url: "https://www.lgchem.com",
+  },
+  {
+    stock_code: "000660",
+    corp_code: "00164529",
+    company_name: "SK하이닉스",
+    industry: { induty_code: "0001", name: "반도체" },
+    description: "메모리 반도체 전문 기업",
+    logo_url: "",
+    market_amount: 120000000000000,
+    ceo_name: "곽노정",
+    establishment_date: "1983-02-01",
+    homepage_url: "https://www.skhynix.com",
+  },
+  {
+    stock_code: "028260",
+    corp_code: "00292146",
+    company_name: "삼성물산",
+    industry: { induty_code: "0005", name: "건설" },
+    description: "건설 및 상사 전문 기업",
+    logo_url: "",
+    market_amount: 20000000000000,
+    ceo_name: "오세철",
+    establishment_date: "1938-11-01",
+    homepage_url: "https://www.samsungcnt.com",
+  },
+];
 
-//let nextNewsId = 1;
+initialCompanies.forEach((c) => companies.set(c.stock_code, c));
+
 /* =========================
    Handlers
 ========================= */
