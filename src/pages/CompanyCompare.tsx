@@ -53,8 +53,12 @@ import {
   updateComparisonName,
   deleteComparison,
 } from "../api/comparison";
-import { searchCompanies, getStockOhlcv } from "../api/company";
-import type { CompanySearchResult, OhlcvItem } from "../types";
+import {
+  searchCompanies,
+  getStockOhlcv,
+  type CompanySearchItem,
+} from "../api/company";
+import type { OhlcvItem } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface CompareProps {
@@ -169,7 +173,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     queryKey: ["comparison", activeSetId],
     enabled: !!activeSetId,
     queryFn: async () => {
-      return await getComparison(activeSetId as number);
+      const res = await getComparison(activeSetId as number);
+      console.log("Comparison detail response:", res);
+      // 백엔드 응답이 { data: {...} } 형식일 수 있음
+      return res.data ?? res;
     },
   });
 
@@ -217,7 +224,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     enabled: !!debouncedSearch.trim(),
     queryFn: async () => {
       const res = await searchCompanies(debouncedSearch);
-      return (res.data?.data ?? []) as CompanySearchResult[];
+      // 백엔드 응답: { data: { results: [...] } }
+      return (res.data?.data?.results ?? []) as CompanySearchItem[];
     },
   });
 
@@ -311,6 +319,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const addCompanyMutation = useMutation({
     mutationFn: async (stockCode: string) => {
       if (!activeSetId) throw new Error("activeSetId가 없습니다.");
+      console.log("Adding company:", {
+        comparison_id: activeSetId,
+        company: stockCode,
+      });
       await addCompany(activeSetId, { company: stockCode });
     },
     onSuccess: async () => {
@@ -319,6 +331,16 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       });
       setIsSearchOpen(false);
       setSearchQuery("");
+    },
+    onError: (error: unknown) => {
+      // 에러 응답 상세 로깅
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { data?: unknown } };
+        console.error(
+          "API Error Response:",
+          JSON.stringify(axiosError.response?.data, null, 2),
+        );
+      }
     },
   });
 
@@ -1328,31 +1350,43 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   검색 중...
                 </div>
               ) : searchResults.length > 0 ? (
-                searchResults.map((company) => (
-                  <button
-                    key={company.id}
-                    onClick={() => handleAddCompany(String(company.id))}
-                    disabled={addCompanyMutation.isPending}
-                    className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      {company.logo_url && (
-                        <img
-                          src={company.logo_url}
-                          alt={company.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      )}
-                      <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
-                        {company.name}
-                      </span>
-                    </div>
-                    <Plus
-                      size={18}
-                      className="text-gray-400 group-hover:text-shinhan-blue"
-                    />
-                  </button>
-                ))
+                searchResults
+                  .filter(
+                    (company) =>
+                      !activeComparison?.companies?.some(
+                        (c) => c.stock_code === company.stock_code,
+                      ),
+                  )
+                  .map((company) => (
+                    <button
+                      key={company.stock_code}
+                      onClick={() => handleAddCompany(company.stock_code)}
+                      disabled={addCompanyMutation.isPending}
+                      className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        {company.logo_url && (
+                          <img
+                            src={company.logo_url}
+                            alt={company.company_name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
+                            {company.company_name}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {company.stock_code} · {company.industry?.name}
+                          </span>
+                        </div>
+                      </div>
+                      <Plus
+                        size={18}
+                        className="text-gray-400 group-hover:text-shinhan-blue"
+                      />
+                    </button>
+                  ))
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">
                   검색 결과가 없습니다.
