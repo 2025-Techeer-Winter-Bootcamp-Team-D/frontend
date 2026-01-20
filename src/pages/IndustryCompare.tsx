@@ -45,6 +45,8 @@ import {
   getIndustryNews,
   getIndustryAnalysis,
   getIndustryCompanies,
+  getIndustryIndices,
+  getIndustryChart,
 } from "../api/industry";
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
@@ -655,15 +657,102 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     enabled: !!indutyCode,
   });
 
+  // 산업 지수 목록 조회
+  const indicesQuery = useQuery({
+    queryKey: ["industryIndices"],
+    queryFn: () => getIndustryIndices(),
+  });
+
+  // 산업 지수 차트 조회 (기간별)
+  const chartPeriodMap: Record<TimeRange, "1m" | "3m" | "6m" | "1y"> = {
+    "1M": "1m",
+    "3M": "3m",
+    "6M": "6m",
+    "1Y": "1y",
+  };
+
+  const chartQuery = useQuery({
+    queryKey: ["industryChart", indutyCode, timeRange],
+    queryFn: () => getIndustryChart(indutyCode, chartPeriodMap[timeRange]),
+    enabled: !!indutyCode,
+  });
+
   // 쿼리 상태 추출
-  const loading = analysisQuery.isLoading || companiesQuery.isLoading;
+  const loading =
+    analysisQuery.isLoading ||
+    companiesQuery.isLoading ||
+    indicesQuery.isLoading ||
+    chartQuery.isLoading;
   const error =
-    analysisQuery.error?.message || companiesQuery.error?.message || null;
+    analysisQuery.error?.message ||
+    companiesQuery.error?.message ||
+    indicesQuery.error?.message ||
+    chartQuery.error?.message ||
+    null;
   const analysis = analysisQuery.data as {
     outlook?: string;
     insights?: { positive: string; risk: string };
   } | null;
   const industryNews = (newsQuery.data as IndustryNewsItem[]) ?? [];
+
+  // 산업 지수 목록 데이터에서 현재 산업 찾기
+  // API 응답이 { data: [...] } 형태일 수 있음
+  const indicesResponse = indicesQuery.data as
+    | {
+        data?: Array<{
+          induty_code: string;
+          induty_name: string;
+          current_value?: number;
+          change_value?: number;
+          change_percent?: number;
+        }>;
+      }
+    | Array<{
+        induty_code: string;
+        induty_name: string;
+        current_value?: number;
+        change_value?: number;
+        change_percent?: number;
+      }>
+    | null;
+
+  const indicesData = Array.isArray(indicesResponse)
+    ? indicesResponse
+    : (indicesResponse?.data ?? []);
+
+  const currentIndexData = indicesData?.find(
+    (item) => item.induty_code === indutyCode,
+  );
+
+  // 차트 데이터
+  const chartData = useMemo(() => {
+    const chartResponse = chartQuery.data as
+      | {
+          data?: Array<{
+            date: string;
+            open: number;
+            high: number;
+            low: number;
+            close: number;
+            change_value: number;
+            change_rate: number;
+          }>;
+        }
+      | Array<{
+          date: string;
+          open: number;
+          high: number;
+          low: number;
+          close: number;
+          change_value: number;
+          change_rate: number;
+        }>
+      | null;
+
+    return Array.isArray(chartResponse)
+      ? chartResponse
+      : (chartResponse?.data ?? []);
+  }, [chartQuery.data]);
 
   // Parallel Coordinates Chart State
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -711,6 +800,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   };
 
   const trendData = useMemo(() => {
+    // API 차트 데이터가 있으면 사용
+    if (chartData && chartData.length > 0) {
+      return chartData.map((item) => ({
+        time: item.date,
+        value: item.close,
+      }));
+    }
+
+    // fallback: mock 데이터
     let labels: string[] = [];
     switch (timeRange) {
       case "1M":
@@ -743,7 +841,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       }
     }
     return result;
-  }, [selectedIndustry, timeRange, currentData.indexValue]);
+  }, [chartData, timeRange, currentData.indexValue]);
 
   return (
     <div className="animate-fade-in pb-12 relative">
@@ -799,15 +897,25 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               </h3>
               <div className="flex items-baseline gap-2 mt-2">
                 <span className="text-3xl font-bold text-slate-900">
-                  {currentData.indexValue.toLocaleString()}
+                  {(
+                    currentIndexData?.current_value ?? currentData.indexValue
+                  ).toLocaleString()}
                 </span>
                 <span
-                  className={`font-medium px-2 py-0.5 rounded text-sm ${currentData.changeValue > 0 ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
+                  className={`font-medium px-2 py-0.5 rounded text-sm ${(currentIndexData?.change_value ?? currentData.changeValue) > 0 ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
                 >
-                  {currentData.changeValue > 0 ? "+" : ""}
-                  {currentData.changeValue} (
-                  {currentData.changeValue > 0 ? "+" : ""}
-                  {currentData.changePercent}%)
+                  {(currentIndexData?.change_value ?? currentData.changeValue) >
+                  0
+                    ? "+"
+                    : ""}
+                  {currentIndexData?.change_value ?? currentData.changeValue} (
+                  {(currentIndexData?.change_value ?? currentData.changeValue) >
+                  0
+                    ? "+"
+                    : ""}
+                  {currentIndexData?.change_percent ??
+                    currentData.changePercent}
+                  %)
                 </span>
               </div>
             </div>
