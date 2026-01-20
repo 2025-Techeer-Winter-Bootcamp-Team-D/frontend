@@ -51,18 +51,16 @@ import {
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
 const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
-  finance: "0021", // 금융업
-  semicon: "0014", // 전기전자 (반도체/IT)
-  auto: "0015", // 운수장비 (자동차/조선)
-  bio: "0010", // 의약품 (바이오)
-  battery: "0014", // 전기전자 (배터리는 전기전자에 포함)
-  internet: "1042", // 소프트웨어
-  ent: "1041", // 디지털콘텐츠
+  agriculture_fishery: "0027", // 농어업
+  manufacturing_kosdaq: "1015", //제조업
+  food: "0006", //음식료품
   steel: "0009", // 화학/정유 (철강 근접)
-  ship: "0015", // 운수장비 (조선)
-  const: "0018", // 건설업
-  retail: "0016", // 유통업
-  telecom: "0020", // 통신업
+  pharmaceuticals: "0010", //의약품
+  battery: "0014", // 전기전자 (배터리는 전기전자에 포함)
+  auto: "0015", // 운수장비 (자동차/조선)
+  semiconductor_kosdaq: "1047", //반도체(코스닥)
+  it_kosdaq: "1012", //it 산업(코스닥)
+  insurance: "0025", //보험
 };
 
 interface AnalysisProps {
@@ -107,9 +105,9 @@ const createMockCompanies = (
 };
 
 const industryDB: Record<IndustryKey, IndustryData> = {
-  finance: {
-    id: "finance",
-    name: "금융 (Finance)",
+  agriculture_fishery: {
+    id: "agriculture_fishery",
+    name: "농어업",
     indexName: "KRX Banks",
     indexValue: 765.42,
     changeValue: 12.5,
@@ -618,12 +616,12 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   onToggleStar,
   setCompanyCode,
 }) => {
-  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 finance
+  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 agriculture_fishery
   const getInitialIndustry = (): IndustryKey => {
     if (initialIndutyCode && industryDB[initialIndutyCode as IndustryKey]) {
       return initialIndutyCode as IndustryKey;
     }
-    return "finance";
+    return "agriculture_fishery";
   };
 
   const [selectedIndustry, setSelectedIndustry] =
