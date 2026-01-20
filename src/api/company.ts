@@ -4,7 +4,7 @@ import type {
   ApiResponse,
   OhlcvData,
   NewsItem,
-  CompanySearchResult,
+  //CompanySearchResult,
 } from "@/types";
 
 /**

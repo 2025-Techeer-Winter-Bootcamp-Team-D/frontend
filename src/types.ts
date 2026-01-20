@@ -26,9 +26,19 @@ export interface Company {
 
 // 기업 검색 결과 타입
 export interface CompanySearchResult {
-  companyId: number;
+  id: string;
   name: string;
-  logo: string;
+  code: string;
+  industry: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  marketCap: string;
+  per: number;
+  pbr: number;
+  revenue: number;
+  profit: number;
+  logo_url?: string;
 }
 
 //분석 및 트랜드 기능
@@ -118,7 +128,7 @@ export interface ExpenseItem {
 // Industry API Types
 // ============================================
 
-// GET /industries/{industry_id}/news
+// GET /industries/{induty_code}/news
 export interface IndustryNewsItem {
   id: number;
   title: string;
@@ -132,11 +142,11 @@ export interface IndustryNewsItem {
 }
 
 export interface IndustryNewsResponse {
-  industryId: string;
+  indutyCode: string;
   items: IndustryNewsItem[];
 }
 
-// GET /industries/{industry_id}/companies
+// GET /industries/{induty_code}/companies
 // 산업 내 기업 정보 타입
 export type IndustryCompany = {
   companyId: number | string;
@@ -160,9 +170,9 @@ export interface IndustryCompaniesResponse {
   data: IndustryCompany[];
 }
 
-// GET /industries/{industry_id}/analysis
+// GET /industries/{induty_id}/analysis
 export interface IndustryAnalysisResponse {
-  industryId: string;
+  indutyCode: string;
   summary: string;
   outlook?: string;
   keywords: string[];
@@ -328,7 +338,7 @@ export interface CompanyApiData {
   stock_code: string;
   corp_code: string;
   company_name: string;
-  industry: { industry_id: number; name: string };
+  industry: { induty_code: string; name: string };
   description: string;
   logo_url: string;
   market_amount: number;

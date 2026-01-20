@@ -2,16 +2,16 @@ import { api } from "./axios";
 
 /**
  * 산업 뉴스 목록 조회
- * @param industryId 산업아이디
+ * @param indutyCode 산업코드
  */
 
-export const getIndustryNews = (industryId: number | string) => {
-  return api.get(`/industries/${industryId}/news`).then((res) => res.data);
+export const getIndustryNews = (indutyCode: number | string) => {
+  return api.get(`/industries/${indutyCode}/news`).then((res) => res.data);
 };
 
 /**
  * 산업 내 기업 순위 조회
- * @param industryId 산업아이디
+ * @param indutyCode 산업코드
  */
 
 export const getIndustryCompanies = (indutyCode: number | string) => {

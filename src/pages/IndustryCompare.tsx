@@ -48,7 +48,7 @@ import {
 } from "../api/industry";
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
-const INDUSTRY_ID_BY_KEY: Record<IndustryKey, string> = {
+const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
   finance: "0021", // 금융업
   semicon: "0014", // 전기전자 (반도체/IT)
   auto: "0015", // 운수장비 (자동차/조선)
@@ -65,7 +65,7 @@ const INDUSTRY_ID_BY_KEY: Record<IndustryKey, string> = {
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
-  initialIndustryId?: string;
+  initialIndutyCode?: string;
   starred: Set<string>;
   onToggleStar: (code: string) => void;
   setCompanyCode?: (code: string) => void;
@@ -611,15 +611,15 @@ const MiniChart = ({ color }: { color: string }) => {
 
 const IndustryAnalysis: React.FC<AnalysisProps> = ({
   setPage,
-  initialIndustryId,
+  initialIndutyCode,
   starred,
   onToggleStar,
   setCompanyCode,
 }) => {
-  // 초기 산업 설정: initialIndustryId가 유효하면 사용, 아니면 finance
+  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 finance
   const getInitialIndustry = (): IndustryKey => {
-    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
-      return initialIndustryId as IndustryKey;
+    if (initialIndutyCode && industryDB[initialIndutyCode as IndustryKey]) {
+      return initialIndutyCode as IndustryKey;
     }
     return "finance";
   };
@@ -631,28 +631,28 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     null,
   );
 
-  // 산업 ID
-  const industryId = INDUSTRY_ID_BY_KEY[selectedIndustry];
+  // 산업 코드
+  const indutyCode = INDUTY_CODE_BY_KEY[selectedIndustry];
 
   // -----------------------------
   // TanStack Query - API 데이터 조회
   // -----------------------------
   const analysisQuery = useQuery({
-    queryKey: ["industryAnalysis", industryId],
-    queryFn: () => getIndustryAnalysis(industryId),
-    enabled: !!industryId,
+    queryKey: ["industryAnalysis", indutyCode],
+    queryFn: () => getIndustryAnalysis(indutyCode),
+    enabled: !!indutyCode,
   });
 
   const companiesQuery = useQuery({
-    queryKey: ["industryCompanies", industryId],
-    queryFn: () => getIndustryCompanies(industryId),
-    enabled: !!industryId,
+    queryKey: ["industryCompanies", indutyCode],
+    queryFn: () => getIndustryCompanies(indutyCode),
+    enabled: !!indutyCode,
   });
 
   const newsQuery = useQuery({
-    queryKey: ["industryNews", industryId],
-    queryFn: () => getIndustryNews(industryId),
-    enabled: !!industryId,
+    queryKey: ["industryNews", indutyCode],
+    queryFn: () => getIndustryNews(indutyCode),
+    enabled: !!indutyCode,
   });
 
   // 쿼리 상태 추출
@@ -934,7 +934,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         {currentData.companies.slice(0, 3).map((company, index) => {
           const isFirst = index === 0;
           const isSecond = index === 1;
-          const isThird = index === 2;
 
           let containerClasses =
             "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
@@ -1637,8 +1636,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           뉴스 <ChevronRight size={18} />
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentData.news.length > 0 ? (
-            currentData.news.slice(0, 6).map((news) => (
+          {industryNews.length > 0 ? (
+            industryNews.slice(0, 6).map((news) => (
               <GlassCard
                 key={news.id}
                 className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"

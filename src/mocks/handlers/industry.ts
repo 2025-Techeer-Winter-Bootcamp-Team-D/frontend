@@ -95,22 +95,22 @@ export const industryHandlers = [
   // 산업 뉴스 조회 (GET /industries/{industry_id}/news)
   http.get("/industries/:industry_id/news", async ({ params }) => {
     await delay(200);
-    const industryId = String(params.industry_id);
+    const indutyCode = String(params.industry_id);
 
-    const news = industryNews.get(industryId) ?? [];
+    const news = industryNews.get(indutyCode) ?? [];
 
     const response: IndustryNewsResponse = {
-      industryId,
+      indutyCode,
       items: news,
     };
 
     return HttpResponse.json(response);
   }),
 
-  // 산업 뉴스 추가 (POST /industries/{industry_id}/news)
-  http.post("/industries/:industry_id/news", async ({ params, request }) => {
+  // 산업 뉴스 추가 (POST /industries/{induty_code}/news)
+  http.post("/industries/:induty_code/news", async ({ params, request }) => {
     await delay(200);
-    const industryId = String(params.industry_id);
+    const indutyCode = String(params.induty_code);
     const body = (await request.json()) as Partial<IndustryNewsItem>;
 
     if (!body.title) {
@@ -128,8 +128,8 @@ export const industryHandlers = [
       content: body.content ?? "",
     };
 
-    const existingNews = industryNews.get(industryId) ?? [];
-    industryNews.set(industryId, [...existingNews, newNews]);
+    const existingNews = industryNews.get(indutyCode) ?? [];
+    industryNews.set(indutyCode, [...existingNews, newNews]);
 
     return HttpResponse.json(
       {
@@ -141,27 +141,28 @@ export const industryHandlers = [
     );
   }),
 
-  // 산업 내 기업 순위 조회 (GET /industries/{industry_id}/companies)
-  http.get("/industries/:industry_id/companies", async ({ params }) => {
+  // 산업 내 기업 순위 조회 (GET /industries/{induty_code}/companies)
+  http.get("/industries/:induty_code/companies", async ({ params }) => {
     await delay(200);
-    const industryId = String(params.industry_id);
+    const indutyCode = String(params.induty_code);
 
-    const companies = industryCompanies.get(industryId) ?? [];
+    const companies = industryCompanies.get(indutyCode) ?? [];
 
     const response: IndustryCompaniesResponse = {
-      industryId,
-      companies,
+      status: 200,
+      message: "해당 산업 내 기업 순위 조회를 성공하였습니다.",
+      data: companies,
     };
 
     return HttpResponse.json(response);
   }),
 
-  // 산업 내 기업 추가 (POST /industries/{industry_id}/companies)
+  // 산업 내 기업 추가 (POST /industries/{induty_code}/companies)
   http.post(
-    "/industries/:industry_id/companies",
+    "/industries/:induty_code/companies",
     async ({ params, request }) => {
       await delay(200);
-      const industryId = String(params.industry_id);
+      const indutyCode = String(params.induty_code);
       const body = (await request.json()) as Partial<IndustryCompany>;
 
       if (!body.companyId || !body.name) {
@@ -171,7 +172,7 @@ export const industryHandlers = [
         );
       }
 
-      const existingCompanies = industryCompanies.get(industryId) ?? [];
+      const existingCompanies = industryCompanies.get(indutyCode) ?? [];
 
       const newCompany: IndustryCompany = {
         companyId: body.companyId,
@@ -182,7 +183,7 @@ export const industryHandlers = [
         logoUrl: body.logoUrl ?? "",
       };
 
-      industryCompanies.set(industryId, [...existingCompanies, newCompany]);
+      industryCompanies.set(indutyCode, [...existingCompanies, newCompany]);
 
       return HttpResponse.json(
         {
@@ -195,44 +196,44 @@ export const industryHandlers = [
     },
   ),
 
-  // 산업 전망 분석 조회 (GET /industries/{industry_id}/analysis)
-  http.get("/industries/:industry_id/analysis", async ({ params }) => {
+  // 산업 전망 분석 조회 (GET /industries/{induty_code}/analysis)
+  http.get("/industries/:induty_code/analysis", async ({ params }) => {
     await delay(400);
-    const industryId = String(params.industry_id);
+    const indutyCode = String(params.induty_code);
 
-    const analysis = industryAnalysis.get(industryId) ?? {
+    const analysis = industryAnalysis.get(indutyCode) ?? {
       summary: "",
       keywords: [],
       sentiment: "neutral" as const,
     };
 
     const response: IndustryAnalysisResponse = {
-      industryId,
+      indutyCode,
       ...analysis,
     };
 
     return HttpResponse.json(response);
   }),
 
-  // 산업 전망 분석 등록/수정 (PUT /industries/{industry_id}/analysis)
-  http.put("/industries/:industry_id/analysis", async ({ params, request }) => {
+  // 산업 전망 분석 등록/수정 (PUT /industries/{induty_code}/analysis)
+  http.put("/industries/:induty_code/analysis", async ({ params, request }) => {
     await delay(200);
-    const industryId = String(params.industry_id);
+    const indutyCode = String(params.induty_code);
     const body = (await request.json()) as Partial<IndustryAnalysis>;
 
-    const existing = industryAnalysis.get(industryId);
+    const existing = industryAnalysis.get(indutyCode);
     const updated: IndustryAnalysis = {
       summary: body.summary ?? existing?.summary ?? "",
       keywords: body.keywords ?? existing?.keywords ?? [],
       sentiment: body.sentiment ?? existing?.sentiment ?? "neutral",
     };
 
-    industryAnalysis.set(industryId, updated);
+    industryAnalysis.set(indutyCode, updated);
 
     return HttpResponse.json({
       status: 200,
       message: "산업 분석이 등록/수정되었습니다.",
-      data: { industryId, ...updated },
+      data: { indutyCode, ...updated },
     });
   }),
 ];
