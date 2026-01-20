@@ -9,7 +9,7 @@ type CompanyInfo = {
   corp_code: string;
   company_name: string;
   industry: {
-    industry_id: number;
+    induty_code: number;
     name: string;
   };
   description: string;
@@ -36,7 +36,7 @@ companies.set("055550", {
   stock_code: "055550",
   corp_code: "00126380",
   company_name: "신한금융지주",
-  industry: { industry_id: 1, name: "금융" },
+  industry: { induty_code: 1, name: "금융" },
   description: "대한민국 대표 금융지주회사",
   logo_url: "",
   market_amount: 42000000000000,
@@ -170,20 +170,20 @@ export const companyHandlers = [
   }),
 
   /* 산업 뉴스 (명세서 그대로) */
-  http.get("/industries/:industry_id/news", async ({ params }) => {
+  http.get("/industries/:induty_code/news", async ({ params }) => {
     await delay(150);
-    const industryId = Number(params.industry_id);
+    const indutyCode = Number(params.induty_code);
 
-    if (!Number.isFinite(industryId)) {
+    if (!Number.isFinite(indutyCode)) {
       return HttpResponse.json(
-        { message: "industry_id 파라미터가 올바르지 않습니다." },
+        { message: "induty_code 파라미터가 올바르지 않습니다." },
         { status: 400 },
       );
     }
 
     return HttpResponse.json({
       message: "산업 뉴스 조회 성공",
-      data: industryNews.get(industryId) ?? [],
+      data: industryNews.get(indutyCode) ?? [],
     });
   }),
 ];

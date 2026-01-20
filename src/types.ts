@@ -118,7 +118,7 @@ export interface ExpenseItem {
 // Industry API Types
 // ============================================
 
-// GET /industries/{industry_id}/news
+// GET /industries/{induty_code}/news
 export interface IndustryNewsItem {
   id: number;
   title: string;
@@ -132,11 +132,11 @@ export interface IndustryNewsItem {
 }
 
 export interface IndustryNewsResponse {
-  industryId: string;
+  indutyCode: string;
   items: IndustryNewsItem[];
 }
 
-// GET /industries/{industry_id}/companies
+// GET /industries/{induty_code}/companies
 // 산업 내 기업 정보 타입
 export type IndustryCompany = {
   companyId: number | string;
@@ -155,14 +155,13 @@ export type IndustryCompany = {
 };
 
 export interface IndustryCompaniesResponse {
-  status: number;
-  message: string;
-  data: IndustryCompany[];
+  indutyCode: string;
+  companies: IndustryCompany[];
 }
 
-// GET /industries/{industry_id}/analysis
+// GET /industries/{induty_code}/analysis
 export interface IndustryAnalysisResponse {
-  industryId: string;
+  indutyCode: string;
   summary: string;
   outlook?: string;
   keywords: string[];
@@ -328,7 +327,7 @@ export interface CompanyApiData {
   stock_code: string;
   corp_code: string;
   company_name: string;
-  industry: { industry_id: number; name: string };
+  industry: { induty_code: string; name: string };
   description: string;
   logo_url: string;
   market_amount: number;

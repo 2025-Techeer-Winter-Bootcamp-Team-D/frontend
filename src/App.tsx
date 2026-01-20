@@ -111,8 +111,8 @@ function App() {
     }
   };
 
-  const handleIndustryClick = (industryId: string) => {
-    setSelectedIndustry(industryId);
+  const handleIndustryClick = (indutyCode: string) => {
+    setSelectedIndustry(indutyCode);
     setPage(PageView.INDUSTRY_ANALYSIS);
   };
 
