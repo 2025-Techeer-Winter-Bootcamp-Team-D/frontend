@@ -21,6 +21,7 @@ import type {
   ComparisonListItem,
   TimeRange,
   OhlcvData,
+  CompanySearchItem,
 } from "../types";
 import {
   BarChart,
@@ -53,11 +54,7 @@ import {
   updateComparisonName,
   deleteComparison,
 } from "../api/comparison";
-import {
-  searchCompanies,
-  getStockOhlcv,
-  type CompanySearchItem,
-} from "../api/company";
+import { searchCompanies, getStockOhlcv } from "../api/company";
 import type { OhlcvItem } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -159,7 +156,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
   });
 
-  const comparisonList = comparisonsQuery.data ?? [];
+  const comparisonList = useMemo(
+    () => comparisonsQuery.data ?? [],
+    [comparisonsQuery.data],
+  );
 
   // 비교 세트 목록이 로드되면 첫 번째 세트를 기본 선택
   useEffect(() => {
@@ -262,7 +262,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
             const rawData = response.data?.data ?? [];
 
-            results[company.companyName] = (rawData as OhlcvData[])
+            results[company.companyName] = (rawData as unknown as OhlcvData[])
               .map((item) => {
                 const dateObj = new Date(item.date);
                 const timeStamp = isNaN(dateObj.getTime())
@@ -291,7 +291,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
   });
 
-  const ohlcvData = ohlcvQuery.data ?? {};
+  const ohlcvData = useMemo(() => ohlcvQuery.data ?? {}, [ohlcvQuery.data]);
 
   const currentMetricOption =
     metricOptions.find((o) => o.id === selectedMetric) || metricOptions[0];

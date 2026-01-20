@@ -248,7 +248,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
     const latestStatement = sortedStatements[0];
     const previousStatement = sortedStatements[1];
 
-    const safeNum = (val: any) => (val ? Number(val) : 0);
+    const safeNum = (val: number | string | null | undefined): number =>
+      val ? Number(val) : 0;
 
     const formatMoney = (val: number) => {
       const v = safeNum(val);
