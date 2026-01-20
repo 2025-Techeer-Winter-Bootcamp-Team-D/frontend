@@ -4,7 +4,10 @@ import type {
   ApiResponse,
   OhlcvData,
   NewsItem,
+  CompanyReportItem,
   CompanyReportsResponse,
+  RevenueComposition,
+  ExtractedInfo,
   ReportAnalysisData,
 } from "@/types";
 
@@ -74,7 +77,7 @@ export const getCompanyNews = (companyId: string) => {
   return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news`);
 };
 /**
- * 기업 보고서 목록 조회
+ * 보고서 목록 조회
  * GET /api/companies/{stock_code}/reports/
  */
 export const getCompanyReports = (
@@ -87,18 +90,19 @@ export const getCompanyReports = (
     {
       params: {
         page,
-        page_size: size,
+        page_size: size, // 스웨거와 JSON 데이터에 따라 파라미터명 확인 필요 (size 또는 page_size)
       },
     },
   );
 };
-
 /**
- * 보고서 분석 결과 조회
- * GET /api/companies/{stock_code}/reports/{rcept_no}/analysis/
+ * 보고서 상세 분석 결과 조회
+ * GET /api/companies/{stock_code}/reports/{rcept_no}
+ * @param stockCode 종목 코드
+ * @param rceptNo 보고서 접수 번호
  */
 export const getReportAnalysis = (stockCode: string, rceptNo: string) => {
   return api.get<ApiResponse<ReportAnalysisData>>(
-    `/companies/${stockCode}/reports/${rceptNo}/analysis/`,
+    `/companies/${stockCode}/reports/${rceptNo}/`,
   );
 };

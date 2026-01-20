@@ -145,6 +145,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
   });
 
   // 공시분석 탭에서 모든 분석을 한번에 가져오기
+  const MAX_ANALYSIS_COUNT = 10;
+
   const analysisQueries = useQueries({
     queries:
       disclosureTab === "analysis" && companyReports.length > 0
@@ -622,6 +624,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
                               className="animate-spin text-blue-500"
                               size={32}
                             />
+                          </div>
+                        ) : query.isError ? (
+                          <div className="text-center text-red-400 py-4">
+                            <p className="text-sm">
+                              분석 데이터 로드 중 오류가 발생했습니다.
+                            </p>
                           </div>
                         ) : analysisData?.extracted_info ? (
                           <div className="relative">
