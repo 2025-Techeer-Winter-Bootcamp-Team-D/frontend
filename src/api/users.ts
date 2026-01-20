@@ -45,29 +45,26 @@ export const logout = () => {
 
 /**
  * 즐겨찾기 목록 조회
- * GET /users/favorites/
+ * GET /api/users/favorites/
  */
 export const getFavorites = () => {
-  // 정의되지 않은 FavoritesListResponse 대신 FavoriteItem[] 사용
-  return api.get<FavoriteItem[]>("/api/users/favorites/");
+  return api.get<FavoriteItem[]>("/users/favorites/");
 };
 
 /**
  * 즐겨찾기 추가
- * POST /users/favorites/
+ * POST /api/users/favorites/
  */
 export const addFavorite = (companyId: string) => {
-  // 정의되지 않은 FavoriteAddResponse 대신 FavoriteActionResponse 사용
-  return api.post<FavoriteActionResponse>("/api/users/favorites/", {
+  return api.post<FavoriteActionResponse>("/users/favorites/", {
     companyId,
   });
 };
 
 /**
  * 즐겨찾기 삭제
+ * DELETE /api/users/favorites/:favoriteId/
  */
 export const removeFavorite = (favoriteId: number) => {
-  return api.delete<FavoriteActionResponse>(
-    `/api/users/favorites/${favoriteId}/`,
-  );
+  return api.delete<FavoriteActionResponse>(`/users/favorites/${favoriteId}/`);
 };

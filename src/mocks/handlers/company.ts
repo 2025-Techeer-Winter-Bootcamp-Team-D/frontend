@@ -26,6 +26,19 @@ type CompanyInfo = {
 const companies = new Map<string, CompanyInfo>();
 const companyNews = new Map<string, NewsItem[]>();
 const industryNews = new Map<string, NewsItem[]>();
+
+companies.set("055550", {
+  stock_code: "055550",
+  corp_code: "00126380",
+  company_name: "신한금융지주",
+  industry: { induty_code: "0021", name: "금융" },
+  description: "대한민국 대표 금융지주회사",
+  logo_url: "",
+  market_amount: 42000000000000,
+  ceo_name: "진옥동",
+  establishment_date: "2001-09-01",
+  homepage_url: "https://www.shinhan.com",
+});
 // 초기 기업 데이터
 const initialCompanies: CompanyInfo[] = [
   {
