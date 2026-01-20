@@ -1,45 +1,17 @@
 import { api } from "./axios";
 import type {
-  CompanyApiData,
+  Company,
   ApiResponse,
   OhlcvData,
   NewsItem,
+  CompanyFinancialsData,
   CompanyReportItem,
   CompanyReportsResponse,
-  RevenueComposition,
-  ExtractedInfo,
   ReportAnalysisData,
+  CompanySearchResponse,
+  StockPricesResponse,
+  CompanyApiData,
 } from "@/types";
-
-// 기업 검색 결과 타입
-export interface CompanySearchItem {
-  stock_code: string;
-  corp_code: string;
-  company_name: string;
-  market: string;
-  induty_code: string;
-  industry: {
-    industry_id: number;
-    name: string;
-    induty_code: string;
-  };
-  description: string;
-  logo_url: string | null;
-  market_amount: number;
-  ceo_name: string;
-  establishment_date: string;
-  homepage_url: string;
-  address: string;
-}
-
-export interface CompanySearchResponse {
-  query: string;
-  total_count: number;
-  total_pages: number;
-  current_page: number;
-  page_size: number;
-  results: CompanySearchItem[];
-}
 
 /*
  * 기업 검색
@@ -61,12 +33,15 @@ export const getCompanyDetail = (stockCode: string) => {
 
 /**
  * 주가 데이터 조회 (OHLCV)
- * GET /companies/{companyId}/ohlcv?interval=
+ * GET /companies/{stock_code}/prices?interval=
  */
-export const getStockOhlcv = (companyId: string, interval: string) => {
-  return api.get<ApiResponse<OhlcvData[]>>(`/companies/${companyId}/ohlcv`, {
-    params: { interval },
-  });
+export const getStockOhlcv = (stock_code: string, interval: string) => {
+  return api.get<ApiResponse<StockPricesResponse>>(
+    `/companies/${stock_code}/prices/`,
+    {
+      params: { interval },
+    },
+  );
 };
 
 /**
@@ -104,5 +79,25 @@ export const getCompanyReports = (
 export const getReportAnalysis = (stockCode: string, rceptNo: string) => {
   return api.get<ApiResponse<ReportAnalysisData>>(
     `/companies/${stockCode}/reports/${rceptNo}/`,
+  );
+};
+
+/**
+ * 기업 재무지표 조회
+ * GET /companies/{stock_code}/financials/
+ */
+export const getCompanyFinancials = (stockCode: string) => {
+  return api.get<ApiResponse<CompanyFinancialsData>>(
+    `/companies/${stockCode}/financials/`,
+  );
+};
+
+/**
+ * 기업 재무지표 조회
+ * GET /companies/{stock_code}/financials/
+ */
+export const getCompanyFinancials = (stockCode: string) => {
+  return api.get<ApiResponse<CompanyFinancialsData>>(
+    `/companies/${stockCode}/financials/`,
   );
 };

@@ -82,7 +82,7 @@ function App() {
   const [page, setPage] = useState<PageView>(PageView.DASHBOARD);
   const [selectedIndustry, setSelectedIndustry] = useState<string>("finance");
   const [selectedCompanyCode, setSelectedCompanyCode] =
-    useState<string>("055550");
+    useState<string>("005930");
 
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();

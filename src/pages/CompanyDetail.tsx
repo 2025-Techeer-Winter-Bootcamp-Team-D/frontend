@@ -7,6 +7,7 @@ import {
   getCompanyNews,
   getCompanyReports,
   getReportAnalysis,
+  getCompanyFinancials,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
 import GlassCard from "../components/Layout/GlassCard";
@@ -22,6 +23,7 @@ import type {
   PageView,
   OhlcvItem,
   CompanyReportItem,
+  CompanyFinancialsData,
 } from "../types";
 
 import {
@@ -31,6 +33,8 @@ import {
   ResponsiveContainer,
   Cell,
   LabelList,
+  PieChart,
+  Pie,
 } from "recharts";
 import { Star, User, X, HelpCircle, Loader2 } from "lucide-react";
 
@@ -54,6 +58,7 @@ const DEFAULT_COMPANY = {
   logo: "--",
 };
 
+// 데이터가 없을 때를 대비한 Mock Data 생성 함수
 const generateFinancialData = (
   year: string,
   quarter: string,
@@ -81,11 +86,16 @@ const generateFinancialData = (
   const historyYears = [y - 3, y - 2, y - 1, y];
 
   return {
-    business: [{ name: "기타", value: 10, color: "#94A3B8" }],
+    business: [
+      { name: "주력사업", value: 45, color: "#3B82F6" },
+      { name: "신규사업", value: 25, color: "#10B981" },
+      { name: "해외사업", value: 20, color: "#F59E0B" },
+      { name: "기타", value: 10, color: "#94A3B8" },
+    ],
     revenue: {
       current: formatMoney(baseRevenue),
       yoy: "15.0%",
-      industryAvg: "2000%",
+      industryAvg: "-",
       history: historyYears.map((hy) => ({
         year: hy.toString(),
         value: 8000 + (hy - 2020) * 800,
@@ -95,7 +105,7 @@ const generateFinancialData = (
     operating: {
       current: formatMoney(baseOperating),
       yoy: "25.0%",
-      industryAvg: "2058%",
+      industryAvg: "-",
       history: historyYears.map((hy) => ({
         year: hy.toString(),
         value: 400 + (hy - 2020) * 50,
@@ -105,7 +115,7 @@ const generateFinancialData = (
     netIncome: {
       current: formatMoney(baseNet),
       yoy: "30.0%",
-      industryAvg: "909%",
+      industryAvg: "-",
       history: historyYears.map((hy) => ({
         year: hy.toString(),
         value: 300 + (hy - 2020) * 40,
@@ -119,11 +129,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
   setPage,
   starred,
   onToggleStar,
-  companyCode: propCompanyCode = "055550",
+  companyCode: propCompanyCode = "005930",
   setCompanyCode,
 }) => {
   const { id } = useParams<{ id: string }>();
-  const companyCode = id || propCompanyCode;
+  const companyCode = id ? id : propCompanyCode;
 
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
@@ -225,6 +235,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
     },
   });
 
+  const { data: financialsData, isLoading: isFinancialsLoading } = useQuery({
+    queryKey: ["company", "financials", companyCode],
+    queryFn: async () => {
+      const response = await getCompanyFinancials(companyCode);
+      return response.data.data as CompanyFinancialsData;
+    },
+  });
+
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
@@ -252,10 +270,92 @@ const CompanyDetail: React.FC<DetailProps> = ({
     };
   }, [apiCompanyData]);
 
-  const financialData = useMemo(
-    () => generateFinancialData(selectedYear, selectedQuarter),
-    [selectedYear, selectedQuarter],
-  );
+  // --- 재무 데이터 가공 로직 (수정됨) ---
+  const financialData = useMemo(() => {
+    if (!financialsData?.financial_statements?.length) {
+      return generateFinancialData(selectedYear, selectedQuarter);
+    }
+
+    const statements = financialsData.financial_statements;
+    const sortedStatements = [...statements].sort(
+      (a, b) => b.fiscal_year - a.fiscal_year,
+    );
+    const latestStatement = sortedStatements[0];
+    const previousStatement = sortedStatements[1];
+
+    const safeNum = (val: number | string | null | undefined): number =>
+      val ? Number(val) : 0;
+
+    const formatMoney = (val: number) => {
+      const v = safeNum(val);
+      const trillion = Math.floor(v / 1_000_000_000_000);
+      const billion = Math.floor((v % 1_000_000_000_000) / 100_000_000);
+      return trillion > 0
+        ? `${trillion}조 ${billion.toLocaleString()}억원`
+        : `${billion.toLocaleString()}억원`;
+    };
+
+    const formatLabel = (val: number) => {
+      const v = safeNum(val);
+      const trillion = Math.floor(v / 1_000_000_000_000);
+      const billion = Math.floor((v % 1_000_000_000_000) / 100_000_000);
+      return trillion > 0 ? `${trillion}조 ${billion}` : `${billion}억`;
+    };
+
+    const calculateYoY = (current: number, previous: number | undefined) => {
+      const curr = safeNum(current);
+      const prev = safeNum(previous);
+      if (prev === 0) return "-";
+      const change = ((curr - prev) / Math.abs(prev)) * 100;
+      return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
+    };
+
+    const buildHistory = (
+      key: "revenue" | "operating_profit" | "net_income",
+    ) => {
+      return sortedStatements
+        .slice(0, 4)
+        .reverse()
+        .map((s) => ({
+          year: s.fiscal_year.toString(),
+          value: safeNum(s[key]) / 100_000_000,
+          label: formatLabel(s[key]),
+        }));
+    };
+
+    return {
+      business: [
+        { name: "주력사업", value: 45, color: "#3B82F6" },
+        { name: "신규사업", value: 25, color: "#10B981" },
+        { name: "해외사업", value: 20, color: "#F59E0B" },
+        { name: "기타", value: 10, color: "#94A3B8" },
+      ],
+      revenue: {
+        current: formatMoney(latestStatement.revenue),
+        yoy: calculateYoY(latestStatement.revenue, previousStatement?.revenue),
+        industryAvg: "-",
+        history: buildHistory("revenue"),
+      },
+      operating: {
+        current: formatMoney(latestStatement.operating_profit),
+        yoy: calculateYoY(
+          latestStatement.operating_profit,
+          previousStatement?.operating_profit,
+        ),
+        industryAvg: "-",
+        history: buildHistory("operating_profit"),
+      },
+      netIncome: {
+        current: formatMoney(latestStatement.net_income),
+        yoy: calculateYoY(
+          latestStatement.net_income,
+          previousStatement?.net_income,
+        ),
+        industryAvg: "-",
+        history: buildHistory("net_income"),
+      },
+    } as FinancialData;
+  }, [financialsData, selectedYear, selectedQuarter]);
 
   const filteredReports = useMemo(() => {
     if (!companyReports || companyReports.length === 0) return [];
@@ -298,58 +398,133 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "disclosure", label: "공시", ref: disclosureRef },
   ];
 
-  const renderFinancialBarChart = (title: string, data: FinancialMetric) => (
-    <div className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col h-full">
-      <div className="flex items-center gap-1 mb-4">
-        <h4 className="font-bold text-slate-800 text-lg">{title}</h4>
-        <HelpCircle size={14} className="text-gray-300 cursor-help" />
-      </div>
-      <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-50">
-        <div>
-          <div className="text-xs text-gray-500 mb-1">
-            {selectedYear}년 {selectedQuarter} {title}
+  // --- 차트 렌더링 (높이 및 레이아웃 수정) ---
+  const renderFinancialBarChart = (title: string, data: FinancialMetric) => {
+    const yoyValue = parseFloat(data.yoy?.replace(/[+%]/g, "") || "0");
+    const isPositive = yoyValue >= 0;
+    const yoyColor =
+      data.yoy === "-"
+        ? "text-gray-500"
+        : isPositive
+          ? "text-red-500"
+          : "text-blue-500";
+    const yoyArrow = data.yoy === "-" ? "" : isPositive ? " ▲" : " ▼";
+
+    return (
+      <div className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col h-full shadow-sm">
+        <div className="flex items-center gap-1 mb-4">
+          <h4 className="font-bold text-slate-800 text-lg">{title}</h4>
+          <HelpCircle size={14} className="text-gray-300 cursor-help" />
+        </div>
+        <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-50">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">
+              {financialsData?.financial_statements?.[0]?.fiscal_year ||
+                selectedYear}
+              년 {title}
+            </div>
+            <div className="text-xl font-bold text-slate-800">
+              {data.current}
+            </div>
           </div>
-          <div className="text-xl font-bold text-slate-800">{data.current}</div>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 mb-1">작년 대비</div>
+            <div className={`text-sm font-bold ${yoyColor}`}>
+              {data.yoy}
+              {yoyArrow}
+            </div>
+          </div>
         </div>
-        <div className="text-right">
-          <div className="text-xs text-gray-500 mb-1">작년 대비</div>
-          <div className="text-sm font-bold text-red-500">{data.yoy} ▲</div>
-        </div>
-      </div>
-      <div className="flex-1 min-h-[160px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data.history}>
-            <XAxis
-              dataKey="year"
-              axisLine={true}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#94A3B8" }}
-              dy={5}
-              stroke="#E5E7EB"
-            />
-            <LabelList
-              dataKey="label"
-              position="top"
-              fill="#64748B"
-              fontSize={11}
-              fontWeight={500}
-              offset={10}
-            />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>
-              {data.history.map((_, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={
-                    index === data.history.length - 1 ? "#3B82F6" : "#E5E7EB"
-                  }
+        {/* Recharts 에러 해결을 위해 부모 div에 명시적 높이(h-48) 부여 */}
+        <div className="w-full h-48 mt-auto">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data.history}
+              margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
+            >
+              <XAxis
+                dataKey="year"
+                axisLine={true}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: "#94A3B8" }}
+                dy={5}
+                stroke="#E5E7EB"
+              />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>
+                <LabelList
+                  dataKey="label"
+                  position="top"
+                  fill="#64748B"
+                  fontSize={10}
+                  fontWeight={500}
+                  offset={8}
                 />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+                {data.history.map((_, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      index === data.history.length - 1 ? "#3B82F6" : "#E5E7EB"
+                    }
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const renderBusinessChart = () => {
+    return (
+      <div className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col h-full shadow-sm">
+        <div className="flex items-center gap-1 mb-4">
+          <h4 className="font-bold text-slate-800 text-lg">사업분석</h4>
+          <HelpCircle size={14} className="text-gray-300 cursor-help" />
+        </div>
+        <div className="flex-1 flex items-center min-h-[180px]">
+          <div className="w-1/2">
+            <ResponsiveContainer width="100%" height={160}>
+              <PieChart>
+                <Pie
+                  data={financialData.business}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={65}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {financialData.business.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="w-1/2 space-y-2">
+            {financialData.business.map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-slate-600 truncate max-w-[80px]">
+                    {item.name}
+                  </span>
+                </div>
+                <span className="font-bold text-slate-800">{item.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (isDetailLoading) {
     return (
@@ -369,6 +544,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
+      {/* 상단 헤더 섹션 */}
       <div className="mb-6 sticky top-14 z-40 bg-white/95 backdrop-blur-md -mx-4 px-4 border-b border-gray-100/50 shadow-sm">
         <div
           className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
@@ -441,7 +617,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
               </div>
               <div className="flex flex-col gap-1 col-span-2">
                 <span className="text-gray-500 text-xs">주요사업</span>
-                <span className="font-bold text-slate-800 text-sm">
+                <span className="font-bold text-slate-800 text-sm leading-relaxed">
                   {currentCompany.desc}
                 </span>
               </div>
@@ -451,7 +627,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8" ref={priceRef}>
-            <GlassCard className="p-6 h-full flex flex-col">
+            <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-slate-800">주가 분석</h3>
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
@@ -466,10 +642,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   ))}
                 </div>
               </div>
-              <div className="flex-1 min-h-[300px]">
+              <div className="flex-1 w-full h-full">
                 {isStockLoading ? (
                   <div className="flex h-full items-center justify-center">
-                    <Loader2 className="animate-spin" />
+                    <Loader2 className="animate-spin text-blue-400" />
                   </div>
                 ) : chartRange === "1D" ? (
                   <CandleChart {...({ data: stockData } as any)} />
@@ -483,25 +659,24 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </div>
 
           <div className="lg:col-span-4">
-            <GlassCard className="p-6 h-full">
+            <GlassCard className="p-6 h-full flex flex-col">
               <h3 className="font-bold text-slate-800 mb-4">동종업계 순위</h3>
               {isPeerLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="animate-spin" />
+                <div className="flex justify-center items-center flex-1">
+                  <Loader2 className="animate-spin text-blue-400" />
                 </div>
               ) : (
-                <div className="space-y-2 overflow-y-auto max-h-[300px]">
+                <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1">
                   {peerCompanies.map((item) => (
                     <div
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50"}`}
+                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-slate-700">
-                          {item.name}
-                        </span>
-                      </div>
+                      <span className="text-sm font-bold text-slate-700">
+                        {item.name}
+                      </span>
+                      <span className="text-xs text-gray-400">{item.code}</span>
                     </div>
                   ))}
                 </div>
@@ -511,14 +686,29 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
 
         <div ref={financialRef} className="scroll-mt-32">
-          <GlassCard className="p-6 bg-slate-50">
+          <GlassCard className="p-6 bg-slate-50/50">
             <h3 className="text-xl font-bold text-slate-800 mb-6">
-              재무 데이터
+              재무 데이터 분석
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {renderFinancialBarChart("매출액", financialData.revenue)}
-              {renderFinancialBarChart("영업이익", financialData.operating)}
-            </div>
+            {isFinancialsLoading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {renderBusinessChart()}
+                  {renderFinancialBarChart("매출액", financialData.revenue)}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {renderFinancialBarChart("영업이익", financialData.operating)}
+                  {renderFinancialBarChart(
+                    "당기순이익",
+                    financialData.netIncome,
+                  )}
+                </div>
+              </div>
+            )}
           </GlassCard>
         </div>
 
@@ -526,8 +716,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-4">기업 뉴스</h3>
             {isNewsLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="animate-spin" />
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-blue-400" />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -535,12 +725,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   <div
                     key={idx}
                     onClick={() => setSelectedNews(news)}
-                    className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer"
+                    className="p-4 border border-gray-100 rounded-xl hover:bg-white hover:shadow-md hover:border-blue-100 transition-all cursor-pointer"
                   >
-                    <h4 className="font-bold text-slate-800 line-clamp-1">
+                    <h4 className="font-bold text-slate-800 line-clamp-1 mb-2">
                       {news.title}
                     </h4>
-                    <p className="text-sm text-slate-500 line-clamp-2 mt-2">
+                    <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
                       {news.summary}
                     </p>
                   </div>
@@ -775,24 +965,33 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
       </div>
 
+      {/* 뉴스 상세 모달 */}
       {selectedNews && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setSelectedNews(null)}
           ></div>
-          <div className="bg-white w-full max-w-2xl rounded-lg z-10 p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold">뉴스 상세</h3>
-              <X
-                className="cursor-pointer"
+          <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up">
+            <div className="flex justify-between items-center mb-6">
+              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">
+                News Detail
+              </span>
+              <button
                 onClick={() => setSelectedNews(null)}
-              />
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={24} className="text-gray-400" />
+              </button>
             </div>
-            <h2 className="text-xl font-bold mb-4">{selectedNews.title}</h2>
-            <p className="text-slate-600 leading-relaxed">
-              {selectedNews.content || selectedNews.summary}
-            </p>
+            <h2 className="text-2xl font-bold mb-6 text-slate-800">
+              {selectedNews.title}
+            </h2>
+            <div className="max-h-[400px] overflow-y-auto pr-2">
+              <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
+                {selectedNews.content || selectedNews.summary}
+              </p>
+            </div>
           </div>
         </div>
       )}
