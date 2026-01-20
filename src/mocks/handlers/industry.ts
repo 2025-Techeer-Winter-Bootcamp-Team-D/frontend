@@ -107,7 +107,7 @@ export const industryHandlers = [
     return HttpResponse.json(response);
   }),
 
-  // 산업 뉴스 추가 (POST /industries/{induty_id}/news)
+  // 산업 뉴스 추가 (POST /industries/{induty_code}/news)
   http.post("/industries/:induty_code/news", async ({ params, request }) => {
     await delay(200);
     const indutyCode = String(params.induty_code);
@@ -141,7 +141,7 @@ export const industryHandlers = [
     );
   }),
 
-  // 산업 내 기업 순위 조회 (GET /industries/{induty_id}/companies)
+  // 산업 내 기업 순위 조회 (GET /industries/{induty_code}/companies)
   http.get("/industries/:induty_code/companies", async ({ params }) => {
     await delay(200);
     const indutyCode = String(params.induty_code);
@@ -156,7 +156,7 @@ export const industryHandlers = [
     return HttpResponse.json(response);
   }),
 
-  // 산업 내 기업 추가 (POST /industries/{industry_id}/companies)
+  // 산업 내 기업 추가 (POST /industries/{induty_code}/companies)
   http.post(
     "/industries/:induty_code/companies",
     async ({ params, request }) => {
@@ -195,7 +195,7 @@ export const industryHandlers = [
     },
   ),
 
-  // 산업 전망 분석 조회 (GET /industries/{industry_id}/analysis)
+  // 산업 전망 분석 조회 (GET /industries/{induty_code}/analysis)
   http.get("/industries/:induty_code/analysis", async ({ params }) => {
     await delay(400);
     const indutyCode = String(params.induty_code);
@@ -214,7 +214,7 @@ export const industryHandlers = [
     return HttpResponse.json(response);
   }),
 
-  // 산업 전망 분석 등록/수정 (PUT /industries/{industry_id}/analysis)
+  // 산업 전망 분석 등록/수정 (PUT /industries/{induty_code}/analysis)
   http.put("/industries/:induty_code/analysis", async ({ params, request }) => {
     await delay(200);
     const indutyCode = String(params.induty_code);

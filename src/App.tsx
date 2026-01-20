@@ -144,7 +144,7 @@ function App() {
         return (
           <IndustryAnalysis
             setPage={handlePageChange}
-            initialIndustryId={selectedIndustry}
+            initialIndutyCode={selectedIndustry}
             starred={starred}
             onToggleStar={toggleStar}
             setCompanyCode={setSelectedCompanyCode}

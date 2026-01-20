@@ -2,7 +2,7 @@ import { api } from "./axios";
 
 /**
  * 산업 뉴스 목록 조회
- * @param indutyCode 산업아이디
+ * @param indutyCode 산업코드
  */
 
 export const getIndustryNews = (indutyCode: number | string) => {
@@ -11,7 +11,7 @@ export const getIndustryNews = (indutyCode: number | string) => {
 
 /**
  * 산업 내 기업 순위 조회
- * @param indutyCode 산업아이디
+ * @param indutyCode 산업코드
  */
 
 export const getIndustryCompanies = (indutyCode: number | string) => {

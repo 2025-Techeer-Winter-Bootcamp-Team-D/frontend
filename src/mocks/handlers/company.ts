@@ -26,6 +26,38 @@ type CompanyInfo = {
 const companies = new Map<string, CompanyInfo>();
 const companyNews = new Map<string, NewsItem[]>();
 const industryNews = new Map<string, NewsItem[]>();
+companies.set("055550", {
+  stock_code: "055550",
+  corp_code: "00126380",
+  company_name: "신한금융지주",
+  industry: { induty_code: "0021", name: "금융" },
+  description: "대한민국 대표 금융지주회사",
+  logo_url: "",
+  market_amount: 42000000000000,
+  ceo_name: "진옥동",
+  establishment_date: "2001-09-01",
+  homepage_url: "https://www.shinhan.com",
+});
+
+companyNews.set("055550", [
+  {
+    id: nextNewsId++,
+    title: "신한금융, 역대 최대 실적 달성",
+    summary: "신한금융지주가 사상 최대 실적을 기록했다.",
+    source: "연합뉴스",
+    date: "2024-12-01",
+  },
+]);
+
+industryNews.set("0021", [
+  {
+    id: nextNewsId++,
+    title: "금융업계, 금리 인하 기대감 확산",
+    summary: "금융 산업 전반에 긍정적인 전망이 나오고 있다.",
+    source: "한국경제",
+    date: "2024-12-02",
+  },
+]);
 
 //let nextNewsId = 1;
 /* =========================
@@ -135,8 +167,9 @@ export const companyHandlers = [
   /* 산업 뉴스 (명세서 그대로) */
   http.get("/industries/:induty_code/news", async ({ params }) => {
     await delay(150);
-    const indutyCode = String(params.induty_code);
-    if (!indutyCode || indutyCode === "undefined") {
+    const indutyCode = String(params.induty_code ?? "");
+
+    if (!/^\d+$/.test(indutyCode)) {
       return HttpResponse.json(
         { message: "induty_code 파라미터가 올바르지 않습니다." },
         { status: 400 },

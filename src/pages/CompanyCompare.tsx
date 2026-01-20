@@ -1297,15 +1297,15 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               ) : searchResults.length > 0 ? (
                 searchResults.map((company) => (
                   <button
-                    key={company.companyId}
-                    onClick={() => handleAddCompany(String(company.companyId))}
+                    key={company.id}
+                    onClick={() => handleAddCompany(String(company.id))}
                     disabled={addCompanyMutation.isPending}
                     className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
-                      {company.logo && (
+                      {company.logo_url && (
                         <img
-                          src={company.logo}
+                          src={company.logo_url}
                           alt={company.name}
                           className="w-8 h-8 rounded-full object-cover"
                         />

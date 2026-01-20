@@ -65,7 +65,7 @@ const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
-  initialIndustryId?: string;
+  initialIndutyCode?: string;
   starred: Set<string>;
   onToggleStar: (code: string) => void;
   setCompanyCode?: (code: string) => void;
@@ -611,15 +611,15 @@ const MiniChart = ({ color }: { color: string }) => {
 
 const IndustryAnalysis: React.FC<AnalysisProps> = ({
   setPage,
-  initialIndustryId,
+  initialIndutyCode,
   starred,
   onToggleStar,
   setCompanyCode,
 }) => {
-  // 초기 산업 설정: initialIndustryId가 유효하면 사용, 아니면 finance
+  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 finance
   const getInitialIndustry = (): IndustryKey => {
-    if (initialIndustryId && industryDB[initialIndustryId as IndustryKey]) {
-      return initialIndustryId as IndustryKey;
+    if (initialIndutyCode && industryDB[initialIndutyCode as IndustryKey]) {
+      return initialIndutyCode as IndustryKey;
     }
     return "finance";
   };
@@ -631,7 +631,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     null,
   );
 
-  // 산업 ID
+  // 산업 코드
   const indutyCode = INDUTY_CODE_BY_KEY[selectedIndustry];
 
   // -----------------------------
@@ -934,7 +934,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         {currentData.companies.slice(0, 3).map((company, index) => {
           const isFirst = index === 0;
           const isSecond = index === 1;
-          const isThird = index === 2;
 
           let containerClasses =
             "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
@@ -1637,8 +1636,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           뉴스 <ChevronRight size={18} />
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentData.news.length > 0 ? (
-            currentData.news.slice(0, 6).map((news) => (
+          {industryNews.length > 0 ? (
+            industryNews.slice(0, 6).map((news) => (
               <GlassCard
                 key={news.id}
                 className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"

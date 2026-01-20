@@ -26,9 +26,19 @@ export interface Company {
 
 // 기업 검색 결과 타입
 export interface CompanySearchResult {
-  companyId: number;
+  id: string;
   name: string;
-  logo: string;
+  code: string;
+  industry: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  marketCap: string;
+  per: number;
+  pbr: number;
+  revenue: number;
+  profit: number;
+  logo_url?: string;
 }
 
 //분석 및 트랜드 기능
