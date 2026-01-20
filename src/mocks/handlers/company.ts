@@ -164,7 +164,7 @@ export const companyHandlers = [
     const indutyCode = String(params.induty_code);
     if (!indutyCode || indutyCode === "undefined") {
       return HttpResponse.json(
-        { message: "induty_ 파라미터가 올바르지 않습니다." },
+        { message: "induty_code 파라미터가 올바르지 않습니다." },
         { status: 400 },
       );
     }
