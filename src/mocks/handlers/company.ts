@@ -25,7 +25,7 @@ type CompanyInfo = {
 ========================= */
 const companies = new Map<string, CompanyInfo>();
 const companyNews = new Map<string, NewsItem[]>();
-const industryNews = new Map<number, NewsItem[]>();
+const industryNews = new Map<string, NewsItem[]>();
 
 let nextNewsId = 1;
 
@@ -55,7 +55,7 @@ companyNews.set("055550", [
   },
 ]);
 
-industryNews.set(1, [
+industryNews.set("0021", [
   {
     id: nextNewsId++,
     title: "금융업계, 금리 인하 기대감 확산",
@@ -172,9 +172,9 @@ export const companyHandlers = [
   /* 산업 뉴스 (명세서 그대로) */
   http.get("/industries/:induty_code/news", async ({ params }) => {
     await delay(150);
-    const indutyCode = Number(params.induty_code);
+    const indutyCode = String(params.induty_code ?? "");
 
-    if (!Number.isFinite(indutyCode)) {
+    if (!/^\d+$/.test(indutyCode)) {
       return HttpResponse.json(
         { message: "induty_code 파라미터가 올바르지 않습니다." },
         { status: 400 },
