@@ -23,7 +23,6 @@ type CompanyInfo = {
 /* =========================
    In-Memory DB
 ========================= */
-let nextNewsId = 1;
 const companies = new Map<string, CompanyInfo>();
 const companyNews = new Map<string, NewsItem[]>();
 const industryNews = new Map<string, NewsItem[]>();
