@@ -170,7 +170,7 @@ export interface IndustryCompaniesResponse {
   data: IndustryCompany[];
 }
 
-// GET /industries/{induty_id}/analysis
+// GET /industries/{induty_code}/analysis
 export interface IndustryAnalysisResponse {
   indutyCode: string;
   summary: string;
