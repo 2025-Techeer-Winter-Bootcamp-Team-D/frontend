@@ -239,7 +239,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   } | null;
 
   const analysisData = analysisResponse?.data;
-  const industryNews = (newsQuery.data as IndustryNewsItem[]) ?? [];
+  const newsResponse = newsQuery.data as { items?: IndustryNewsItem[] } | null;
+  const industryNews = newsResponse?.items ?? [];
 
   // 차트 데이터
   const chartData = useMemo(() => {
