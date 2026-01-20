@@ -151,7 +151,10 @@ export const industryHandlers = [
     const response: IndustryCompaniesResponse = {
       status: 200,
       message: "해당 산업 내 기업 순위 조회를 성공하였습니다.",
-      data: companies,
+      data: {
+        indutyCode,
+        companies,
+      },
     };
 
     return HttpResponse.json(response);
