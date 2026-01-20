@@ -51,6 +51,7 @@ import {
   addCompany,
   removeCompany,
   updateComparisonName,
+  deleteComparison,
 } from "../api/comparison";
 import { searchCompanies, getStockOhlcv } from "../api/company";
 import type { CompanySearchResult, OhlcvItem } from "../types";
@@ -347,6 +348,20 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
   });
 
+  const deleteSetMutation = useMutation({
+    mutationFn: async (comparisonId: number) => {
+      await deleteComparison(comparisonId);
+    },
+    onSuccess: async (_res, deletedId) => {
+      await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
+      // 삭제된 세트가 현재 선택된 세트면 다른 세트 선택
+      if (activeSetId === deletedId) {
+        const remaining = comparisonList.filter((c) => c.id !== deletedId);
+        setActiveSetId(remaining.length > 0 ? remaining[0].id : null);
+      }
+    },
+  });
+
   // -----------------------------
   // Handlers
   // -----------------------------
@@ -387,6 +402,15 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       console.error("이름 변경 실패:", e);
       setTempSetName(activeComparison?.name ?? "");
       setIsEditingName(false);
+    }
+  };
+
+  const handleDeleteSet = async (e: React.MouseEvent, comparisonId: number) => {
+    e.stopPropagation(); // 버튼 클릭 시 세트 선택 방지
+    try {
+      await deleteSetMutation.mutateAsync(comparisonId);
+    } catch (err) {
+      console.error("비교 세트 삭제 실패:", err);
     }
   };
 
@@ -624,10 +648,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               </h2>
               <div className="space-y-2">
                 {comparisonList.map((item) => (
-                  <button
+                  <div
                     key={item.id}
                     onClick={() => setActiveSetId(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
                       activeSetId === item.id
                         ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
                         : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
@@ -636,10 +660,19 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     <span className="font-medium text-sm truncate max-w-[150px]">
                       {item.name}
                     </span>
-                    {activeSetId === item.id && (
-                      <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
-                    )}
-                  </button>
+                    <button
+                      onClick={(e) => handleDeleteSet(e, item.id)}
+                      disabled={deleteSetMutation.isPending}
+                      className={`p-1 rounded-full transition-colors flex-shrink-0 ${
+                        activeSetId === item.id
+                          ? "hover:bg-white/20 text-white"
+                          : "hover:bg-gray-200 text-gray-400 hover:text-red-500"
+                      } disabled:opacity-50`}
+                      title="세트 삭제"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 ))}
               </div>
               <button
