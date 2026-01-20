@@ -47,20 +47,20 @@ import {
   getIndustryCompanies,
 } from "../api/industry";
 
-// 산업 ID 매핑 (IndustryKey -> API industryId)
-const INDUSTRY_ID_BY_KEY: Record<IndustryKey, number> = {
-  finance: 1,
-  semicon: 2,
-  auto: 3,
-  bio: 4,
-  battery: 5,
-  internet: 6,
-  ent: 7,
-  steel: 8,
-  ship: 9,
-  const: 10,
-  retail: 11,
-  telecom: 12,
+// 산업 코드 매핑 (IndustryKey -> API induty_code)
+const INDUSTRY_ID_BY_KEY: Record<IndustryKey, string> = {
+  finance: "0021", // 금융업
+  semicon: "0014", // 전기전자 (반도체/IT)
+  auto: "0015", // 운수장비 (자동차/조선)
+  bio: "0010", // 의약품 (바이오)
+  battery: "0014", // 전기전자 (배터리는 전기전자에 포함)
+  internet: "1042", // 소프트웨어
+  ent: "1041", // 디지털콘텐츠
+  steel: "0009", // 화학/정유 (철강 근접)
+  ship: "0015", // 운수장비 (조선)
+  const: "0018", // 건설업
+  retail: "0016", // 유통업
+  telecom: "0020", // 통신업
 };
 
 interface AnalysisProps {
@@ -985,7 +985,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       onClick={(e) => handleToggleStar(e, company.code)}
                       className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                      <StarIcon isActive={starred.has(company.code)} />
+                      <StarIcon
+                        isActive={starred?.has(company.code) ?? false}
+                      />
                     </button>
                   </div>
                 </div>
@@ -993,7 +995,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   onClick={(e) => handleToggleStar(e, company.code)}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <StarIcon isActive={starred.has(company.code)} />
+                  <StarIcon isActive={starred?.has(company.code) ?? false} />
                 </button>
               </div>
 
@@ -1080,7 +1082,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         onClick={(e) => handleToggleStar(e, company.code)}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                       >
-                        <StarIcon isActive={starred.has(company.code)} />
+                        <StarIcon
+                          isActive={starred?.has(company.code) ?? false}
+                        />
                       </button>
                     </td>
                     <td className="px-2 py-4 text-center">

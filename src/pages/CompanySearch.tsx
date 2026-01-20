@@ -253,7 +253,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                 나의 관심 기업
               </h2>
               <p className="text-xs text-blue-100 mt-1">
-                {starred.size}개의 기업을 구독 중입니다.
+                {starred?.size ?? 0}개의 기업을 구독 중입니다.
               </p>
             </div>
 
@@ -317,9 +317,9 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                 </div>
               )}
 
-              {starred.size > starredList.length && (
+              {(starred?.size ?? 0) > starredList.length && (
                 <div className="text-center text-xs text-gray-400 py-3 border-t border-gray-50">
-                  + 그 외 {starred.size - starredList.length}개 기업
+                  + 그 외 {(starred?.size ?? 0) - starredList.length}개 기업
                   <br />
                   (로딩 중이거나 순위권 밖)
                 </div>

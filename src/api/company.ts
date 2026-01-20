@@ -22,15 +22,15 @@ export const searchCompanies = (keyword: string) => {
  * GET /companies/{code}
  */
 export const getCompanyDetail = (code: string) => {
-  return api.get<ApiResponse<Company>>(`/companies/${code}`);
+  return api.get<ApiResponse<Company>>(`/companies/${code}/`);
 };
 
 /**
  * 주가 데이터 조회 (OHLCV)
- * GET /companies/{companyId}/ohlcv?interval=
+ * GET /companies/{companyId}/prices/?interval=
  */
 export const getStockOhlcv = (companyId: string, interval: string) => {
-  return api.get<ApiResponse<OhlcvData[]>>(`/companies/${companyId}/ohlcv`, {
+  return api.get<ApiResponse<OhlcvData[]>>(`/companies/${companyId}/prices/`, {
     params: { interval },
   });
 };
