@@ -132,8 +132,6 @@ function App() {
         return (
           <CompanySearch
             setPage={handlePageChange}
-            starred={starred}
-            onToggleStar={toggleStar}
             setCompanyCode={(code) => {
               setSelectedCompanyCode(code);
               navigate(`/company/${code}`);

@@ -14,20 +14,25 @@ import { PageView } from "../types";
 import { getCompanyRankings } from "../api/ranking";
 import { searchCompanies } from "../api/company";
 import type { RankingItem } from "../types";
+import { useStarred } from "../context/StarredContext"; // [수정] Context 임포트 확인
 
 interface CompanySearchProps {
   setPage: (page: PageView) => void;
-  starred: Set<string>;
-  onToggleStar: (code: string) => void;
   setCompanyCode: (code: string) => void;
+  // starred와 onToggleStar는 context에서 직접 가져오므로 props에서 제외하거나 옵션으로 변경 가능
 }
 
 const CompanySearch: React.FC<CompanySearchProps> = ({
   setPage,
-  starred,
-  onToggleStar,
   setCompanyCode,
 }) => {
+  // [수정: 25번 라인] Context에서 필요한 모든 상태 가져오기
+  const {
+    starred,
+    toggleStar,
+    favoriteMap,
+    isLoading: isStarredLoading,
+  } = useStarred();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -42,7 +47,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     queryKey: ["companyRankings"],
     queryFn: async () => {
       const response = await getCompanyRankings();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (response.data || []) as RankingItem[];
     },
     staleTime: 1000 * 60 * 5,
@@ -52,26 +56,19 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     queryKey: ["companySearch", debouncedQuery],
     queryFn: () => searchCompanies(debouncedQuery),
     enabled: !!debouncedQuery.trim(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     select: (response: any) => {
       const responseData = response.data;
       if (!responseData?.data) return [] as RankingItem[];
-
-      return responseData.data.map(
-        (
-          item: { companyId: string; name: string; logo: string },
-          index: number,
-        ) => ({
-          rank: index + 1,
-          name: item.name,
-          code: item.companyId,
-          sector: "-",
-          price: "-",
-          change: "-",
-          changeVal: 0,
-          marketCap: "-",
-        }),
-      ) as RankingItem[];
+      return responseData.data.map((item: any, index: number) => ({
+        rank: index + 1,
+        name: item.name,
+        code: item.companyId,
+        sector: "-",
+        price: "-",
+        change: "-",
+        changeVal: 0,
+        marketCap: "-",
+      })) as RankingItem[];
     },
   });
 
@@ -81,18 +78,24 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   };
 
   const displayList = useMemo(() => {
-    if (debouncedQuery.trim()) {
-      return searchResults;
-    }
-    return rankingData;
+    return debouncedQuery.trim() ? searchResults : rankingData;
   }, [debouncedQuery, searchResults, rankingData]);
 
-  const hasQuery = debouncedQuery.trim().length > 0;
-  const isLoading = hasQuery ? isSearching : isRankingLoading;
+  const isLoading = debouncedQuery.trim() ? isSearching : isRankingLoading;
 
+  // [수정: 82번 라인] starredList 생성 로직 (fav 에러 해결 핵심 부분)
   const starredList = useMemo(() => {
-    return rankingData.filter((item) => starred.has(item.code));
-  }, [starred, rankingData]);
+    return Array.from(favoriteMap.values()).map((fav) => {
+      // 랭킹 데이터에 있으면 시세 정보를 가져오고, 없으면 기본값 표시
+      const liveData = rankingData.find((r) => r.code === fav.companyId);
+      return {
+        code: fav.companyId,
+        name: fav.companyName,
+        price: liveData ? liveData.price : "-",
+        change: liveData ? liveData.change : "-",
+      };
+    });
+  }, [favoriteMap, rankingData]);
 
   const StarIcon = ({ isActive }: { isActive: boolean }) => (
     <svg
@@ -112,6 +115,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
+      {/* 검색창 섹션 */}
       <div className="flex flex-col items-center justify-center mb-10 pt-4">
         <h1 className="text-3xl font-bold text-slate-800 mb-6">기업 검색</h1>
         <div className="w-full max-w-2xl relative">
@@ -120,35 +124,27 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           </div>
           <input
             type="text"
-            placeholder="기업명, 종목코드 또는 산업군을 입력하세요..."
-            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100 transition-all placeholder:text-gray-400 text-slate-800"
+            placeholder="기업명 또는 종목코드를 입력하세요..."
+            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            autoFocus
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* 메인 리스트 */}
         <div className="lg:col-span-3">
           <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <TrendingUp size={20} className="text-shinhan-blue" />
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 size={16} className="animate-spin" />
-                    로딩 중...
-                  </span>
-                ) : debouncedQuery ? (
-                  `검색 결과 (${displayList.length})`
-                ) : (
-                  "시가총액 상위 랭킹"
-                )}
+                {isLoading
+                  ? "로딩 중..."
+                  : debouncedQuery
+                    ? `검색 결과 (${displayList.length})`
+                    : "시가총액 상위 랭킹"}
               </h2>
-              <button className="text-sm font-medium text-gray-500 hover:text-shinhan-blue flex items-center gap-1">
-                <Filter size={14} /> 필터
-              </button>
             </div>
 
             <div className="overflow-x-auto flex-1">
@@ -158,10 +154,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     <th className="px-6 py-4 w-16 text-center">순위</th>
                     <th className="px-6 py-4 w-16">관심</th>
                     <th className="px-6 py-4">기업명</th>
-                    <th className="px-6 py-4 text-center">산업</th>
                     <th className="px-6 py-4 text-right">현재가</th>
                     <th className="px-6 py-4 text-right">등락률</th>
-                    <th className="px-6 py-4 text-right">시가총액</th>
                     <th className="px-6 py-4 w-16"></th>
                   </tr>
                 </thead>
@@ -173,112 +167,83 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                         onClick={() => handleCompanyClick(item.code)}
                         className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
                       >
-                        <td className="px-6 py-4 text-center">
-                          <span
-                            className={`font-bold ${index < 3 ? "text-shinhan-blue text-lg" : "text-slate-500"}`}
-                          >
-                            {item.rank}
-                          </span>
+                        <td className="px-6 py-4 text-center font-bold text-slate-500">
+                          {index + 1}
                         </td>
                         <td
                           className="px-6 py-4 text-center"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
-                            onClick={() => onToggleStar(item.code)}
-                            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                            onClick={() => toggleStar(item.code)}
+                            className="p-1.5 hover:bg-gray-100 rounded-full"
                           >
                             <StarIcon isActive={starred.has(item.code)} />
                           </button>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="font-bold text-slate-800 text-base">
+                          <div className="font-bold text-slate-800">
                             {item.name}
                           </div>
-                          <div className="text-xs text-gray-400 font-mono mt-0.5">
+                          <div className="text-xs text-gray-400 font-mono">
                             {item.code}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
-                            {item.sector}
-                          </span>
-                        </td>
                         <td className="px-6 py-4 text-right font-bold text-slate-700">
-                          {item.price === "-" ? "-" : `${item.price}원`}
+                          {item.price}원
                         </td>
                         <td
                           className={`px-6 py-4 text-right font-bold ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                         >
                           {item.change}
-                          <div className="text-[10px] font-normal opacity-70">
-                            {item.change.startsWith("+") ? "▲" : "▼"}{" "}
-                            {Math.abs(item.changeVal).toLocaleString()}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right text-slate-600 font-medium">
-                          {item.marketCap}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <ChevronRight
                             size={18}
-                            className="text-gray-300 group-hover:text-shinhan-blue transition-colors"
+                            className="text-gray-300 group-hover:text-shinhan-blue"
                           />
                         </td>
                       </tr>
                     ))}
-                  {!isLoading && displayList.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="py-20 text-center text-gray-400"
-                      >
-                        {debouncedQuery
-                          ? "검색 결과가 없습니다."
-                          : "데이터가 없습니다."}
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
           </GlassCard>
         </div>
 
-        <div className="lg:col-span-1 space-y-6">
+        {/* [수정] 우측 사이드바: 나의 관심 기업 */}
+        <div className="lg:col-span-1">
           <GlassCard className="p-0 overflow-hidden flex flex-col h-full bg-white border-2 border-shinhan-light/50">
             <div className="p-5 border-b border-gray-100 bg-shinhan-blue text-white">
               <h2 className="text-lg font-bold flex items-center gap-2">
-                <Star size={20} className="fill-white" />
-                나의 관심 기업
+                <Star size={20} className="fill-white" /> 나의 관심 기업
               </h2>
               <p className="text-xs text-blue-100 mt-1">
-                {starred?.size ?? 0}개의 기업을 구독 중입니다.
+                {starred.size}개의 기업 구독 중
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[600px] custom-scrollbar bg-white">
+            <div className="flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
               {starredList.length > 0 ? (
                 <div className="divide-y divide-gray-50">
-                  {starredList.map((item: RankingItem) => (
+                  {starredList.map((item) => (
                     <div
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className="relative p-4 hover:bg-blue-50 transition-colors cursor-pointer group flex items-center justify-between overflow-hidden"
+                      className="p-4 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-between"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
-                      <div className="relative flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onToggleStar(item.code);
+                            toggleStar(item.code);
                           }}
-                          className="text-yellow-400 hover:text-yellow-500 transition-colors"
+                          className="text-yellow-400"
                         >
                           <Star size={18} fill="currentColor" />
                         </button>
                         <div>
-                          <div className="font-bold text-slate-800 text-sm group-hover:text-shinhan-blue transition-colors">
+                          <div className="font-bold text-slate-800 text-sm">
                             {item.name}
                           </div>
                           <div className="text-xs text-gray-400 font-mono">
@@ -286,7 +251,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           </div>
                         </div>
                       </div>
-                      <div className="relative text-right">
+                      <div className="text-right">
                         <div className="font-bold text-slate-700 text-sm">
                           {item.price}
                         </div>
@@ -301,35 +266,15 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                 </div>
               ) : (
                 <div className="text-center py-10 px-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star size={24} className="text-gray-300" />
-                  </div>
-                  <p className="text-slate-500 font-bold mb-1">
-                    관심 기업이 없습니다
-                  </p>
-                  <p className="text-xs text-gray-400 leading-relaxed">
-                    왼쪽 리스트에서{" "}
-                    <Star size={10} className="inline mx-0.5 text-gray-400" />{" "}
-                    버튼을 눌러
-                    <br />
-                    관심 기업을 추가해보세요.
-                  </p>
+                  {isStarredLoading ? (
+                    <Loader2 className="animate-spin mx-auto text-gray-300" />
+                  ) : (
+                    <p className="text-slate-400 text-sm">
+                      관심 기업이 없습니다.
+                    </p>
+                  )}
                 </div>
               )}
-
-              {(starred?.size ?? 0) > starredList.length && (
-                <div className="text-center text-xs text-gray-400 py-3 border-t border-gray-50">
-                  + 그 외 {(starred?.size ?? 0) - starredList.length}개 기업
-                  <br />
-                  (로딩 중이거나 순위권 밖)
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-gray-100 bg-white">
-              <button className="w-full py-3 rounded-xl border border-dashed border-gray-300 text-gray-500 font-bold text-sm hover:border-shinhan-blue hover:text-shinhan-blue hover:bg-blue-50 transition-all flex items-center justify-center gap-2">
-                관심 그룹 관리 <ArrowRight size={14} />
-              </button>
             </div>
           </GlassCard>
         </div>

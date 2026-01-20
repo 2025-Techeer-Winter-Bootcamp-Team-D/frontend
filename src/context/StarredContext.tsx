@@ -17,10 +17,10 @@ import {
 interface StarredContextType {
   starred: Set<string>;
   starredItems: string[];
+  favoriteMap: Map<string, FavoriteItem>; // 상세 정보를 위해 Map 전체를 노출
   toggleStar: (id: string) => void;
   isStarred: (id: string) => boolean;
   isLoading: boolean;
-  favoriteMap?: Map<string, FavoriteItem>;
 }
 
 const StarredContext = createContext<StarredContextType | undefined>(undefined);
@@ -46,7 +46,7 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       try {
         const response = await getFavorites();
-        const items = response.data;
+        const items = response.data; // [{ favoriteId, companyId, companyName, logoUrl }, ...]
         const newMap = new Map<string, FavoriteItem>();
         if (Array.isArray(items)) {
           items.forEach((item) => {
@@ -54,8 +54,8 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
           });
         }
         setFavoriteMap(newMap);
-      } catch {
-        // 에러 시 빈 목록 유지
+      } catch (error) {
+        console.error("초기 즐겨찾기 로드 실패:", error);
       } finally {
         setIsLoading(false);
       }
@@ -76,10 +76,12 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       try {
         if (favoriteMap.has(id)) {
+          // 삭제 로직 (DELETE method)
           const favoriteItem = favoriteMap.get(id);
           if (favoriteItem) {
             const response = await removeFavorite(favoriteItem.favoriteId);
 
+            // 성공 시 status: 200 확인
             if (response.status === 200) {
               setFavoriteMap((prev) => {
                 const newMap = new Map(prev);
@@ -89,9 +91,10 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         } else {
-          // 추가 로직 (기존 유지)
+          // 추가 로직 (POST method)
           const response = await addFavorite(id);
 
+          // 성공 시 { data: { data: { favoriteId, companyId... } } } 구조 반영
           if (response.data && response.data.data) {
             const newFavorite = response.data.data;
             setFavoriteMap((prev) => {
@@ -102,15 +105,12 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } catch (error: any) {
-        if (error.response && error.response.data) {
-          const errorMsg =
-            error.response.data.message ||
-            error.response.data.companyId?.[0] ||
-            "처리 중 오류가 발생했습니다.";
-          console.error("API Error:", errorMsg);
-        } else {
-          console.error("즐겨찾기 처리 중 알 수 없는 오류:", error);
-        }
+        // 실패 시 message 처리
+        const errorMsg =
+          error.response?.data?.message ||
+          error.response?.data?.companyId?.[0] ||
+          "즐겨찾기 처리 중 오류가 발생했습니다.";
+        console.error("API Error:", errorMsg);
       } finally {
         setIsLoading(false);
       }
@@ -129,7 +129,7 @@ export const StarredProvider = ({ children }: { children: ReactNode }) => {
       value={{
         starred,
         starredItems,
-        favoriteMap,
+        favoriteMap, // Map 객체를 value에 추가하여 컴포넌트에서 fav 에러 방지
         toggleStar,
         isStarred,
         isLoading,
