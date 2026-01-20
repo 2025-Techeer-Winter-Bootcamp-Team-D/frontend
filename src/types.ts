@@ -361,18 +361,16 @@ export interface FinancialData {
 }
 //산업
 export type IndustryKey =
-  | "finance"
-  | "semicon"
-  | "auto"
-  | "bio"
-  | "battery"
-  | "internet"
-  | "ent"
-  | "steel"
-  | "ship"
-  | "const"
-  | "retail"
-  | "telecom";
+  | "agriculture_fishery" // 농어업
+  | "manufacturing_kosdaq" // 제조업(코스닥)
+  | "food" // 음식료품
+  | "chemical" // 화학/정유
+  | "pharmaceuticals" // 의약품
+  | "battery" // 전기전자
+  | "auto" // 운수장비(자동차/조선)
+  | "semiconductor_kosdaq" // 반도체(코스닥)
+  | "it_kosdaq" // IT산업(코스닥)
+  | "insurance"; // 보험
 
 export type TimeRange = "1M" | "3M" | "6M" | "1Y";
 
