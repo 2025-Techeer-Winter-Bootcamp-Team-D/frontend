@@ -160,17 +160,19 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const analysisQueries = useQueries({
     queries:
       disclosureTab === "analysis" && companyReports.length > 0
-        ? companyReports.map((report: CompanyReportItem) => ({
-            queryKey: ["reportAnalysis", companyCode, report.rcept_no],
-            queryFn: async () => {
-              const response = await getReportAnalysis(
-                companyCode,
-                report.rcept_no,
-              );
-              return { ...response.data.data, report };
-            },
-            enabled: disclosureTab === "analysis",
-          }))
+        ? companyReports
+            .slice(0, MAX_ANALYSIS_COUNT)
+            .map((report: CompanyReportItem) => ({
+              queryKey: ["reportAnalysis", companyCode, report.rcept_no],
+              queryFn: async () => {
+                const response = await getReportAnalysis(
+                  companyCode,
+                  report.rcept_no,
+                );
+                return { ...response.data.data, report };
+              },
+              enabled: disclosureTab === "analysis",
+            }))
         : [],
   });
 
@@ -765,7 +767,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 ))}
               </div>
               <button
-                onClick={() => window.open("https://dart.fss.or.kr", "_blank")}
+                onClick={() =>
+                  window.open(
+                    "https://dart.fss.or.kr",
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
                 className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 전자공시확인
@@ -826,7 +834,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
                             <button
                               onClick={() => {
                                 if (report?.report_url)
-                                  window.open(report.report_url, "_blank");
+                                  window.open(
+                                    report.report_url,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  );
                               }}
                               className="absolute top-0 right-0 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
                             >
@@ -939,7 +951,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
                         key={item.rcept_no || idx}
                         onClick={() => {
                           if (item.report_url) {
-                            window.open(item.report_url, "_blank");
+                            window.open(
+                              item.report_url,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
                           }
                         }}
                         className="grid grid-cols-12 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"

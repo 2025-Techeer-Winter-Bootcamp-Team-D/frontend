@@ -5,7 +5,6 @@ import type {
   OhlcvData,
   NewsItem,
   CompanyFinancialsData,
-  CompanyReportItem,
   CompanyReportsResponse,
   ReportAnalysisData,
   CompanySearchResponse,
@@ -79,16 +78,6 @@ export const getCompanyReports = (
 export const getReportAnalysis = (stockCode: string, rceptNo: string) => {
   return api.get<ApiResponse<ReportAnalysisData>>(
     `/companies/${stockCode}/reports/${rceptNo}/`,
-  );
-};
-
-/**
- * 기업 재무지표 조회
- * GET /companies/{stock_code}/financials/
- */
-export const getCompanyFinancials = (stockCode: string) => {
-  return api.get<ApiResponse<CompanyFinancialsData>>(
-    `/companies/${stockCode}/financials/`,
   );
 };
 
