@@ -26,6 +26,7 @@ type CompanyInfo = {
 const companies = new Map<string, CompanyInfo>();
 const companyNews = new Map<string, NewsItem[]>();
 const industryNews = new Map<string, NewsItem[]>();
+
 companies.set("055550", {
   stock_code: "055550",
   corp_code: "00126380",
