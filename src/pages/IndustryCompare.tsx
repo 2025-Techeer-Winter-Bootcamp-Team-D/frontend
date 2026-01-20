@@ -45,7 +45,6 @@ import {
   getIndustryNews,
   getIndustryAnalysis,
   getIndustryCompanies,
-  getIndustryIndices,
   getIndustryChart,
 } from "../api/industry";
 
@@ -181,12 +180,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     queryKey: ["industryNews", indutyCode],
     queryFn: () => getIndustryNews(indutyCode),
     enabled: !!indutyCode,
-  });
-
-  // 산업 지수 목록 조회
-  const indicesQuery = useQuery({
-    queryKey: ["industryIndices"],
-    queryFn: () => getIndustryIndices(),
   });
 
   // 산업 지수 차트 조회 (기간별)
