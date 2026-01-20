@@ -1,19 +1,43 @@
 import { api } from "./axios";
-import type {
-  Company,
-  ApiResponse,
-  OhlcvData,
-  NewsItem,
-  CompanySearchResult,
-} from "@/types";
+import type { Company, ApiResponse, OhlcvData, NewsItem } from "@/types";
+
+// 기업 검색 결과 타입
+export interface CompanySearchItem {
+  stock_code: string;
+  corp_code: string;
+  company_name: string;
+  market: string;
+  induty_code: string;
+  industry: {
+    industry_id: number;
+    name: string;
+    induty_code: string;
+  };
+  description: string;
+  logo_url: string | null;
+  market_amount: number;
+  ceo_name: string;
+  establishment_date: string;
+  homepage_url: string;
+  address: string;
+}
+
+export interface CompanySearchResponse {
+  query: string;
+  total_count: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+  results: CompanySearchItem[];
+}
 
 /*
  * 기업 검색
- * GET /companies?keyword=
+ * GET /companies/search/?q=
  */
 export const searchCompanies = (keyword: string) => {
-  return api.get<ApiResponse<Company[]>>("/companies", {
-    params: { keyword },
+  return api.get<ApiResponse<CompanySearchResponse>>("/companies/search/", {
+    params: { q: keyword },
   });
 };
 

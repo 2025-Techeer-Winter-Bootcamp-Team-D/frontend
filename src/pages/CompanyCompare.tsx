@@ -12,6 +12,7 @@ import {
   Check,
   Edit2,
   CheckCircle2,
+  Radar,
 } from "lucide-react";
 import { PageView } from "../types";
 import type {
@@ -33,6 +34,15 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
+  ScatterChart,
+  Scatter,
+  ReferenceArea,
+  ReferenceLine,
+  RadarChart,
+  Radar as RechartsRadar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import {
   getComparisons,
@@ -41,9 +51,14 @@ import {
   addCompany,
   removeCompany,
   updateComparisonName,
+  deleteComparison,
 } from "../api/comparison";
-import { searchCompanies, getStockOhlcv } from "../api/company";
-import type { Company, OhlcvItem } from "../types";
+import {
+  searchCompanies,
+  getStockOhlcv,
+  type CompanySearchItem,
+} from "../api/company";
+import type { OhlcvItem } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface CompareProps {
@@ -158,7 +173,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     queryKey: ["comparison", activeSetId],
     enabled: !!activeSetId,
     queryFn: async () => {
-      return await getComparison(activeSetId as number);
+      const res = await getComparison(activeSetId as number);
+      return res.data ?? res;
     },
   });
 
@@ -190,6 +206,9 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     "roe",
   ]);
 
+  // State for Radar Chart
+  const [selectedRadarCompany, setSelectedRadarCompany] = useState<string>("");
+
   // -----------------------------
   // Search (debounce + query)
   // -----------------------------
@@ -203,7 +222,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     enabled: !!debouncedSearch.trim(),
     queryFn: async () => {
       const res = await searchCompanies(debouncedSearch);
-      return (res.data?.data ?? []) as Company[];
+      return (res.data?.data?.results ?? []) as CompanySearchItem[];
     },
   });
 
@@ -286,7 +305,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
     onSuccess: async (res) => {
       await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
-      setActiveSetId(res.id);
+      // API 응답: { comparisonId: 1, ... }
+      const newId = res.comparisonId ?? res.id;
+      if (newId != null) {
+        setActiveSetId(newId);
+      }
     },
   });
 
@@ -330,6 +353,19 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
   });
 
+  const deleteSetMutation = useMutation({
+    mutationFn: async (comparisonId: number) => {
+      await deleteComparison(comparisonId);
+    },
+    onSuccess: async (_res, deletedId) => {
+      await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
+      if (activeSetId === deletedId) {
+        const remaining = comparisonList.filter((c) => c.id !== deletedId);
+        setActiveSetId(remaining.length > 0 ? remaining[0].id : null);
+      }
+    },
+  });
+
   // -----------------------------
   // Handlers
   // -----------------------------
@@ -370,6 +406,15 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       console.error("이름 변경 실패:", e);
       setTempSetName(activeComparison?.name ?? "");
       setIsEditingName(false);
+    }
+  };
+
+  const handleDeleteSet = async (e: React.MouseEvent, comparisonId: number) => {
+    e.stopPropagation();
+    try {
+      await deleteSetMutation.mutateAsync(comparisonId);
+    } catch (err) {
+      console.error("비교 세트 삭제 실패:", err);
     }
   };
 
@@ -442,6 +487,101 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     });
     return result;
   }, [activeComparison?.companies, activeMetrics]);
+
+  // PER-YoY Matrix 차트 데이터
+  const perYoyChartData = useMemo(() => {
+    if (!activeComparison?.companies?.length) return [];
+    return activeComparison.companies.map((company, index) => ({
+      name: company.companyName,
+      per: company.per ?? 0,
+      yoy: company.yoy ?? 0,
+      fill: CHART_COLORS[index % CHART_COLORS.length],
+    }));
+  }, [activeComparison?.companies]);
+
+  const avgPer = useMemo(() => {
+    if (!perYoyChartData.length) return 15;
+    const sum = perYoyChartData.reduce((acc, d) => acc + d.per, 0);
+    return sum / perYoyChartData.length;
+  }, [perYoyChartData]);
+
+  //ReferenceArea 경계값 동적 범위 계산
+  const { minYoy, maxYoy, maxPer } = useMemo(() => {
+    if (!perYoyChartData.length)
+      return { minYoy: -100, maxYoy: 100, maxPer: 100 };
+    const yoys = perYoyChartData.map((d) => d.yoy);
+    const pers = perYoyChartData.map((d) => d.per);
+    return {
+      minYoy: Math.min(-10, ...yoys) - 10,
+      maxYoy: Math.max(10, ...yoys) + 10,
+      maxPer: Math.max(avgPer + 10, ...pers) + 10,
+    };
+  }, [perYoyChartData, avgPer]);
+
+  // Radar Chart: 선택된 기업 초기화
+  useEffect(() => {
+    if (activeComparison?.companies?.length && !selectedRadarCompany) {
+      setSelectedRadarCompany(activeComparison.companies[0].companyName);
+    }
+  }, [activeComparison?.companies, selectedRadarCompany]);
+
+  // Radar Chart 데이터 (산업 평균 대비)
+  const radarData = useMemo(() => {
+    if (!activeComparison?.companies?.length) return [];
+
+    const selectedCompany = activeComparison.companies.find(
+      (c) => c.companyName === selectedRadarCompany,
+    );
+    if (!selectedCompany) return [];
+
+    // 산업 평균 계산
+    const avgRoe =
+      activeComparison.companies.reduce((sum, c) => sum + (c.roe ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgPer =
+      activeComparison.companies.reduce((sum, c) => sum + (c.per ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgPbr =
+      activeComparison.companies.reduce((sum, c) => sum + (c.pbr ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgYoy =
+      activeComparison.companies.reduce((sum, c) => sum + (c.yoy ?? 0), 0) /
+      activeComparison.companies.length;
+    const avgOperatingMargin =
+      activeComparison.companies.reduce(
+        (sum, c) => sum + (c.operatingMargin ?? 0),
+        0,
+      ) / activeComparison.companies.length;
+
+    return [
+      { subject: "ROE", A: selectedCompany.roe ?? 0, B: avgRoe, fullMark: 25 },
+      { subject: "PER", A: selectedCompany.per ?? 0, B: avgPer, fullMark: 50 },
+      { subject: "PBR", A: selectedCompany.pbr ?? 0, B: avgPbr, fullMark: 5 },
+      { subject: "YoY", A: selectedCompany.yoy ?? 0, B: avgYoy, fullMark: 30 },
+      {
+        subject: "영업이익률",
+        A: selectedCompany.operatingMargin ?? 0,
+        B: avgOperatingMargin,
+        fullMark: 25,
+      },
+    ];
+  }, [activeComparison?.companies, selectedRadarCompany]);
+  //radarData 도메인 계산 (음수 값 포함)
+  const { radarMin, radarMax } = useMemo(() => {
+    if (!radarData.length) return { radarMin: 0, radarMax: 25 };
+
+    const allValues = radarData.flatMap((d) => [d.A, d.B]);
+    const dataMin = Math.min(...allValues);
+    const dataMax = Math.max(...allValues);
+    const maxFull = Math.max(...radarData.map((d) => d.fullMark ?? 0));
+
+    // 음수 값이 있으면 최소값을 약간 여유있게 설정, 없으면 0
+    const min = dataMin < 0 ? Math.floor(dataMin * 1.1) : 0;
+    // 최대값은 데이터 최대값과 fullMark 중 큰 값에 여유 추가
+    const max = Math.max(25, maxFull, Math.ceil(dataMax * 1.1));
+
+    return { radarMin: min, radarMax: max };
+  }, [radarData]);
 
   // 주가 추이 차트 데이터 (OHLCV API 기반)
   const trendChartData = useMemo(() => {
@@ -521,10 +661,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               </h2>
               <div className="space-y-2">
                 {comparisonList.map((item) => (
-                  <button
+                  <div
                     key={item.id}
                     onClick={() => setActiveSetId(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
                       activeSetId === item.id
                         ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
                         : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
@@ -533,10 +673,19 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     <span className="font-medium text-sm truncate max-w-[150px]">
                       {item.name}
                     </span>
-                    {activeSetId === item.id && (
-                      <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
-                    )}
-                  </button>
+                    <button
+                      onClick={(e) => handleDeleteSet(e, item.id)}
+                      disabled={deleteSetMutation.isPending}
+                      className={`p-1 rounded-full transition-colors flex-shrink-0 ${
+                        activeSetId === item.id
+                          ? "hover:bg-white/20 text-white"
+                          : "hover:bg-gray-200 text-gray-400 hover:text-red-500"
+                      } disabled:opacity-50`}
+                      title="세트 삭제"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 ))}
               </div>
               <button
@@ -796,7 +945,215 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                 </ResponsiveContainer>
               </div>
             </GlassCard>
+
+            {/* Row 3: PER-YoY Matrix (Quadrant Style) */}
+            <GlassCard className="p-6">
+              <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                <BarChart3 size={18} className="text-shinhan-blue" />
+                이익 성장성 대비 저평가 분석
+              </h3>
+              <p className="text-sm text-slate-500 mb-4">
+                PER(주가수익비율)과 YoY(전년 대비 성장률)를 기준으로 기업의
+                가치와 성장성을 비교합니다.
+              </p>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart
+                    margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      type="number"
+                      dataKey="yoy"
+                      name="YoY"
+                      unit="%"
+                      domain={[minYoy, maxYoy]}
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={{ stroke: "#cbd5e1" }}
+                      label={{
+                        value: "YoY 성장률 (%)",
+                        position: "bottom",
+                        offset: 0,
+                        style: { fontSize: 12, fill: "#64748b" },
+                      }}
+                    />
+                    <YAxis
+                      type="number"
+                      dataKey="per"
+                      name="PER"
+                      domain={[0, maxPer]}
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={{ stroke: "#cbd5e1" }}
+                      label={{
+                        value: "PER (배)",
+                        angle: -90,
+                        position: "insideLeft",
+                        style: { fontSize: 12, fill: "#64748b" },
+                      }}
+                    />
+                    <Tooltip
+                      cursor={{ strokeDasharray: "3 3" }}
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "none",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                      formatter={(value, name) => {
+                        const numValue = typeof value === "number" ? value : 0;
+                        return [
+                          name === "PER"
+                            ? `${numValue.toFixed(1)}배`
+                            : `${numValue.toFixed(1)}%`,
+                          name,
+                        ];
+                      }}
+                      labelFormatter={(_, payload) =>
+                        payload?.[0]?.payload?.name ?? ""
+                      }
+                    />
+                    {/* 사분면 구분 */}
+                    <ReferenceArea
+                      x1={0}
+                      x2={maxYoy}
+                      y1={0}
+                      y2={avgPer}
+                      fill="#dcfce7"
+                      fillOpacity={0.4}
+                    />
+                    <ReferenceArea
+                      x1={minYoy}
+                      x2={0}
+                      y1={avgPer}
+                      y2={maxPer}
+                      fill="#fef2f2"
+                      fillOpacity={0.4}
+                    />
+                    <ReferenceLine
+                      x={0}
+                      stroke="#94a3b8"
+                      strokeDasharray="5 5"
+                    />
+                    <ReferenceLine
+                      y={avgPer}
+                      stroke="#94a3b8"
+                      strokeDasharray="5 5"
+                      label={{
+                        value: `평균 PER: ${avgPer.toFixed(1)}`,
+                        position: "right",
+                        style: { fontSize: 10, fill: "#64748b" },
+                      }}
+                    />
+                    <Scatter
+                      name="기업"
+                      data={perYoyChartData}
+                      shape={(props: unknown) => {
+                        const { cx, cy, payload } = props as {
+                          cx: number;
+                          cy: number;
+                          payload: { fill: string; name: string };
+                        };
+                        return (
+                          <g>
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={8}
+                              fill={payload.fill}
+                              stroke="#fff"
+                              strokeWidth={2}
+                            />
+                            <text
+                              x={cx}
+                              y={cy - 14}
+                              textAnchor="middle"
+                              fontSize={11}
+                              fontWeight="bold"
+                              fill="#334155"
+                            >
+                              {payload.name}
+                            </text>
+                          </g>
+                        );
+                      }}
+                    />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-6 mt-4 text-xs text-slate-500">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
+                  <span>저평가 + 고성장 (매력적)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-red-50 border border-red-200"></div>
+                  <span>고평가 + 저성장 (주의)</span>
+                </div>
+              </div>
+            </GlassCard>
           </div>
+
+          {/* 2.5 Industry Deviation Radar */}
+          <GlassCard className="p-6 mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <Radar size={18} className="text-shinhan-blue" />
+                산업 평균 이탈 탐지
+              </h3>
+              <select
+                className="text-xs font-bold border border-gray-300 rounded-md p-1.5 text-slate-700 bg-white"
+                value={selectedRadarCompany}
+                onChange={(e) => setSelectedRadarCompany(e.target.value)}
+              >
+                {activeComparison?.companies?.map((c) => (
+                  <option key={c.stock_code} value={c.companyName}>
+                    {c.companyName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="80%"
+                  data={radarData}
+                >
+                  <PolarGrid stroke="#e2e8f0" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={30}
+                    domain={[radarMin, radarMax]}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <RechartsRadar
+                    name={selectedRadarCompany}
+                    dataKey="A"
+                    stroke="#0046FF"
+                    strokeWidth={2}
+                    fill="#0046FF"
+                    fillOpacity={0.2}
+                  />
+                  <RechartsRadar
+                    name="비교 평균"
+                    dataKey="B"
+                    stroke="#94A3B8"
+                    strokeWidth={2}
+                    fill="#94A3B8"
+                    fillOpacity={0.1}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
+                  />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
 
           {/* 3. Detailed Financial Ratios (Redesigned Grid + Toggle Layout) */}
           <div className="mt-8">
@@ -988,17 +1345,21 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               ) : searchResults.length > 0 ? (
                 searchResults.map((company) => (
                   <button
-                    key={company.code}
-                    onClick={() => handleAddCompany(company.code)}
+                    key={company.stock_code}
+                    onClick={() => handleAddCompany(company.stock_code)}
                     disabled={addCompanyMutation.isPending}
                     className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
                   >
-                    <div>
+                    <div className="flex items-center gap-3">
+                      {company.logo_url && (
+                        <img
+                          src={company.logo_url}
+                          alt={company.company_name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      )}
                       <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
-                        {company.name}
-                      </span>
-                      <span className="ml-2 text-xs text-gray-400">
-                        {company.code}
+                        {company.company_name}
                       </span>
                     </div>
                     <Plus
