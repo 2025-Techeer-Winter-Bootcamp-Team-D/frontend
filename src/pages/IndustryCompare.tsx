@@ -200,12 +200,12 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const loading =
     analysisQuery.isLoading ||
     companiesQuery.isLoading ||
-    indicesQuery.isLoading ||
+    newsQuery.isLoading ||
     chartQuery.isLoading;
   const error =
     analysisQuery.error?.message ||
     companiesQuery.error?.message ||
-    indicesQuery.error?.message ||
+    newsQuery.error?.message ||
     chartQuery.error?.message ||
     null;
   // API 응답 구조에 맞게 타입 정의
