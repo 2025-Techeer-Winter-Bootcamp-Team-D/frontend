@@ -9,7 +9,7 @@ type CompanyInfo = {
   corp_code: string;
   company_name: string;
   industry: {
-    induty_code: string;
+    induty_code: number;
     name: string;
   };
   description: string;
@@ -25,9 +25,35 @@ type CompanyInfo = {
 ========================= */
 const companies = new Map<string, CompanyInfo>();
 const companyNews = new Map<string, NewsItem[]>();
-const industryNews = new Map<number, NewsItem[]>();
+const industryNews = new Map<string, NewsItem[]>();
 
 let nextNewsId = 1;
+
+/* =========================
+   초기 Mock 데이터 (중요)
+========================= */
+companies.set("055550", {
+  stock_code: "055550",
+  corp_code: "00126380",
+  company_name: "신한금융지주",
+  industry: { induty_code: 1, name: "금융" },
+  description: "대한민국 대표 금융지주회사",
+  logo_url: "",
+  market_amount: 42000000000000,
+  ceo_name: "진옥동",
+  establishment_date: "2001-09-01",
+  homepage_url: "https://www.shinhan.com",
+});
+
+companyNews.set("055550", [
+  {
+    id: nextNewsId++,
+    title: "신한금융, 역대 최대 실적 달성",
+    summary: "신한금융지주가 사상 최대 실적을 기록했다.",
+    source: "연합뉴스",
+    date: "2024-12-01",
+  },
+]);
 /* =========================
    Handlers
 ========================= */
@@ -135,11 +161,10 @@ export const companyHandlers = [
   /* 산업 뉴스 (명세서 그대로) */
   http.get("/industries/:induty_code/news", async ({ params }) => {
     await delay(150);
-    const indutyCode = Number(params.induty_code);
-
-    if (!Number.isFinite(indutyCode)) {
+    const indutyCode = String(params.induty_code);
+    if (!indutyCode || indutyCode === "undefined") {
       return HttpResponse.json(
-        { message: "induty_code 파라미터가 올바르지 않습니다." },
+        { message: "induty_ 파라미터가 올바르지 않습니다." },
         { status: 400 },
       );
     }
