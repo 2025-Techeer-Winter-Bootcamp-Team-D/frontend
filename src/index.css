@@ -18,6 +18,13 @@ body,
   scrollbar-width: none;
 }
 
+/* Remove focus outline/shadow on click */
+button:focus,
+[role="button"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 /* Custom colors */
 :root {
   --color-shinhan-blue: #0046ff;

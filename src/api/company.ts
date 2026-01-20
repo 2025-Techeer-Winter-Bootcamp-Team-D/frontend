@@ -1,5 +1,12 @@
 import { api } from "./axios";
-import type { Company, ApiResponse, OhlcvData, NewsItem } from "@/types";
+import type {
+  CompanyApiData,
+  ApiResponse,
+  OhlcvData,
+  NewsItem,
+  CompanyReportsResponse,
+  ReportAnalysisData,
+} from "@/types";
 
 // 기업 검색 결과 타입
 export interface CompanySearchItem {
@@ -42,11 +49,11 @@ export const searchCompanies = (keyword: string) => {
 };
 
 /**
- * 기업 상세 조회
- * GET /companies/{code}
+ * 기업 기본 정보 조회
+ * GET /companies/{stock_code}/
  */
-export const getCompanyDetail = (code: string) => {
-  return api.get<ApiResponse<Company>>(`/companies/${code}`);
+export const getCompanyDetail = (stockCode: string) => {
+  return api.get<ApiResponse<CompanyApiData>>(`/companies/${stockCode}/`);
 };
 
 /**
@@ -65,4 +72,33 @@ export const getStockOhlcv = (companyId: string, interval: string) => {
  */
 export const getCompanyNews = (companyId: string) => {
   return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news`);
+};
+/**
+ * 기업 보고서 목록 조회
+ * GET /api/companies/{stock_code}/reports/
+ */
+export const getCompanyReports = (
+  stockCode: string,
+  page: number = 1,
+  size: number = 20,
+) => {
+  return api.get<ApiResponse<CompanyReportsResponse>>(
+    `/companies/${stockCode}/reports/`,
+    {
+      params: {
+        page,
+        page_size: size,
+      },
+    },
+  );
+};
+
+/**
+ * 보고서 분석 결과 조회
+ * GET /api/companies/{stock_code}/reports/{rcept_no}/analysis/
+ */
+export const getReportAnalysis = (stockCode: string, rceptNo: string) => {
+  return api.get<ApiResponse<ReportAnalysisData>>(
+    `/companies/${stockCode}/reports/${rceptNo}/analysis/`,
+  );
 };

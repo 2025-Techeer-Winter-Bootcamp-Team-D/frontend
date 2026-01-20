@@ -337,13 +337,20 @@ export interface CompanyApiData {
   stock_code: string;
   corp_code: string;
   company_name: string;
-  industry: { induty_code: string; name: string };
+  market: string;
+  induty_code: string;
+  industry: {
+    industry_id: number;
+    name: string;
+    induty_code: string;
+  };
   description: string;
-  logo_url: string;
+  logo_url: string | null;
   market_amount: number;
   ceo_name: string;
   establishment_date: string;
   homepage_url: string;
+  address: string;
 }
 // 재무 데이터 타입
 export interface FinancialMetric {
@@ -358,6 +365,56 @@ export interface FinancialData {
   revenue: FinancialMetric;
   operating: FinancialMetric;
   netIncome: FinancialMetric;
+}
+// 기업 보고서 개별 항목 타입
+export interface CompanyReportItem {
+  rcept_no: string; // 접수 번호
+  report_name: string; // 보고서 명
+  report_type: string; // 보고서 유형 (예: 정기공시)
+  submitted_at: string; // 제출 일시 (ISO 8601 형식)
+  report_url: string; // 보고서 상세 URL
+}
+
+// 보고서 목록 응답 데이터 타입
+export interface CompanyReportsResponse {
+  total_count: number;
+  page: number;
+  page_size: number;
+  reports: CompanyReportItem[]; // results가 아닌 reports로 매핑
+}
+// 매출 구성 (사업보고서용)
+export interface RevenueComposition {
+  ratio: number;
+  revenue: number;
+  segment: string;
+}
+
+// 추출된 상세 정보
+export interface ExtractedInfo {
+  summary: {
+    date: string;
+    title: string;
+    one_line: string;
+  };
+  // key_info는 "매출액" 또는 "취득금액" 등 키값이 유동적이므로 인덱스 시그니처 사용
+  key_info: {
+    [key: string]: string;
+  };
+  report_type: string;
+  company_name: string;
+  revenue_composition: RevenueComposition[];
+}
+
+// 보고서 상세 분석 응답 데이터
+export interface ReportAnalysisData {
+  id: number;
+  rcept_no: string;
+  report_name: string;
+  report_type: string;
+  submitted_at: string;
+  report_url: string;
+  extracted_info: ExtractedInfo;
+  created_at: string;
 }
 //산업
 export type IndustryKey =
