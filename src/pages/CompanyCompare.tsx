@@ -973,10 +973,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                       fillOpacity={0.4}
                     />
                     <ReferenceArea
-                      x1={-100}
+                      x1={minYoy}
                       x2={0}
                       y1={avgPer}
-                      y2={100}
+                      y2={maxPer}
                       fill="#fef2f2"
                       fillOpacity={0.4}
                     />
