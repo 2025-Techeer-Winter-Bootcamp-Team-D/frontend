@@ -39,27 +39,6 @@ companies.set("055550", {
   homepage_url: "https://www.shinhan.com",
 });
 
-companyNews.set("055550", [
-  {
-    id: nextNewsId++,
-    title: "신한금융, 역대 최대 실적 달성",
-    summary: "신한금융지주가 사상 최대 실적을 기록했다.",
-    source: "연합뉴스",
-    date: "2024-12-01",
-  },
-]);
-
-industryNews.set("0021", [
-  {
-    id: nextNewsId++,
-    title: "금융업계, 금리 인하 기대감 확산",
-    summary: "금융 산업 전반에 긍정적인 전망이 나오고 있다.",
-    source: "한국경제",
-    date: "2024-12-02",
-  },
-]);
-
-//let nextNewsId = 1;
 /* =========================
    Handlers
 ========================= */
