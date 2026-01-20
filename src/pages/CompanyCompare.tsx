@@ -174,8 +174,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     enabled: !!activeSetId,
     queryFn: async () => {
       const res = await getComparison(activeSetId as number);
-      console.log("Comparison detail response:", res);
-      // 백엔드 응답이 { data: {...} } 형식일 수 있음
       return res.data ?? res;
     },
   });
@@ -319,10 +317,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const addCompanyMutation = useMutation({
     mutationFn: async (stockCode: string) => {
       if (!activeSetId) throw new Error("activeSetId가 없습니다.");
-      console.log("Adding company:", {
-        comparison_id: activeSetId,
-        company: stockCode,
-      });
       await addCompany(activeSetId, { company: stockCode });
     },
     onSuccess: async () => {
@@ -331,16 +325,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       });
       setIsSearchOpen(false);
       setSearchQuery("");
-    },
-    onError: (error: unknown) => {
-      // 에러 응답 상세 로깅
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as { response?: { data?: unknown } };
-        console.error(
-          "API Error Response:",
-          JSON.stringify(axiosError.response?.data, null, 2),
-        );
-      }
     },
   });
 
