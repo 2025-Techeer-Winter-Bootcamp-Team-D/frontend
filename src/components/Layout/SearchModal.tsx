@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PageView } from "../../types";
-import { Search, X, ChevronRight, TrendingUp } from "lucide-react";
+import { Search, X, ChevronRight, TrendingUp, Loader2 } from "lucide-react";
 import GlassCard from "./GlassCard";
+import { searchCompanies, type CompanySearchItem } from "../../api/company";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -10,17 +11,31 @@ interface SearchModalProps {
   onSearchSelect?: (code: string) => void;
 }
 
-const MOCK_COMPANIES = [
-  { name: "신한지주", code: "055550", type: "KOSPI", change: "+0.51%" },
-  { name: "삼성전자", code: "005930", type: "KOSPI", change: "+0.96%" },
-  { name: "SK하이닉스", code: "000660", type: "KOSPI", change: "+2.10%" },
-  { name: "현대차", code: "005380", type: "KOSPI", change: "-1.20%" },
-  { name: "KB금융", code: "105560", type: "KOSPI", change: "+1.12%" },
-  { name: "하나금융", code: "086790", type: "KOSPI", change: "-0.32%" },
-  { name: "카카오뱅크", code: "323410", type: "KOSPI", change: "-1.50%" },
-  { name: "에코프로비엠", code: "247540", type: "KOSDAQ", change: "-0.80%" },
-  { name: "LG에너지솔루션", code: "373220", type: "KOSPI", change: "-1.50%" },
-];
+const RECENT_SEARCHES_KEY = "recentSearches";
+const MAX_RECENT_SEARCHES = 8;
+
+// 최근 검색어 로컬스토리지에서 가져오기
+const getRecentSearches = (): string[] => {
+  try {
+    const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
+// 최근 검색어 로컬스토리지에 저장
+const saveRecentSearch = (query: string) => {
+  try {
+    const recent = getRecentSearches();
+    const filtered = recent.filter((q) => q !== query);
+    const updated = [query, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+};
 
 const SearchModal: React.FC<SearchModalProps> = ({
   isOpen,
@@ -29,13 +44,24 @@ const SearchModal: React.FC<SearchModalProps> = ({
   onSearchSelect,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<CompanySearchItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 컴포넌트 마운트 시 최근 검색어 로드
+  useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
 
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
+      // 모달 열릴 때 최근 검색어 새로고침
+      setRecentSearches(getRecentSearches());
     }
   }, [isOpen]);
 
@@ -47,20 +73,59 @@ const SearchModal: React.FC<SearchModalProps> = ({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  const handleCompanyClick = (code: string) => {
+  // 검색어 변경 시 API 호출 (디바운스 적용)
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const response = await searchCompanies(searchQuery);
+        // API 응답 구조에 따라 results 추출
+        const data = response.data;
+        const results = data?.data?.results ?? data?.results ?? [];
+        setSearchResults(results);
+      } catch (error) {
+        console.error("검색 실패:", error);
+        setSearchResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  const handleCompanyClick = (code: string, companyName?: string) => {
+    // 검색어 또는 기업명 저장
+    if (companyName) {
+      const updated = saveRecentSearch(companyName);
+      setRecentSearches(updated);
+    } else if (searchQuery.trim()) {
+      const updated = saveRecentSearch(searchQuery.trim());
+      setRecentSearches(updated);
+    }
+
     if (onSearchSelect) {
       onSearchSelect(code);
     }
     setPage(PageView.COMPANY_DETAIL);
     onClose();
     setSearchQuery("");
+    setSearchResults([]);
   };
-
-  const filteredCompanies = searchQuery
-    ? MOCK_COMPANIES.filter(
-        (c) => c.name.includes(searchQuery) || c.code.includes(searchQuery),
-      )
-    : [];
 
   if (!isOpen) return null;
 
@@ -98,22 +163,24 @@ const SearchModal: React.FC<SearchModalProps> = ({
           {searchQuery === "" ? (
             <div className="space-y-6">
               {/* 최근 검색어 */}
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                  최근 검색어
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {["신한지주", "2차전지", "삼성전자", "반도체"].map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => setSearchQuery(tag)}
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-slate-600 font-medium transition-colors"
-                    >
-                      {tag}
-                    </button>
-                  ))}
+              {recentSearches.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                    최근 검색어
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => setSearchQuery(tag)}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-slate-600 font-medium transition-colors"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* 인기 종목 TOP 4 */}
               <div>
@@ -133,7 +200,9 @@ const SearchModal: React.FC<SearchModalProps> = ({
                   ].map((company, index) => (
                     <button
                       key={company.code}
-                      onClick={() => handleCompanyClick(company.code)}
+                      onClick={() =>
+                        handleCompanyClick(company.code, company.name)
+                      }
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors group text-left"
                     >
                       <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gray-200 text-gray-600">
@@ -165,34 +234,35 @@ const SearchModal: React.FC<SearchModalProps> = ({
                 </div>
               </div>
             </div>
-          ) : filteredCompanies.length > 0 ? (
-            filteredCompanies.map((company) => (
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={24} className="animate-spin text-shinhan-blue" />
+            </div>
+          ) : searchResults.length > 0 ? (
+            searchResults.map((company) => (
               <button
-                key={company.code}
-                onClick={() => handleCompanyClick(company.code)}
+                key={company.stock_code}
+                onClick={() =>
+                  handleCompanyClick(company.stock_code, company.company_name)
+                }
                 className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-600 group-hover:bg-blue-100 group-hover:text-shinhan-blue transition-colors">
-                    {company.name[0]}
+                    {company.company_name[0]}
                   </div>
                   <div>
                     <span className="font-bold text-slate-700 group-hover:text-shinhan-blue transition-colors">
-                      {company.name}
+                      {company.company_name}
                     </span>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <span className="font-mono">{company.code}</span>
+                      <span className="font-mono">{company.stock_code}</span>
                       <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                      <span>{company.type}</span>
+                      <span>{company.market}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right flex items-center gap-2">
-                  <span
-                    className={`font-bold text-sm ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
-                  >
-                    {company.change}
-                  </span>
                   <ChevronRight
                     size={18}
                     className="text-gray-400 group-hover:text-shinhan-blue"
