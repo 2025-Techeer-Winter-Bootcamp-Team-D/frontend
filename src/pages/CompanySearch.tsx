@@ -12,14 +12,33 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { PageView } from "../types";
 import { getCompanyRankings } from "../api/ranking";
-import { searchCompanies } from "../api/company";
+import { searchCompanies, getStockOhlcv } from "../api/company";
 import type { RankingItem } from "../types";
 import { useStarred } from "../context/StarredContext"; // [수정] Context 임포트 확인
+
+// 시가총액 포맷 함수 (억/조 단위)
+const formatMarketCap = (value: number | string): string => {
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(numValue) || numValue === 0) return "-";
+  const uk = Math.floor(numValue / 100000000); // 억 단위로 변환
+  if (uk >= 10000) {
+    const jo = Math.floor(uk / 10000);
+    const remainder = uk % 10000;
+    return remainder > 0
+      ? `${jo}조 ${remainder.toLocaleString()}억`
+      : `${jo}조`;
+  }
+  return `${uk.toLocaleString()}억`;
+};
+
+// 가격 포맷 함수
+const formatPrice = (price: number): string => {
+  return price.toLocaleString();
+};
 
 interface CompanySearchProps {
   setPage: (page: PageView) => void;
   setCompanyCode: (code: string) => void;
-  // starred와 onToggleStar는 context에서 직접 가져오므로 props에서 제외하거나 옵션으로 변경 가능
 }
 
 const CompanySearch: React.FC<CompanySearchProps> = ({
@@ -47,7 +66,64 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     queryKey: ["companyRankings"],
     queryFn: async () => {
       const response = await getCompanyRankings();
-      return (response.data || []) as RankingItem[];
+      const data = response?.data ?? response ?? [];
+
+      // 각 기업의 주가 데이터를 병렬로 조회
+      const rankingWithPrices = await Promise.all(
+        data.map(async (item: any) => {
+          let price = "-";
+          let change = "-";
+          let changeVal = 0;
+
+          try {
+            const priceResponse = await getStockOhlcv(item.stock_code, "1d");
+            // API response: { data: { stock_code, interval, total_count, data: [...] } }
+            const responseData =
+              priceResponse?.data?.data ?? priceResponse?.data ?? ({} as any);
+            const priceData = responseData?.data ?? [];
+
+            if (priceData.length > 0) {
+              // 최신 데이터 (첫 번째 항목)
+              const latest = priceData[0];
+              const latestClose = latest.close ?? 0;
+
+              if (latestClose > 0) {
+                price = formatPrice(latestClose);
+
+                // 전일 대비 등락률 계산 (두 번째 데이터가 있으면)
+                if (priceData.length > 1) {
+                  const previous = priceData[1];
+                  const prevClose = previous.close ?? 0;
+                  if (prevClose > 0) {
+                    const changePercent =
+                      ((latestClose - prevClose) / prevClose) * 100;
+                    changeVal = changePercent;
+                    change =
+                      changePercent >= 0
+                        ? `+${changePercent.toFixed(2)}%`
+                        : `${changePercent.toFixed(2)}%`;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`주가 조회 실패 (${item.stock_code}):`, error);
+          }
+
+          return {
+            rank: item.rank,
+            name: item.name,
+            code: item.stock_code,
+            sector: "-",
+            price,
+            change,
+            changeVal,
+            marketCap: item.amount ? String(item.amount) : "-",
+          };
+        }),
+      );
+
+      return rankingWithPrices as RankingItem[];
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -156,6 +232,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     <th className="px-6 py-4">기업명</th>
                     <th className="px-6 py-4 text-right">현재가</th>
                     <th className="px-6 py-4 text-right">등락률</th>
+                    <th className="px-6 py-4 text-right">시가총액</th>
                     <th className="px-6 py-4 w-16"></th>
                   </tr>
                 </thead>
@@ -193,9 +270,12 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           {item.price}원
                         </td>
                         <td
-                          className={`px-6 py-4 text-right font-bold ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                          className={`px-6 py-4 text-right font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
                         >
                           {item.change}
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-slate-600">
+                          {formatMarketCap(item.marketCap)}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <ChevronRight
@@ -256,7 +336,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           {item.price}
                         </div>
                         <div
-                          className={`text-xs font-bold ${item.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                          className={`text-xs font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
                         >
                           {item.change}
                         </div>

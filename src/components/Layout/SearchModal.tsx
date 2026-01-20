@@ -3,6 +3,28 @@ import { PageView } from "../../types";
 import { Search, X, ChevronRight, TrendingUp, Loader2 } from "lucide-react";
 import GlassCard from "./GlassCard";
 import { searchCompanies, type CompanySearchItem } from "../../api/company";
+import { getCompanyRankings } from "../../api/ranking";
+
+// 시가총액 포맷 함수
+const formatMarketCap = (value: number): string => {
+  const uk = Math.floor(value / 100000000); // 억 단위로 변환
+  if (uk >= 10000) {
+    const jo = Math.floor(uk / 10000);
+    const remainder = uk % 10000;
+    return remainder > 0
+      ? `${jo}조 ${remainder.toLocaleString()}억`
+      : `${jo}조`;
+  }
+  return `${uk.toLocaleString()}억`;
+};
+
+interface TopCompany {
+  rank: number;
+  name: string;
+  stock_code: string;
+  amount: number;
+  logo: string | null;
+}
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -47,12 +69,25 @@ const SearchModal: React.FC<SearchModalProps> = ({
   const [searchResults, setSearchResults] = useState<CompanySearchItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [topCompanies, setTopCompanies] = useState<TopCompany[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 컴포넌트 마운트 시 최근 검색어 로드
+  // 컴포넌트 마운트 시 최근 검색어 로드 및 시가총액 TOP 4 조회
   useEffect(() => {
     setRecentSearches(getRecentSearches());
+
+    // 시가총액 TOP 4 조회
+    const fetchTopCompanies = async () => {
+      try {
+        const response = await getCompanyRankings();
+        const data = response?.data ?? response ?? [];
+        setTopCompanies(data.slice(0, 4));
+      } catch (error) {
+        console.error("시가총액 순위 조회 실패:", error);
+      }
+    };
+    fetchTopCompanies();
   }, []);
 
   useEffect(() => {
@@ -182,57 +217,41 @@ const SearchModal: React.FC<SearchModalProps> = ({
                 </div>
               )}
 
-              {/* 인기 종목 TOP 4 */}
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                  인기 종목 TOP 4
-                </h4>
-                <div className="space-y-1">
-                  {[
-                    { name: "삼성전자", code: "005930", change: "+0.96%" },
-                    { name: "SK하이닉스", code: "000660", change: "+2.10%" },
-                    { name: "신한지주", code: "055550", change: "+0.51%" },
-                    {
-                      name: "LG에너지솔루션",
-                      code: "373220",
-                      change: "-1.50%",
-                    },
-                  ].map((company, index) => (
-                    <button
-                      key={company.code}
-                      onClick={() =>
-                        handleCompanyClick(company.code, company.name)
-                      }
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors group text-left"
-                    >
-                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gray-200 text-gray-600">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1">
-                        <span className="font-bold text-slate-700 group-hover:text-shinhan-blue transition-colors">
-                          {company.name}
-                        </span>
-                        <span className="ml-2 text-xs text-gray-400 font-mono">
-                          {company.code}
-                        </span>
-                      </div>
-                      <span
-                        className={`font-bold text-sm ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
-                      >
-                        {company.change}
-                      </span>
-                      <TrendingUp
-                        size={14}
-                        className={
-                          company.change.startsWith("+")
-                            ? "text-red-500"
-                            : "text-blue-500"
+              {/* 시가총액 TOP 4 */}
+              {topCompanies.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                    시가총액 TOP 4
+                  </h4>
+                  <div className="space-y-1">
+                    {topCompanies.map((company, index) => (
+                      <button
+                        key={company.stock_code}
+                        onClick={() =>
+                          handleCompanyClick(company.stock_code, company.name)
                         }
-                      />
-                    </button>
-                  ))}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors group text-left"
+                      >
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gray-200 text-gray-600">
+                          {index + 1}
+                        </span>
+                        <div className="flex-1">
+                          <span className="font-bold text-slate-700 group-hover:text-shinhan-blue transition-colors">
+                            {company.name}
+                          </span>
+                          <span className="ml-2 text-xs text-gray-400 font-mono">
+                            {company.stock_code}
+                          </span>
+                        </div>
+                        <span className="font-medium text-sm text-slate-500">
+                          {formatMarketCap(company.amount)}
+                        </span>
+                        <TrendingUp size={14} className="text-shinhan-blue" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : isLoading ? (
             <div className="flex items-center justify-center py-8">
