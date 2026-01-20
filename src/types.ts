@@ -23,22 +23,39 @@ export interface Company {
   revenue: number; // in billions
   profit: number; // in billions
 }
+// 기업 검색 결과 타입
+export interface CompanySearchItem {
+  stock_code: string;
+  corp_code: string;
+  company_name: string;
+  market: string;
+  industry: {
+    name: string;
+    induty_code: string;
+  };
+  description: string;
+  logo_url: string | null;
+  market_amount: number;
+  ceo_name: string;
+  establishment_date: string;
+  homepage_url: string;
+  address: string;
+}
+
+export interface CompanySearchResponse {
+  query: string;
+  total_count: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+  results: CompanySearchItem[];
+}
 
 // 기업 검색 결과 타입
 export interface CompanySearchResult {
-  id: string;
+  companyId: number;
   name: string;
-  code: string;
-  industry: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  marketCap: string;
-  per: number;
-  pbr: number;
-  revenue: number;
-  profit: number;
-  logo_url?: string;
+  logo: string;
 }
 
 //분석 및 트랜드 기능
@@ -315,6 +332,27 @@ export interface OhlcvItem {
   volume: number;
   amount: number;
 }
+
+// GET /companies/{stock_code}/prices/ - 주가 데이터 조회
+export interface StockPriceItem {
+  bucket: string;
+  stock_code: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  amount: number;
+  trade_count: number;
+  source: string;
+}
+
+export interface StockPricesResponse {
+  stock_code: string;
+  interval: string;
+  total_count: number;
+  data: StockPriceItem[];
+}
 // 동종업계 순위 아이템
 export interface PeerCompanyItem {
   rank: number;
@@ -483,3 +521,34 @@ export type KeywordRank = {
   keyword: string;
   count: number;
 };
+
+// ============================================
+// Financial Statements API Types
+// ============================================
+
+// GET /companies/{stock_code}/financials - 재무제표 항목
+export interface FinancialStatement {
+  fiscal_year: number;
+  report_type: string;
+  revenue: number;
+  operating_profit: number;
+  net_income: number;
+  total_assets: number;
+  total_liabilities: number;
+  total_equity: number;
+  roe: string;
+  debt_ratio: string;
+  per: string;
+  pbr: string;
+  dividend_yield: string;
+  metrics_calculated_at: string;
+}
+
+// GET /companies/{stock_code}/financials - 응답 데이터
+export interface CompanyFinancialsData {
+  stock_code: string;
+  company_name: string;
+  market_amount: number;
+  financial_statements: FinancialStatement[];
+  revenue_composition: unknown[];
+}
