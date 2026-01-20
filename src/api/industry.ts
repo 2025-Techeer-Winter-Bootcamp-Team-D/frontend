@@ -14,15 +14,17 @@ export const getIndustryNews = (industryId: number | string) => {
  * @param industryId 산업아이디
  */
 
-export const getIndustryCompanies = (industryId: number) => {
-  return api.get(`/industries/${industryId}/companies`).then((res) => res.data);
+export const getIndustryCompanies = (indutyCode: number | string) => {
+  return api
+    .get(`/industries/${indutyCode}/companies/`)
+    .then((res) => res.data);
 };
 
 /**
  * 산업 전망 분석 조회
- * @param industryId 산업아이디
+ * @param indutyCode 산업코드
  */
 
-export const getIndustryAnalysis = (industryId: number) => {
-  return api.get(`/industries/${industryId}/analysis`).then((res) => res.data);
+export const getIndustryAnalysis = (indutyCode: number | string) => {
+  return api.get(`/industries/${indutyCode}/outlook/`).then((res) => res.data);
 };

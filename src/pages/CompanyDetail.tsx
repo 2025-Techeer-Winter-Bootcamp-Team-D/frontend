@@ -129,6 +129,17 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // 프론트엔드 시간 범위를 백엔드 interval로 매핑
+  const getBackendInterval = (range: string): string => {
+    const mapping: Record<string, string> = {
+      "1D": "1d",
+      "1W": "1d",
+      "3M": "1d",
+      "1Y": "1d",
+    };
+    return mapping[range] || "1d";
+  };
+
   // --- API Fetching (수정된 섹션) ---
 
   const {
@@ -147,17 +158,21 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const { data: stockData = [], isLoading: isStockLoading } = useQuery({
     queryKey: ["company", "stock", companyCode, chartRange],
     queryFn: async () => {
-      const response = await getStockOhlcv(companyCode, chartRange);
+      const response = await getStockOhlcv(
+        companyCode,
+        getBackendInterval(chartRange),
+      );
       return response.data.data as unknown as OhlcvItem[];
     },
   });
 
   const { data: peerCompanies = [], isLoading: isPeerLoading } = useQuery({
-    queryKey: ["industry", "peers", apiCompanyData?.industry?.industry_id],
+    queryKey: ["industry", "peers", apiCompanyData?.industry?.induty_code],
     queryFn: async () => {
-      const industryId = apiCompanyData?.industry?.industry_id;
-      if (!industryId) return [];
-      const response = await getIndustryCompanies(Number(industryId));
+      console.log("industry data:", apiCompanyData?.industry);
+      const indutyCode = apiCompanyData?.industry?.induty_code;
+      if (!indutyCode) return [];
+      const response = await getIndustryCompanies(indutyCode);
       const companies = response?.data?.data?.companies || [];
       return companies.map((company: any, index: number) => ({
         rank: company.rank || index + 1,
@@ -167,14 +182,15 @@ const CompanyDetail: React.FC<DetailProps> = ({
         change: "-",
       })) as PeerCompanyItem[];
     },
-    enabled: !!apiCompanyData?.industry?.industry_id,
+    enabled: !!apiCompanyData?.industry?.induty_code,
   });
 
   const { data: companyNews = [], isLoading: isNewsLoading } = useQuery({
     queryKey: ["company", "news", companyCode],
     queryFn: async () => {
       const response = await getCompanyNews(companyCode);
-      return response.data.data as NewsItem[];
+      const data = response.data?.data;
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -325,11 +341,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
           <div className="ml-auto flex gap-2">
             <button
               onClick={() => onToggleStar(companyCode)}
-              className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${starred.has(companyCode) ? "border-yellow-500 text-yellow-500 bg-yellow-50" : "border-gray-200 text-gray-500 hover:text-yellow-500"}`}
+              className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${(starred?.has(companyCode) ?? false) ? "border-yellow-500 text-yellow-500 bg-yellow-50" : "border-gray-200 text-gray-500 hover:text-yellow-500"}`}
             >
               <Star
                 size={20}
-                fill={starred.has(companyCode) ? "currentColor" : "none"}
+                fill={
+                  (starred?.has(companyCode) ?? false) ? "currentColor" : "none"
+                }
               />
             </button>
           </div>

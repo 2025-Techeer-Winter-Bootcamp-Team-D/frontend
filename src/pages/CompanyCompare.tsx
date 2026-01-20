@@ -460,19 +460,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     return result;
   }, [activeComparison?.companies, activeMetrics]);
 
-  //ReferenceArea 경계값 동적 범위 계산
-  const { minYoy, maxYoy, maxPer } = useMemo(() => {
-    if (!perYoyChartData.length)
-      return { minYoy: -100, maxYoy: 100, maxPer: 100 };
-    const yoys = perYoyChartData.map((d) => d.yoy);
-    const pers = perYoyChartData.map((d) => d.per);
-    return {
-      minYoy: Math.min(-10, ...yoys) - 10,
-      maxYoy: Math.max(10, ...yoys) + 10,
-      maxPer: Math.max(avgPer + 10, ...pers) + 10,
-    };
-  }, [perYoyChartData, avgPer]);
-
   // PER-YoY Matrix 차트 데이터
   const perYoyChartData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
@@ -489,6 +476,19 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     const sum = perYoyChartData.reduce((acc, d) => acc + d.per, 0);
     return sum / perYoyChartData.length;
   }, [perYoyChartData]);
+
+  //ReferenceArea 경계값 동적 범위 계산
+  const { minYoy, maxYoy, maxPer } = useMemo(() => {
+    if (!perYoyChartData.length)
+      return { minYoy: -100, maxYoy: 100, maxPer: 100 };
+    const yoys = perYoyChartData.map((d) => d.yoy);
+    const pers = perYoyChartData.map((d) => d.per);
+    return {
+      minYoy: Math.min(-10, ...yoys) - 10,
+      maxYoy: Math.max(10, ...yoys) + 10,
+      maxPer: Math.max(avgPer + 10, ...pers) + 10,
+    };
+  }, [perYoyChartData, avgPer]);
 
   // Radar Chart: 선택된 기업 초기화
   useEffect(() => {

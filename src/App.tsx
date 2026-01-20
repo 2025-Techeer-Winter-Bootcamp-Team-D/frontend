@@ -84,7 +84,7 @@ import { useEffect } from "react";
 function App() {
   useEffect(() => {
     api
-      .get("/api/comparisons/")
+      .get("/comparisons/")
       .then((res) => console.log("연동 성공:", res.data))
       .catch((err) => console.error("연동 실패:", err));
   }, []);
