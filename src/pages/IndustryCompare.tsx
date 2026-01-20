@@ -48,7 +48,7 @@ import {
 } from "../api/industry";
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
-const INDUSTRY_ID_BY_KEY: Record<IndustryKey, string> = {
+const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
   finance: "0021", // 금융업
   semicon: "0014", // 전기전자 (반도체/IT)
   auto: "0015", // 운수장비 (자동차/조선)
@@ -632,27 +632,27 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   );
 
   // 산업 ID
-  const industryId = INDUSTRY_ID_BY_KEY[selectedIndustry];
+  const indutyCode = INDUTY_CODE_BY_KEY[selectedIndustry];
 
   // -----------------------------
   // TanStack Query - API 데이터 조회
   // -----------------------------
   const analysisQuery = useQuery({
-    queryKey: ["industryAnalysis", industryId],
-    queryFn: () => getIndustryAnalysis(industryId),
-    enabled: !!industryId,
+    queryKey: ["industryAnalysis", indutyCode],
+    queryFn: () => getIndustryAnalysis(indutyCode),
+    enabled: !!indutyCode,
   });
 
   const companiesQuery = useQuery({
-    queryKey: ["industryCompanies", industryId],
-    queryFn: () => getIndustryCompanies(industryId),
-    enabled: !!industryId,
+    queryKey: ["industryCompanies", indutyCode],
+    queryFn: () => getIndustryCompanies(indutyCode),
+    enabled: !!indutyCode,
   });
 
   const newsQuery = useQuery({
-    queryKey: ["industryNews", industryId],
-    queryFn: () => getIndustryNews(industryId),
-    enabled: !!industryId,
+    queryKey: ["industryNews", indutyCode],
+    queryFn: () => getIndustryNews(indutyCode),
+    enabled: !!indutyCode,
   });
 
   // 쿼리 상태 추출

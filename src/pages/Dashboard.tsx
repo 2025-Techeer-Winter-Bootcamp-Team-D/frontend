@@ -20,7 +20,7 @@ import type { MarketIndexData } from "../api/indices";
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
-  onIndustryClick: (industryId: string) => void;
+  onIndustryClick: (indutyCode: string) => void;
   onShowNavbar: (show: boolean) => void;
 }
 
