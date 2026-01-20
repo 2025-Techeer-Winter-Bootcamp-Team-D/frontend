@@ -689,10 +689,37 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     indicesQuery.error?.message ||
     chartQuery.error?.message ||
     null;
-  const analysis = analysisQuery.data as {
-    outlook?: string;
-    insights?: { positive: string; risk: string };
+  // API 응답 구조에 맞게 타입 정의
+  const analysisResponse = analysisQuery.data as {
+    data?: {
+      induty_code: string;
+      industry_name: string;
+      ksic_code: string;
+      analyzed_at: string;
+      scenarios: {
+        optimistic: { analysis: string; key_factors: string[] };
+        neutral: { analysis: string; key_factors: string[] };
+        pessimistic: { analysis: string; key_factors: string[] };
+      };
+      industry_statistics: {
+        company_count: number;
+        total_market_cap: number;
+        avg_market_cap: number;
+        top_companies: Array<{
+          stock_code: string;
+          company_name: string;
+          market_amount: number;
+        }>;
+      };
+      data_sources: {
+        news_count: number;
+        report_count: number;
+        company_count: number;
+      };
+    };
   } | null;
+
+  const analysisData = analysisResponse?.data;
   const industryNews = (newsQuery.data as IndustryNewsItem[]) ?? [];
 
   // 산업 지수 목록 데이터에서 현재 산업 찾기
@@ -1003,19 +1030,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               {/* 분석 내용 글라스 카드 */}
               <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-4">
                 <p className="text-white text-sm leading-relaxed">
-                  {analysis?.outlook ??
+                  {analysisData?.scenarios?.neutral?.analysis ??
                     currentData.outlook ??
                     "전망 정보가 없습니다."}
                 </p>
               </div>
-              {(analysis?.insights || currentData.insights) && (
+              {(analysisData?.scenarios || currentData.insights) && (
                 <div className="space-y-2">
                   <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex items-start gap-2">
                     <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
                       긍정
                     </span>
                     <p className="text-xs text-white leading-relaxed">
-                      {analysis?.insights?.positive ??
+                      {analysisData?.scenarios?.optimistic?.analysis ??
                         currentData.insights?.positive}
                     </p>
                   </div>
@@ -1024,7 +1051,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       리스크
                     </span>
                     <p className="text-xs text-white leading-relaxed">
-                      {analysis?.insights?.risk ?? currentData.insights?.risk}
+                      {analysisData?.scenarios?.pessimistic?.analysis ??
+                        currentData.insights?.risk}
                     </p>
                   </div>
                 </div>
