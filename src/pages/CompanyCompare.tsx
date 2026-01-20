@@ -51,9 +51,14 @@ import {
   addCompany,
   removeCompany,
   updateComparisonName,
+  deleteComparison,
 } from "../api/comparison";
-import { searchCompanies, getStockOhlcv } from "../api/company";
-import type { CompanySearchResult, OhlcvItem } from "../types";
+import {
+  searchCompanies,
+  getStockOhlcv,
+  type CompanySearchItem,
+} from "../api/company";
+import type { OhlcvItem } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface CompareProps {
@@ -168,7 +173,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     queryKey: ["comparison", activeSetId],
     enabled: !!activeSetId,
     queryFn: async () => {
-      return await getComparison(activeSetId as number);
+      const res = await getComparison(activeSetId as number);
+      return res.data ?? res;
     },
   });
 
@@ -216,7 +222,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     enabled: !!debouncedSearch.trim(),
     queryFn: async () => {
       const res = await searchCompanies(debouncedSearch);
-      return (res.data?.data ?? []) as CompanySearchResult[];
+      // 백엔드 응답: { data: { results: [...] } }
+      return (res.data?.data?.results ?? []) as CompanySearchItem[];
     },
   });
 
@@ -285,7 +292,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
   });
 
-  const ohlcvData = ohlcvQuery.data ?? {};
+  const ohlcvData = useMemo(() => ohlcvQuery.data ?? {}, [ohlcvQuery.data]);
 
   const currentMetricOption =
     metricOptions.find((o) => o.id === selectedMetric) || metricOptions[0];
@@ -347,6 +354,20 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     },
   });
 
+  const deleteSetMutation = useMutation({
+    mutationFn: async (comparisonId: number) => {
+      await deleteComparison(comparisonId);
+    },
+    onSuccess: async (_res, deletedId) => {
+      await queryClient.invalidateQueries({ queryKey: ["comparisons"] });
+      // 삭제된 세트가 현재 선택된 세트면 다른 세트 선택
+      if (activeSetId === deletedId) {
+        const remaining = comparisonList.filter((c) => c.id !== deletedId);
+        setActiveSetId(remaining.length > 0 ? remaining[0].id : null);
+      }
+    },
+  });
+
   // -----------------------------
   // Handlers
   // -----------------------------
@@ -387,6 +408,15 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       console.error("이름 변경 실패:", e);
       setTempSetName(activeComparison?.name ?? "");
       setIsEditingName(false);
+    }
+  };
+
+  const handleDeleteSet = async (e: React.MouseEvent, comparisonId: number) => {
+    e.stopPropagation(); // 버튼 클릭 시 세트 선택 방지
+    try {
+      await deleteSetMutation.mutateAsync(comparisonId);
+    } catch (err) {
+      console.error("비교 세트 삭제 실패:", err);
     }
   };
 
@@ -624,10 +654,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               </h2>
               <div className="space-y-2">
                 {comparisonList.map((item) => (
-                  <button
+                  <div
                     key={item.id}
                     onClick={() => setActiveSetId(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
                       activeSetId === item.id
                         ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
                         : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
@@ -636,10 +666,19 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     <span className="font-medium text-sm truncate max-w-[150px]">
                       {item.name}
                     </span>
-                    {activeSetId === item.id && (
-                      <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
-                    )}
-                  </button>
+                    <button
+                      onClick={(e) => handleDeleteSet(e, item.id)}
+                      disabled={deleteSetMutation.isPending}
+                      className={`p-1 rounded-full transition-colors flex-shrink-0 ${
+                        activeSetId === item.id
+                          ? "hover:bg-white/20 text-white"
+                          : "hover:bg-gray-200 text-gray-400 hover:text-red-500"
+                      } disabled:opacity-50`}
+                      title="세트 삭제"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 ))}
               </div>
               <button
@@ -1295,31 +1334,43 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   검색 중...
                 </div>
               ) : searchResults.length > 0 ? (
-                searchResults.map((company) => (
-                  <button
-                    key={company.id}
-                    onClick={() => handleAddCompany(String(company.id))}
-                    disabled={addCompanyMutation.isPending}
-                    className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      {company.logo_url && (
-                        <img
-                          src={company.logo_url}
-                          alt={company.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      )}
-                      <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
-                        {company.name}
-                      </span>
-                    </div>
-                    <Plus
-                      size={18}
-                      className="text-gray-400 group-hover:text-shinhan-blue"
-                    />
-                  </button>
-                ))
+                searchResults
+                  .filter(
+                    (company) =>
+                      !activeComparison?.companies?.some(
+                        (c) => c.stock_code === company.stock_code,
+                      ),
+                  )
+                  .map((company) => (
+                    <button
+                      key={company.stock_code}
+                      onClick={() => handleAddCompany(company.stock_code)}
+                      disabled={addCompanyMutation.isPending}
+                      className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        {company.logo_url && (
+                          <img
+                            src={company.logo_url}
+                            alt={company.company_name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
+                            {company.company_name}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {company.stock_code} · {company.industry?.name}
+                          </span>
+                        </div>
+                      </div>
+                      <Plus
+                        size={18}
+                        className="text-gray-400 group-hover:text-shinhan-blue"
+                      />
+                    </button>
+                  ))
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">
                   검색 결과가 없습니다.
