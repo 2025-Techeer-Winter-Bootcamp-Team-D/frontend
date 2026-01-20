@@ -150,9 +150,7 @@ export const industryHandlers = [
 
     const response: IndustryCompaniesResponse = {
       indutyCode,
-      status: 200,
-      message: "성공",
-      data: companies,
+      companies,
     };
 
     return HttpResponse.json(response);
@@ -198,7 +196,7 @@ export const industryHandlers = [
   ),
 
   // 산업 전망 분석 조회 (GET /industries/{industry_id}/analysis)
-  http.get("/industries/:industry_id/analysis", async ({ params }) => {
+  http.get("/industries/:induty_code/analysis", async ({ params }) => {
     await delay(400);
     const indutyCode = String(params.induty_code);
 
