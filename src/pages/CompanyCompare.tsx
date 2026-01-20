@@ -566,12 +566,21 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       },
     ];
   }, [activeComparison?.companies, selectedRadarCompany]);
-  //radarDada 선언
-  const radarMax = useMemo(() => {
-    const maxFull = radarData.length
-      ? Math.max(...radarData.map((d) => d.fullMark ?? 0))
-      : 0;
-    return Math.max(25, maxFull);
+  //radarData 도메인 계산 (음수 값 포함)
+  const { radarMin, radarMax } = useMemo(() => {
+    if (!radarData.length) return { radarMin: 0, radarMax: 25 };
+
+    const allValues = radarData.flatMap((d) => [d.A, d.B]);
+    const dataMin = Math.min(...allValues);
+    const dataMax = Math.max(...allValues);
+    const maxFull = Math.max(...radarData.map((d) => d.fullMark ?? 0));
+
+    // 음수 값이 있으면 최소값을 약간 여유있게 설정, 없으면 0
+    const min = dataMin < 0 ? Math.floor(dataMin * 1.1) : 0;
+    // 최대값은 데이터 최대값과 fullMark 중 큰 값에 여유 추가
+    const max = Math.max(25, maxFull, Math.ceil(dataMax * 1.1));
+
+    return { radarMin: min, radarMax: max };
   }, [radarData]);
 
   // 주가 추이 차트 데이터 (OHLCV API 기반)
@@ -1115,7 +1124,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   />
                   <PolarRadiusAxis
                     angle={30}
-                    domain={[0, radarMax]}
+                    domain={[radarMin, radarMax]}
                     tick={false}
                     axisLine={false}
                   />
