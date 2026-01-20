@@ -967,6 +967,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                       dataKey="yoy"
                       name="YoY"
                       unit="%"
+                      domain={[minYoy, maxYoy]}
                       tick={{ fontSize: 12, fill: "#64748b" }}
                       axisLine={{ stroke: "#cbd5e1" }}
                       label={{
@@ -980,6 +981,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                       type="number"
                       dataKey="per"
                       name="PER"
+                      domain={[0, maxPer]}
                       tick={{ fontSize: 12, fill: "#64748b" }}
                       axisLine={{ stroke: "#cbd5e1" }}
                       label={{
