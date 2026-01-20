@@ -364,7 +364,7 @@ export type IndustryKey =
   | "agriculture_fishery" // 농어업
   | "manufacturing_kosdaq" // 제조업(코스닥)
   | "food" // 음식료품
-  | "steel" // 철강/화학
+  | "chemical" // 화학/정유
   | "pharmaceuticals" // 의약품
   | "battery" // 전기전자
   | "auto" // 운수장비(자동차/조선)

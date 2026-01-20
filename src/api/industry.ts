@@ -5,7 +5,7 @@ import { api } from "./axios";
  * @param indutyCode 산업코드
  */
 
-export const getIndustryNews = (indutyCode: number | string) => {
+export const getIndustryNews = (indutyCode: string) => {
   return api.get(`/industries/${indutyCode}/news`).then((res) => res.data);
 };
 
@@ -14,7 +14,7 @@ export const getIndustryNews = (indutyCode: number | string) => {
  * @param indutyCode 산업코드
  */
 
-export const getIndustryCompanies = (indutyCode: number | string) => {
+export const getIndustryCompanies = (indutyCode: string) => {
   return api
     .get(`/industries/${indutyCode}/companies/`)
     .then((res) => res.data);

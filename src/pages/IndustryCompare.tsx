@@ -54,7 +54,7 @@ const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
   agriculture_fishery: "0027", // 농어업
   manufacturing_kosdaq: "1015", //제조업
   food: "0006", //음식료품
-  steel: "0009", // 화학/정유 (철강 근접)
+  chemical: "0009", // 화학/정유
   pharmaceuticals: "0010", //의약품
   battery: "0014", // 전기전자 (배터리는 전기전자에 포함)
   auto: "0015", // 운수장비 (자동차/조선)
@@ -85,7 +85,7 @@ const INDUSTRY_NAMES: Record<IndustryKey, { name: string; indexName: string }> =
     agriculture_fishery: { name: "농어업", indexName: "농어업 지수" },
     manufacturing_kosdaq: { name: "제조업", indexName: "제조업 지수" },
     food: { name: "음식료품", indexName: "음식료품 지수" },
-    steel: { name: "철강/화학", indexName: "철강 지수" },
+    chemical: { name: "화학/정유", indexName: "화학 지수" },
     pharmaceuticals: { name: "의약품", indexName: "의약품 지수" },
     battery: { name: "전기전자", indexName: "전기전자 지수" },
     auto: { name: "운수장비", indexName: "운수장비 지수" },
@@ -322,46 +322,37 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const currentIndustryInfo = INDUSTRY_NAMES[selectedIndustry];
 
   // API에서 가져온 기업 목록 (companies API)
-  const companiesResponse = companiesQuery.data as
-    | {
-        data?: Array<{
-          stock_code: string;
-          company_name: string;
-          current_price: number;
-          change_rate: number;
-          per: number;
-          pbr: number;
-          roe: number;
-          market_cap: number;
-        }>;
-      }
-    | Array<{
-        stock_code: string;
-        company_name: string;
-        current_price: number;
-        change_rate: number;
-        per: number;
-        pbr: number;
-        roe: number;
-        market_cap: number;
-      }>
-    | null;
+  const companiesResponse = companiesQuery.data as {
+    data?: Array<{
+      rank: number;
+      name: string;
+      stock_code: string;
+      amount: number;
+      logo: string | null;
+    }>;
+  } | null;
 
   const companiesData = useMemo(() => {
-    const rawData = Array.isArray(companiesResponse)
-      ? companiesResponse
-      : (companiesResponse?.data ?? []);
+    const rawData = companiesResponse?.data ?? [];
+
+    // 시가총액(amount)을 억 단위로 변환하는 함수
+    const formatAmount = (amount: number): string => {
+      const uk = Math.floor(amount / 100000000); // 억 단위
+      return formatMarketCap(uk);
+    };
 
     return rawData.map((company) => ({
-      name: company.company_name,
+      rank: company.rank,
+      name: company.name,
       code: company.stock_code,
-      price: company.current_price?.toLocaleString() ?? "0",
-      change: `${company.change_rate >= 0 ? "+" : ""}${company.change_rate?.toFixed(2) ?? "0.00"}%`,
-      per: company.per ?? 0,
-      pbr: company.pbr ?? 0,
-      roe: company.roe ?? 0,
-      aiScore: 75,
-      marketCap: formatMarketCap(company.market_cap ?? 0),
+      logo: company.logo,
+      marketCap: formatAmount(company.amount),
+      // TODO: 기업 지표 API 연동 후 실제 데이터로 교체
+      price: "0",
+      change: "+0.00%",
+      per: 0,
+      pbr: 0,
+      roe: 0,
     }));
   }, [companiesResponse]);
 
