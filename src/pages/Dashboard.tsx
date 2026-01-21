@@ -18,6 +18,7 @@ import { SAMPLE_STOCKS } from "../constants";
 import { getKospi, getKosdaq } from "../api/indices";
 import type { MarketIndexData } from "../api/indices";
 import { getNewsKeywords } from "../api/news";
+import { searchCompanies } from "../api/company";
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
@@ -108,11 +109,46 @@ const Dashboard: React.FC<DashboardProps> = ({
   onShowNavbar,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [visibleSections, setVisibleSections] = useState<Set<string>>(
     new Set(["hero"]),
   );
+
+  // 기업 검색 쿼리
+  const { data: searchResults = [], isLoading: isSearching } = useQuery({
+    queryKey: ["companySearch", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery.trim()) return [];
+      const response = await searchCompanies(searchQuery);
+      return response.data?.data?.results ?? [];
+    },
+    enabled: searchQuery.trim().length > 0,
+    staleTime: 1000 * 60,
+  });
+
+  // 검색 결과 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 기업 클릭 핸들러
+  const handleCompanySelect = (stockCode: string) => {
+    setShowSearchResults(false);
+    setSearchQuery("");
+    navigate(`/company/${stockCode}`);
+  };
 
   // 1. 시장 지수 데이터 (수정된 타입 적용)
   const {
@@ -302,9 +338,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
               </p>
             </div>
-            <div className="relative w-full md:w-96">
+            <div className="relative w-full md:w-96" ref={searchRef}>
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10"
                 size={20}
               />
               <input
@@ -312,8 +348,53 @@ const Dashboard: React.FC<DashboardProps> = ({
                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-none shadow-lg focus:ring-2 focus:ring-blue-500 transition-all"
                 placeholder="기업명 혹은 종목코드"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchResults(true);
+                }}
+                onFocus={() => setShowSearchResults(true)}
               />
+              {/* 검색 결과 드롭다운 */}
+              {showSearchResults && searchQuery.trim() && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 max-h-80 overflow-y-auto z-50">
+                  {isSearching ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2
+                        className="animate-spin text-blue-500"
+                        size={24}
+                      />
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.slice(0, 8).map((company) => (
+                      <button
+                        key={company.stock_code}
+                        onClick={() => handleCompanySelect(company.stock_code)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-b border-slate-100 last:border-b-0"
+                      >
+                        {company.logo_url && (
+                          <img
+                            src={company.logo_url}
+                            alt={company.company_name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-slate-800 truncate">
+                            {company.company_name}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {company.stock_code}
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-slate-400 text-sm">
+                      검색 결과가 없습니다
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

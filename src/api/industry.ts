@@ -49,3 +49,11 @@ export const getIndustryChart = (
     .get(`/industries/${indutyCode}/chart/`, { params: { period } })
     .then((res) => res.data);
 };
+
+/**
+ * 전체 산업 순위 조회
+ * GET /industries/rankings/industries/
+ */
+export const getIndustryRankings = () => {
+  return api.get(`/industries/rankings/industries/`).then((res) => res.data);
+};
