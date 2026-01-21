@@ -10,6 +10,7 @@ import {
   Cell,
 } from "recharts";
 
+// 1. 데이터 샘플 (필요에 따라 외부에서 props로 전달 가능)
 const data = [
   { time: "09:00", open: 77000, high: 77500, low: 76800, close: 77200 },
   { time: "09:30", open: 77200, high: 77800, low: 77100, close: 77500 },
@@ -27,52 +28,51 @@ const data = [
   { time: "15:30", open: 78600, high: 78900, low: 78500, close: 78200 },
 ];
 
+// 2. 데이터 전처리 (고가-저가 범위를 배열로 전달)
 const processedData = data.map((item) => ({
   ...item,
   range: [item.low, item.high],
 }));
 
-// Y축 domain을 데이터에 밀착시켜 변화가 잘 보이도록 함
-const getYDomain = (): [number, number] => {
+// 3. Y축 범위를 데이터에 최적화하는 함수
+const getYDomain = () => {
   const lows = data.map((d) => d.low);
   const highs = data.map((d) => d.high);
   const min = Math.min(...lows);
   const max = Math.max(...highs);
-  const range = max - min;
-  // 변동폭의 10%만 패딩으로 추가
-  const padding = range * 0.1;
+  const padding = (max - min) * 0.15; // 상하 15% 여유 공간
   return [min - padding, max + padding];
 };
 
 const yDomain = getYDomain();
 
-type CandleStickShapeProps = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  payload: {
-    open: number;
-    close: number;
-    high: number;
-    low: number;
-  };
-};
+// 4. 캔들스틱 모양 정의 컴포넌트
+interface CandleStickShapeProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  payload?: any;
+}
 
 const CandleStickShape = (props: CandleStickShapeProps) => {
-  const { x, y, width, height, payload } = props;
+  const { x = 0, y = 0, width = 0, height = 0, payload } = props;
   const { open, close, high, low } = payload;
   const isUp = close >= open;
-  const color = isUp ? "#EF4444" : "#3B82F6";
+  const color = isUp ? "#EF4444" : "#3B82F6"; // 상승: 빨강, 하락: 파랑
 
-  const range = high - low;
-  const safeRange = range === 0 ? Number.EPSILON : range;
-  const ratio = height / safeRange;
-  const bodyTop = y + (high - Math.max(open, close)) * ratio;
-  const bodyHeight = Math.abs(open - close) * ratio;
+  // 가격 1단위당 픽셀 높이 계산
+  const ratio = height / (high - low);
+
+  // 몸통의 실제 위치 계산 (Recharts y는 차트 상단 기준)
+  const bodyUpper = Math.max(open, close);
+  const bodyLower = Math.min(open, close);
+  const bodyTop = y + (high - bodyUpper) * ratio;
+  const bodyHeight = Math.max(1, (bodyUpper - bodyLower) * ratio);
 
   return (
     <g>
+      {/* 고가-저가 연결선 (꼬리) */}
       <line
         x1={x + width / 2}
         y1={y}
@@ -81,96 +81,93 @@ const CandleStickShape = (props: CandleStickShapeProps) => {
         stroke={color}
         strokeWidth={1}
       />
-      <rect
-        x={x}
-        y={bodyTop}
-        width={width}
-        height={Math.max(2, bodyHeight)}
-        fill={color}
-      />
+      {/* 시가-종가 사각형 (몸통) */}
+      <rect x={x} y={bodyTop} width={width} height={bodyHeight} fill={color} />
     </g>
   );
 };
 
+// 5. 메인 차트 컴포넌트
 const CandleChart: React.FC = () => {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        data={processedData}
-        margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
-      >
-        <CartesianGrid
-          strokeDasharray="3 3"
-          vertical={false}
-          stroke="#E5E7EB"
-        />
-        <XAxis
-          dataKey="time"
-          axisLine={false}
-          tickLine={false}
-          tick={{ fontSize: 12, fill: "#94A3B8" }}
-        />
-        <YAxis
-          domain={yDomain}
-          orientation="right"
-          axisLine={false}
-          tickLine={false}
-          tick={{ fontSize: 12, fill: "#94A3B8" }}
-          tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-        />
-        <Tooltip
-          cursor={{ fill: "transparent" }}
-          contentStyle={{
-            borderRadius: "12px",
-            border: "none",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          }}
-          content={({ active, payload }) => {
-            if (active && payload && payload.length) {
-              const data = payload[0].payload;
-              return (
-                <div className="bg-white/90 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-100 text-xs">
-                  <div className="font-bold mb-1 text-slate-700">
-                    {data.time}
+    <div style={{ width: "100%", height: "400px", padding: "20px" }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={processedData}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke="#F1F5F9"
+          />
+          <XAxis
+            dataKey="time"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 12, fill: "#94A3B8" }}
+            minTickGap={20}
+          />
+          <YAxis
+            domain={yDomain}
+            orientation="right"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 12, fill: "#94A3B8" }}
+            tickFormatter={(value) => value.toLocaleString()}
+          />
+          <Tooltip
+            cursor={{ fill: "rgba(0,0,0,0.04)" }}
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                const d = payload[0].payload;
+                const isUp = d.close >= d.open;
+                return (
+                  <div className="bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-slate-100 text-[11px]">
+                    <div className="font-bold mb-2 text-slate-800 border-b pb-1">
+                      {d.time}
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                      <span className="text-slate-400">시가</span>
+                      <span className="text-right font-mono font-medium">
+                        {d.open.toLocaleString()}
+                      </span>
+                      <span className="text-slate-400">종가</span>
+                      <span
+                        className={`text-right font-mono font-medium ${isUp ? "text-red-500" : "text-blue-500"}`}
+                      >
+                        {d.close.toLocaleString()}
+                      </span>
+                      <span className="text-slate-400">고가</span>
+                      <span className="text-right font-mono text-red-500">
+                        {d.high.toLocaleString()}
+                      </span>
+                      <span className="text-slate-400">저가</span>
+                      <span className="text-right font-mono text-blue-500">
+                        {d.low.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <span className="text-gray-500">시가</span>
-                    <span
-                      className={`font-mono text-right ${data.open > data.close ? "text-blue-500" : "text-red-500"}`}
-                    >
-                      {data.open.toLocaleString()}
-                    </span>
-                    <span className="text-gray-500">고가</span>
-                    <span className="font-mono text-right text-red-500">
-                      {data.high.toLocaleString()}
-                    </span>
-                    <span className="text-gray-500">저가</span>
-                    <span className="font-mono text-right text-blue-500">
-                      {data.low.toLocaleString()}
-                    </span>
-                    <span className="text-gray-500">종가</span>
-                    <span
-                      className={`font-mono text-right ${data.close > data.open ? "text-red-500" : "text-blue-500"}`}
-                    >
-                      {data.close.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          }}
-        />
-        <Bar dataKey="range" shape={<CandleStickShape />} barSize={12}>
-          {processedData.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={entry.close >= entry.open ? "#EF4444" : "#3B82F6"}
-            />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+                );
+              }
+              return null;
+            }}
+          />
+          <Bar
+            dataKey="range"
+            shape={<CandleStickShape />}
+            barSize={14} // 캔들 두께 조절
+          >
+            {processedData.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.close >= entry.open ? "#EF4444" : "#3B82F6"}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 
