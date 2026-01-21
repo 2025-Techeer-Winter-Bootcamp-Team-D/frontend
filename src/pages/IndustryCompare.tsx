@@ -40,29 +40,12 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from "recharts";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getIndustryNews,
-  getIndustryAnalysis,
-  getIndustryCompanies,
-  getIndustryChart,
-} from "../api/industry";
-import { getCompanyFinancials, getStockOhlcv } from "../api/company";
 import { format } from "date-fns";
-
-// 산업 코드 매핑 (IndustryKey -> API induty_code)
-const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
-  agriculture_fishery: "0027", // 농어업
-  manufacturing_kosdaq: "1015", //제조업
-  food: "0006", //음식료품
-  chemical: "0009", // 화학/정유
-  pharmaceuticals: "0010", //의약품
-  battery: "0014", // 전기전자 (배터리는 전기전자에 포함)
-  auto: "0015", // 운수장비 (자동차/조선)
-  semiconductor_kosdaq: "1047", //반도체(코스닥)
-  it_kosdaq: "1012", //it 산업(코스닥)
-  insurance: "0025", //보험
-};
+import {
+  useIndustryData,
+  INDUTY_CODE_BY_KEY,
+} from "../hooks/useIndustryQueries";
+import { getStockOhlcv, getCompanyFinancials } from "../api/company";
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -84,15 +67,22 @@ const generateSparklineData = () => {
 const INDUSTRY_NAMES: Record<IndustryKey, { name: string; indexName: string }> =
   {
     agriculture_fishery: { name: "농어업", indexName: "농어업 지수" },
-    manufacturing_kosdaq: { name: "제조업", indexName: "제조업 지수" },
+    manufacturing: { name: "제조업", indexName: "제조업 지수" },
     food: { name: "음식료품", indexName: "음식료품 지수" },
     chemical: { name: "화학/정유", indexName: "화학 지수" },
     pharmaceuticals: { name: "의약품", indexName: "의약품 지수" },
-    battery: { name: "전기전자", indexName: "전기전자 지수" },
-    auto: { name: "운수장비", indexName: "운수장비 지수" },
+    electronics: { name: "전기전자", indexName: "전기전자 지수" },
+    transportation: { name: "운수장비", indexName: "운수장비 지수" },
     semiconductor_kosdaq: { name: "반도체", indexName: "반도체 지수" },
-    it_kosdaq: { name: "IT산업", indexName: "IT 지수" },
+    it_parts_kosdaq: { name: "IT부품", indexName: "IT부품 지수" },
+    construction: { name: "건설업", indexName: "건설업 지수" },
+    distribution: { name: "유통업", indexName: "유통업 지수" },
+    telecom: { name: "통신업", indexName: "통신업 지수" },
+    software: { name: "소프트웨어", indexName: "소프트웨어 지수" },
+    digital_content: { name: "디지털콘텐츠", indexName: "디지털콘텐츠 지수" },
+    finance: { name: "금융업", indexName: "금융업 지수" },
     insurance: { name: "보험", indexName: "보험 지수" },
+    service: { name: "서비스업", indexName: "서비스업 지수" },
   };
 
 // 시가총액 포맷 함수
@@ -227,56 +217,18 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     null,
   );
 
-  // 산업 코드
-  const indutyCode = INDUTY_CODE_BY_KEY[selectedIndustry];
-
   // -----------------------------
-  // TanStack Query - API 데이터 조회
+  // TanStack Query - 커스텀 훅 사용
+  // (accessToken 없으면 요청 안함, 캐시 재사용, 기간 변경 시 깜빡임 방지)
   // -----------------------------
-  const analysisQuery = useQuery({
-    queryKey: ["industryAnalysis", indutyCode],
-    queryFn: () => getIndustryAnalysis(indutyCode),
-    enabled: !!indutyCode,
-  });
-
-  const companiesQuery = useQuery({
-    queryKey: ["industryCompanies", indutyCode],
-    queryFn: () => getIndustryCompanies(indutyCode),
-    enabled: !!indutyCode,
-  });
-
-  const newsQuery = useQuery({
-    queryKey: ["industryNews", indutyCode],
-    queryFn: () => getIndustryNews(indutyCode),
-    enabled: !!indutyCode,
-  });
-
-  // 산업 지수 차트 조회 (기간별)
-  const chartPeriodMap: Record<TimeRange, "1m" | "3m" | "6m" | "1y"> = {
-    "1M": "1m",
-    "3M": "3m",
-    "6M": "6m",
-    "1Y": "1y",
-  };
-
-  const chartQuery = useQuery({
-    queryKey: ["industryChart", indutyCode, timeRange],
-    queryFn: () => getIndustryChart(indutyCode, chartPeriodMap[timeRange]),
-    enabled: !!indutyCode,
-  });
-
-  // 쿼리 상태 추출
-  const loading =
-    analysisQuery.isLoading ||
-    companiesQuery.isLoading ||
-    newsQuery.isLoading ||
-    chartQuery.isLoading;
-  const error =
-    analysisQuery.error?.message ||
-    companiesQuery.error?.message ||
-    newsQuery.error?.message ||
-    chartQuery.error?.message ||
-    null;
+  const {
+    analysisQuery,
+    companiesQuery,
+    newsQuery,
+    chartQuery,
+    isLoading: loading,
+    error,
+  } = useIndustryData(selectedIndustry, timeRange);
   // API 응답 구조에 맞게 타입 정의
   const analysisResponse = analysisQuery.data as {
     data?: {

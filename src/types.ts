@@ -460,15 +460,22 @@ export interface ReportAnalysisData {
 //산업
 export type IndustryKey =
   | "agriculture_fishery" // 농어업
-  | "manufacturing_kosdaq" // 제조업(코스닥)
+  | "manufacturing" // 제조업
   | "food" // 음식료품
   | "chemical" // 화학/정유
   | "pharmaceuticals" // 의약품
-  | "battery" // 전기전자
-  | "auto" // 운수장비(자동차/조선)
+  | "electronics" // 전기전자
+  | "transportation" // 운수장비
   | "semiconductor_kosdaq" // 반도체(코스닥)
-  | "it_kosdaq" // IT산업(코스닥)
-  | "insurance"; // 보험
+  | "it_parts_kosdaq" // IT부품(코스닥)
+  | "construction" // 건설업
+  | "distribution" // 유통업
+  | "telecom" // 통신업
+  | "software" // 소프트웨어
+  | "digital_content" // 디지털콘텐츠
+  | "finance" // 금융업
+  | "insurance" // 보험
+  | "service"; // 서비스업
 
 export type TimeRange = "1M" | "3M" | "6M" | "1Y";
 
