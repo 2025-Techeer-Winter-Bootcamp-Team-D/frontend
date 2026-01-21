@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PageView } from "../../types";
 import { Search, X, ChevronRight, TrendingUp, Loader2 } from "lucide-react";
-import GlassCard from "./GlassCard";
 import { searchCompanies, type CompanySearchItem } from "../../api/company";
 import { getCompanyRankings } from "../../api/ranking";
 
@@ -165,12 +164,12 @@ const SearchModal: React.FC<SearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <GlassCard className="w-full max-w-lg relative z-10 p-6 animate-fade-in">
+      <div className="w-full max-w-lg mx-4 relative z-10 p-6 animate-fade-in bg-white/70 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-slate-800">기업 검색</h3>
           <button
@@ -188,7 +187,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="기업명 또는 종목코드를 입력하세요"
-            className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all"
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue outline-none transition-all"
             autoFocus
           />
           <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
@@ -295,7 +294,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             </div>
           )}
         </div>
-      </GlassCard>
+      </div>
     </div>
   );
 };
