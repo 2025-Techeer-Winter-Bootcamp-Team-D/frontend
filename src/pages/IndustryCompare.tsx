@@ -624,9 +624,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         time: item.date,
         value: item.close,
       }));
+
+      // 날짜 기준 오름차순 정렬 (과거 → 최신)
+      const rawDataSorted = rawData.sort(
+        (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+      );
+
       // timeRange에 따라 샘플링 적용
       const sampler = xAxisProps.sampler;
-      return sampler ? sampler(rawData) : rawData;
+      return sampler ? sampler(rawDataSorted) : rawDataSorted;
     }
 
     // API 데이터가 없으면 빈 배열 반환
