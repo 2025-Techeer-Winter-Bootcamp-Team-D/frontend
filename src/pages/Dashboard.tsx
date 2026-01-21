@@ -810,6 +810,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                         size={24}
                       />
                     </div>
+                  ) : isReportsError ? (
+                    <div className="py-8 text-center text-slate-400 text-sm">
+                      공시 데이터를 불러오지 못했습니다
+                    </div>
                   ) : recentReports.length > 0 ? (
                     recentReports.slice(0, 4).map((report) => (
                       <div
