@@ -28,6 +28,7 @@ import type {
   CompanyFinancialsData,
   CompanyOutlookData,
   RevenueComposition,
+  IndustryCompany,
 } from "../types";
 
 import {
@@ -292,11 +293,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
       const response = await getIndustryCompanies(indutyCode);
       // getIndustryCompanies는 이미 .then(res => res.data)를 하므로 response가 곧 서버 응답
       const companies = response?.data || response?.companies || [];
-      return companies.map((company: any, index: number) => {
+      return companies.map((company: IndustryCompany, index: number) => {
         // 시가총액 포맷팅 (amount를 억 단위로 변환)
-        const formatMarketCap = (amount: number | undefined) => {
+        const formatMarketCap = (amount: number | string | undefined) => {
           if (!amount) return "-";
-          const billion = Math.floor(amount / 100000000);
+          const numAmount =
+            typeof amount === "string" ? Number(amount) : amount;
+          if (isNaN(numAmount)) return "-";
+          const billion = Math.floor(numAmount / 100000000);
           if (billion >= 10000) {
             const trillion = Math.floor(billion / 10000);
             const remainBillion = billion % 10000;
@@ -309,8 +313,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
         return {
           rank: company.rank || index + 1,
           name: company.name,
-          code: company.stock_code,
-          marketCap: formatMarketCap(company.amount),
+          code: company.stockCode,
+          marketCap: formatMarketCap(company.marketCap),
         };
       }) as PeerCompanyItem[];
     },
