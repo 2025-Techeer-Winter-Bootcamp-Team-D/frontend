@@ -1,10 +1,10 @@
 /**
  * useIndustryQueries - 산업 페이지 전용 TanStack Query 훅
  *
- * accessToken 없으면 요청하지 않음 (401 방지)
- * staleTime으로 캐시 재사용 (불필요한 재요청 방지)
- * keepPreviousData로 기간 변경 시 깜빡임 방지
- * gcTime으로 페이지 이동 후에도 데이터 유지
+ * 특징:
+ * - staleTime으로 캐시 재사용 (불필요한 재요청 방지)
+ * - keepPreviousData로 기간 변경 시 깜빡임 방지
+ * - gcTime으로 페이지 이동 후에도 데이터 유지
  */
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";

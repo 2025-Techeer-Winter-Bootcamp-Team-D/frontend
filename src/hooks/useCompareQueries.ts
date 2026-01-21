@@ -2,7 +2,6 @@
  * useCompareQueries - 기업 비교 페이지 전용 TanStack Query 훅
  *
  * 특징:
- * - accessToken 없으면 요청하지 않음 (401 방지)
  * - 기업 코드 배열이 바뀌면 queryKey가 바뀜
  * - 동일한 비교 조합이면 캐시 재사용
  * - keepPreviousData로 기간 변경 시 깜빡임 방지
@@ -95,7 +94,10 @@ export function useCompanySearch(debouncedSearch: string) {
     queryKey: compareQueryKeys.search(debouncedSearch),
     queryFn: async () => {
       const res = await searchCompanies(debouncedSearch);
-      return (res.data?.data?.results ?? []) as CompanySearchItem[];
+      const data = res.data;
+      // API 응답 구조에 따라 results 추출 (SearchModal과 동일한 방식)
+      const results = data?.data?.results ?? data?.results ?? [];
+      return results as CompanySearchItem[];
     },
     enabled: !!debouncedSearch.trim(),
     staleTime: CACHE_TIME.SEARCH,

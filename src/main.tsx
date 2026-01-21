@@ -13,8 +13,8 @@ const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 30,
       // 창 포커스 시 자동 refetch 비활성화 (불필요한 요청 방지)
       refetchOnWindowFocus: false,
-      // 마운트 시 stale 데이터면 refetch
-      refetchOnMount: "always",
+      // 마운트 시 stale 데이터만 refetch (fresh 데이터는 재요청 안함)
+      refetchOnMount: true,
       // 네트워크 재연결 시 refetch
       refetchOnReconnect: true,
       // 실패 시 3번까지 재시도
