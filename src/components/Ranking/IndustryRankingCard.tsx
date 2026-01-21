@@ -41,27 +41,18 @@ interface IndustryRankItem {
   amount: number;
 }
 
-// OHLCV 응답 데이터 타입
-type OhlcvResponseData = Record<string, { data?: Array<{ close: number }> }>;
-
 // 단일 종목의 등락률을 조회하는 헬퍼
 const fetchChangePercent = async (stockCode: string): Promise<number> => {
   try {
-    const response = await getStockOhlcv(stockCode, "");
-    const responseData = response?.data
-      ?.data as unknown as OhlcvResponseData | null;
+    // 1m interval로 실시간 분봉 데이터 조회 (가장 빠름)
+    const response = await getStockOhlcv(stockCode, "1m");
+    const priceData = response?.data?.data?.data ?? [];
 
-    if (!responseData) return 0;
-
-    const intervals = ["1d", "1h", "15m", "1m"];
-    for (const intv of intervals) {
-      const priceData = responseData[intv]?.data ?? [];
-      if (priceData.length > 1) {
-        const latest = priceData[0]?.close ?? 0;
-        const previous = priceData[1]?.close ?? 0;
-        if (previous > 0) {
-          return ((latest - previous) / previous) * 100;
-        }
+    if (priceData.length > 1) {
+      const latest = priceData[0]?.close ?? 0;
+      const previous = priceData[1]?.close ?? 0;
+      if (previous > 0) {
+        return ((latest - previous) / previous) * 100;
       }
     }
     return 0;
@@ -85,6 +76,16 @@ const fetchOhlcvBatch = async (
   return new Map(
     results.map(({ code, changePercent }) => [code, changePercent]),
   );
+};
+
+// API 응답 정규화 헬퍼: 배열이면 그대로, 객체면 data 추출
+const normalizeApiResponse = <T,>(response: unknown): T[] => {
+  if (Array.isArray(response)) return response as T[];
+  if (response && typeof response === "object" && "data" in response) {
+    const data = (response as { data: unknown }).data;
+    if (Array.isArray(data)) return data as T[];
+  }
+  return [];
 };
 
 interface IndustryRankingCardProps {
