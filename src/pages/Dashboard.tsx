@@ -373,8 +373,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 divYield = parseFloat(latest.dividend_yield) || 0;
               }
             } catch (error) {
-              // AbortError는 무시 (정상적인 취소)
-              if (error instanceof Error && error.name === "AbortError") {
+              // AbortError/CanceledError는 무시 (정상적인 취소)
+              if (
+                error instanceof Error &&
+                (error.name === "AbortError" || error.name === "CanceledError")
+              ) {
                 return null;
               }
               console.error(
