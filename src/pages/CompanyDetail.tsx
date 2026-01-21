@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import {
   getCompanyDetail,
   getStockOhlcv,
   getCompanyNews,
   getCompanyNewsDetail,
+  getCompanyReports,
+  getReportAnalysis,
   getCompanyFinancials,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
@@ -21,6 +23,7 @@ import type {
   CompanyApiData,
   PageView,
   OhlcvItem,
+  CompanyReportItem,
   CompanyFinancialsData,
 } from "../types";
 
@@ -140,6 +143,45 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [isNewsLoading2, setIsNewsLoading2] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [disclosureTab, setDisclosureTab] = useState<
+    "main" | "analysis" | "all"
+  >("main");
+
+  const {
+    data: companyReports = [],
+    isLoading: isReportsLoading,
+    isError: isReportsError,
+    error: reportsError,
+  } = useQuery({
+    queryKey: ["company", "reports", companyCode],
+    queryFn: async () => {
+      const response = await getCompanyReports(companyCode);
+      const data = response.data?.data;
+      return data?.reports || [];
+    },
+  });
+
+  // 공시분석 탭에서 모든 분석을 한번에 가져오기
+  const MAX_ANALYSIS_COUNT = 10;
+
+  const analysisQueries = useQueries({
+    queries:
+      disclosureTab === "analysis" && companyReports.length > 0
+        ? companyReports
+            .slice(0, MAX_ANALYSIS_COUNT)
+            .map((report: CompanyReportItem) => ({
+              queryKey: ["reportAnalysis", companyCode, report.rcept_no],
+              queryFn: async () => {
+                const response = await getReportAnalysis(
+                  companyCode,
+                  report.rcept_no,
+                );
+                return { ...response.data.data, report };
+              },
+              enabled: disclosureTab === "analysis",
+            }))
+        : [],
+  });
 
   // 뉴스 상세 조회 핸들러
   const handleNewsClick = async (newsId: number) => {
@@ -177,7 +219,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
     return mapping[range] || "1d";
   };
 
-  // --- API 호출 ---
   const {
     data: apiCompanyData,
     isLoading: isDetailLoading,
@@ -253,6 +294,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
   const newsRef = useRef<HTMLDivElement>(null);
+  const disclosureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -362,6 +404,24 @@ const CompanyDetail: React.FC<DetailProps> = ({
     } as FinancialData;
   }, [financialsData, selectedYear, selectedQuarter]);
 
+  const filteredReports = useMemo(() => {
+    if (!companyReports || companyReports.length === 0) return [];
+
+    switch (disclosureTab) {
+      case "main":
+        return companyReports.filter(
+          (report: CompanyReportItem) =>
+            report.report_type?.includes("주요") ||
+            report.report_name?.includes("주요"),
+        );
+      case "analysis":
+        return companyReports;
+      case "all":
+      default:
+        return companyReports;
+    }
+  }, [companyReports, disclosureTab]);
+
   const handleTabClick = (
     id: string,
     ref: React.RefObject<HTMLDivElement | null>,
@@ -382,6 +442,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "price", label: "주가", ref: priceRef },
     { id: "financial", label: "재무분석", ref: financialRef },
     { id: "news", label: "뉴스", ref: newsRef },
+    { id: "disclosure", label: "공시", ref: disclosureRef },
   ];
 
   // --- 차트 렌더링 (높이 및 레이아웃 수정) ---
@@ -733,6 +794,284 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </GlassCard>
+        </div>
+
+        <div ref={disclosureRef} className="scroll-mt-32">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2">
+                {[
+                  { key: "main", label: "주요공시" },
+                  { key: "analysis", label: "공시분석" },
+                  { key: "all", label: "공시전체보기" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() =>
+                      setDisclosureTab(tab.key as "main" | "analysis" | "all")
+                    }
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      disclosureTab === tab.key
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() =>
+                  window.open(
+                    "https://dart.fss.or.kr",
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
+                className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                전자공시확인
+              </button>
+            </div>
+
+            {disclosureTab === "analysis" ? (
+              // 공시분석 탭: 분석 카드만 표시
+              <div className="space-y-4">
+                {isReportsError ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-red-500">
+                    <svg
+                      className="w-12 h-12 mb-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    <p className="text-sm font-medium">
+                      공시 목록을 불러오는데 실패했습니다.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {(reportsError as Error)?.message ||
+                        "알 수 없는 오류가 발생했습니다."}
+                    </p>
+                  </div>
+                ) : isReportsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="animate-spin" />
+                  </div>
+                ) : analysisQueries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <svg
+                      className="w-12 h-12 mb-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <p className="text-sm">분석 데이터가 없습니다.</p>
+                  </div>
+                ) : (
+                  analysisQueries.map((query, idx) => {
+                    const analysisData = query.data;
+                    const report = analysisData?.report as
+                      | CompanyReportItem
+                      | undefined;
+
+                    return (
+                      <div
+                        key={report?.rcept_no || idx}
+                        className="bg-slate-50 border border-gray-200 rounded-lg p-6"
+                      >
+                        {query.isLoading ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2
+                              className="animate-spin text-blue-500"
+                              size={32}
+                            />
+                          </div>
+                        ) : query.isError ? (
+                          <div className="text-center text-red-400 py-4">
+                            <p className="text-sm">
+                              분석 데이터 로드 중 오류가 발생했습니다.
+                            </p>
+                          </div>
+                        ) : analysisData?.extracted_info ? (
+                          <div className="relative">
+                            <button
+                              onClick={() => {
+                                if (report?.report_url)
+                                  window.open(
+                                    report.report_url,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  );
+                              }}
+                              className="absolute top-0 right-0 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                            >
+                              공시 원본 보기
+                            </button>
+                            <div className="flex gap-8">
+                              <div className="flex-shrink-0 w-64">
+                                <h3 className="text-2xl font-bold text-red-600 leading-tight mb-3">
+                                  {report?.report_name}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                  기준 일시:{" "}
+                                  {report?.submitted_at
+                                    ? report.submitted_at.split("T")[0]
+                                    : "-"}
+                                </p>
+                              </div>
+                              <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                <table className="w-full text-sm">
+                                  <tbody>
+                                    {analysisData.extracted_info?.key_info &&
+                                      Object.entries(
+                                        analysisData.extracted_info.key_info,
+                                      ).map(([key, value], i) => (
+                                        <tr
+                                          key={key}
+                                          className={
+                                            i % 2 === 0
+                                              ? "bg-gray-50"
+                                              : "bg-white"
+                                          }
+                                        >
+                                          <td className="px-4 py-3 font-medium text-gray-600 w-40 border-r border-gray-100">
+                                            {key}
+                                          </td>
+                                          <td className="px-4 py-3 text-gray-800">
+                                            {value as string}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    {analysisData.extracted_info?.summary
+                                      ?.one_line && (
+                                      <tr className="bg-white">
+                                        <td className="px-4 py-3 font-medium text-gray-600 w-40 border-r border-gray-100">
+                                          요약
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-800">
+                                          {
+                                            analysisData.extracted_info.summary
+                                              .one_line
+                                          }
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center text-gray-400 py-4">
+                            <p className="text-sm">
+                              분석 데이터를 불러올 수 없습니다.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              // 주요공시, 공시전체보기 탭: 테이블 형식
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="grid grid-cols-12 bg-gray-100 text-gray-700 font-semibold text-sm">
+                  <div className="col-span-2 px-4 py-3">날짜</div>
+                  <div className="col-span-3 px-4 py-3">공시구분</div>
+                  <div className="col-span-7 px-4 py-3">공시제목</div>
+                </div>
+
+                {isReportsError ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-red-500">
+                    <svg
+                      className="w-12 h-12 mb-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    <p className="text-sm font-medium">
+                      공시 목록을 불러오는데 실패했습니다.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {(reportsError as Error)?.message ||
+                        "알 수 없는 오류가 발생했습니다."}
+                    </p>
+                  </div>
+                ) : isReportsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="animate-spin" />
+                  </div>
+                ) : filteredReports.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <svg
+                      className="w-12 h-12 mb-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <p className="text-sm">
+                      {disclosureTab === "main"
+                        ? "주요 공시 데이터가 없습니다."
+                        : "공시 데이터가 없습니다."}
+                    </p>
+                  </div>
+                ) : (
+                  filteredReports.map(
+                    (item: CompanyReportItem, idx: number) => (
+                      <a
+                        key={item.rcept_no || idx}
+                        href={item.report_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="grid grid-cols-12 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="col-span-2 px-4 py-3 text-sm text-gray-700">
+                          {item.submitted_at
+                            ? item.submitted_at.split("T")[0]
+                            : "-"}
+                        </div>
+                        <div className="col-span-3 px-4 py-3 text-sm text-gray-500">
+                          {item.report_type || "-"}
+                        </div>
+                        <div className="col-span-7 px-4 py-3 text-sm text-gray-700">
+                          {item.report_name}
+                        </div>
+                      </a>
+                    ),
+                  )
+                )}
               </div>
             )}
           </GlassCard>
