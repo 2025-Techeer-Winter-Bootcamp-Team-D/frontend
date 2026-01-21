@@ -215,6 +215,20 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
     ? isIndustryCompaniesLoading
     : isCompanyLoading;
 
+  // 순위별 메달 (1위: 금, 2위: 은, 3위: 동)
+  const getMedal = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return "🥇";
+      case 2:
+        return "🥈";
+      case 3:
+        return "🥉";
+      default:
+        return null;
+    }
+  };
+
   // 순위 포맷 (01, 02, ...)
   const formatRank = (rank: number) => rank.toString().padStart(2, "0");
 

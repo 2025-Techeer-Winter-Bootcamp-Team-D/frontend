@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search, Loader2, TrendingUp, Bell, X } from "lucide-react";
+import { Search, Loader2, TrendingUp, Bell, X } from "lucide-react";
 
 // Components
 import GlassCard from "../components/Layout/GlassCard";
@@ -21,6 +21,9 @@ import { getNewsKeywords, getNewsList, getNewsDetail } from "../api/news";
 import type { NewsDetailItem } from "../api/news";
 import { searchCompanies, getCompanyFinancials } from "../api/company";
 import { getCompanyRankings } from "../api/ranking";
+
+// Constants
+const MAX_SEARCH_RESULTS = 8;
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
@@ -538,16 +541,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <br />
             기업의 <span className="text-blue-300">미래 가치</span>
           </h1>
-          <button
-            onClick={() =>
-              document
-                .getElementById("parallel-coordinates")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="px-10 py-4 bg-white text-blue-600 font-bold rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center gap-3 mx-auto"
-          >
-            분석 도구 시작 <ArrowRight size={20} />
-          </button>
+        </div>
+        {/* 스크롤 다운 인디케이터 */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 z-10">
+          <span className="text-xs tracking-widest uppercase">Scroll Down</span>
+          <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center pt-2">
+            <div className="w-1.5 h-3 bg-white/60 rounded-full animate-bounce"></div>
+          </div>
         </div>
       </section>
 
@@ -559,11 +559,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div
           className={`max-w-7xl mx-auto w-full transition-all duration-700 ${visibleSections.has("parallel-coordinates") ? "opacity-100" : "opacity-0 translate-y-10"}`}
         >
-          <div className="mb-12">
+          <div className="mb-4">
             <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-              나만의 저평가 우량주 발굴
+              다차원 가치 지표 분석
             </h2>
-            <p className="text-slate-500 mt-2">
+            <p className="text-slate-500 mt-1">
               다차원 필터를 통해 원하는 조건의 기업을 실시간으로 필터링하세요.
             </p>
           </div>
@@ -595,73 +595,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div
           className={`max-w-7xl mx-auto w-full transition-all duration-700 ${visibleSections.has("market-dashboard") ? "opacity-100" : "opacity-0 translate-y-10"}`}
         >
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900">
-                실시간 시장 대시보드
-              </h2>
-              <p className="text-slate-500 mt-2">
-                주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
-              </p>
-            </div>
-            <div className="relative w-full md:w-96" ref={searchRef}>
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10"
-                size={20}
-              />
-              <input
-                type="text"
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-none shadow-lg focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="기업명 혹은 종목코드"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowSearchResults(true);
-                }}
-                onFocus={() => setShowSearchResults(true)}
-              />
-              {/* 검색 결과 드롭다운 */}
-              {showSearchResults && searchQuery.trim() && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 max-h-80 overflow-y-auto z-50">
-                  {isSearching ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2
-                        className="animate-spin text-blue-500"
-                        size={24}
-                      />
-                    </div>
-                  ) : searchResults.length > 0 ? (
-                    searchResults.slice(0, 8).map((company) => (
-                      <button
-                        key={company.stock_code}
-                        onClick={() => handleCompanySelect(company.stock_code)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-b border-slate-100 last:border-b-0"
-                      >
-                        {company.logo_url && (
-                          <img
-                            src={company.logo_url}
-                            alt={company.company_name}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-slate-800 truncate">
-                            {company.company_name}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            {company.stock_code}
-                          </div>
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="py-8 text-center text-slate-400 text-sm">
-                      검색 결과가 없습니다
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-slate-900">
+              실시간 시장 대시보드
+            </h2>
+            <p className="text-slate-500 mt-2">
+              주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -756,17 +696,91 @@ const Dashboard: React.FC<DashboardProps> = ({
               />
             </div>
 
-            <div className="lg:col-span-4">
-              <div className="bg-white rounded-3xl p-8 h-full border border-slate-100 shadow-sm">
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              {/* 검색바 */}
+              <div className="relative w-full" ref={searchRef}>
+                <div className="relative flex items-center">
+                  <Search
+                    className="absolute left-4 text-slate-400 z-10 pointer-events-none"
+                    size={20}
+                  />
+                  <input
+                    type="text"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:border-blue-400 transition-all"
+                    placeholder="기업명 혹은 종목코드"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowSearchResults(true);
+                    }}
+                    onFocus={() => setShowSearchResults(true)}
+                  />
+                </div>
+                {/* 검색 결과 드롭다운 */}
+                {showSearchResults && searchQuery.trim() && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 max-h-80 overflow-y-auto z-50">
+                    {isSearching ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2
+                          className="animate-spin text-blue-500"
+                          size={24}
+                        />
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      searchResults
+                        .slice(0, MAX_SEARCH_RESULTS)
+                        .map((company) => (
+                          <button
+                            key={company.stock_code}
+                            onClick={() =>
+                              handleCompanySelect(company.stock_code)
+                            }
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-b border-slate-100 last:border-b-0"
+                          >
+                            <div className="w-8 h-8 flex-shrink-0">
+                              {company.logo_url ? (
+                                <img
+                                  src={company.logo_url}
+                                  alt={company.company_name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">
+                                  {(company.company_name &&
+                                    company.company_name.charAt(0)) ||
+                                    (company.stock_code &&
+                                      company.stock_code.charAt(0)) ||
+                                    "?"}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-slate-800 truncate">
+                                {company.company_name}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {company.stock_code}
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                    ) : (
+                      <div className="py-8 text-center text-slate-400 text-sm">
+                        검색 결과가 없습니다
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 자본시장 공시 */}
+              <div className="bg-white rounded-3xl p-8 flex-1 border border-slate-100 shadow-sm">
                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                   <Bell size={20} className="text-blue-600" /> 자본시장 공시
                 </h3>
                 <div className="space-y-6">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className="pb-4 border-b border-slate-50 last:border-0"
-                    >
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="pb-4 border-b border-slate-50">
                       <span className="text-[10px] font-bold text-blue-600 uppercase">
                         공시
                       </span>
@@ -780,6 +794,28 @@ const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                     </div>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/disclosures")}
+                    className="w-full pt-2 flex items-center justify-center gap-2 cursor-pointer group"
+                  >
+                    <span className="text-sm font-semibold text-slate-500 group-hover:text-blue-600 transition-colors">
+                      전체공시 보기
+                    </span>
+                    <svg
+                      className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -790,7 +826,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* 4. AI ISSUE TRACKING SECTION */}
       <section
         id="ai-issue"
-        className="min-h-screen w-full py-24 px-6 bg-white snap-start"
+        className="min-h-screen w-full py-24 px-6 bg-white snap-start flex flex-col justify-center"
       >
         <div
           className={`max-w-7xl mx-auto w-full transition-all duration-700 ${visibleSections.has("ai-issue") ? "opacity-100" : "opacity-0 translate-y-10"}`}
@@ -801,7 +837,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <h2 className="text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
                   AI 이슈포착
                 </h2>
-                <p className="text-xl text-slate-600 leading-relaxed">
+                <p className="text-lg text-slate-600 leading-relaxed">
                   수만 개의 뉴스 데이터 속에서{" "}
                   <span className="text-blue-600 font-bold">
                     인공지능이 추출한 핵심 마켓 시그널
