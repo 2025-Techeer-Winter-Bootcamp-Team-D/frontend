@@ -49,7 +49,9 @@ export const getStockOhlcv = (stock_code: string, interval: string) => {
  * GET /companies/{companyId}/news
  */
 export const getCompanyNews = (companyId: string) => {
-  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news/`);
+  return api.get<ApiResponse<{ results: NewsItem[] }>>(
+    `/companies/${companyId}/news/`,
+  );
 };
 
 /**
