@@ -45,7 +45,15 @@ export const getStockOhlcv = (stock_code: string, interval: string) => {
  * GET /companies/{companyId}/news
  */
 export const getCompanyNews = (companyId: string) => {
-  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news`);
+  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news/`);
+};
+
+/**
+ * 기업 뉴스 상세 조회
+ * GET /companies/{stock_code}/news/{news_id}/
+ */
+export const getCompanyNewsDetail = (stockCode: string, newsId: number) => {
+  return api.get(`/companies/${stockCode}/news/${newsId}/`);
 };
 
 /**

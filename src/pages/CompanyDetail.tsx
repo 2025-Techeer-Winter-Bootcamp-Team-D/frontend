@@ -5,6 +5,7 @@ import {
   getCompanyDetail,
   getStockOhlcv,
   getCompanyNews,
+  getCompanyNewsDetail,
   getCompanyFinancials,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
@@ -137,7 +138,34 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [selectedYear] = useState("2024");
   const [selectedQuarter] = useState("1분기");
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [isNewsLoading2, setIsNewsLoading2] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // 뉴스 상세 조회 핸들러
+  const handleNewsClick = async (newsId: number) => {
+    setIsNewsLoading2(true);
+    try {
+      const response = await getCompanyNewsDetail(companyCode, newsId);
+      const data = response.data?.data;
+      if (data) {
+        setSelectedNews({
+          id: data.news_id,
+          title: data.title,
+          summary: data.summary,
+          source: data.press,
+          date: data.published_at,
+          author: data.author,
+          content: data.content,
+          keywords: data.keywords,
+          url: data.url,
+        });
+      }
+    } catch (error) {
+      console.error("뉴스 상세 조회 실패:", error);
+    } finally {
+      setIsNewsLoading2(false);
+    }
+  };
 
   const getBackendInterval = (range: string): string => {
     const mapping: Record<string, string> = {
@@ -196,8 +224,20 @@ const CompanyDetail: React.FC<DetailProps> = ({
     queryKey: ["company", "news", companyCode],
     queryFn: async () => {
       const response = await getCompanyNews(companyCode);
-      const data = response.data?.data;
-      return Array.isArray(data) ? data : [];
+      // API 응답: { data: { results: [...] } }
+      const results = response.data?.data?.results ?? [];
+      // API 필드 -> NewsItem 필드로 매핑
+      return results.map((item: any) => ({
+        id: item.news_id,
+        title: item.title,
+        summary: item.summary,
+        source: item.press,
+        date: item.published_at,
+        author: item.author,
+        content: item.summary, // content가 없으면 summary 사용
+        keywords: item.keywords,
+        url: item.url,
+      })) as NewsItem[];
     },
   });
 
@@ -666,19 +706,31 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 <Loader2 className="animate-spin text-blue-400" />
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {companyNews.slice(0, 4).map((news, idx) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {companyNews.slice(0, 6).map((news, idx) => (
                   <div
-                    key={idx}
-                    onClick={() => setSelectedNews(news)}
+                    key={news.id || idx}
+                    onClick={() => news.id && handleNewsClick(news.id)}
                     className="p-4 border border-gray-100 rounded-xl hover:bg-white hover:shadow-md hover:border-blue-100 transition-all cursor-pointer"
                   >
-                    <h4 className="font-bold text-slate-800 line-clamp-1 mb-2">
+                    <h4 className="font-bold text-slate-800 line-clamp-2 mb-2 text-sm">
                       {news.title}
                     </h4>
-                    <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-2">
                       {news.summary}
                     </p>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      {news.source && <span>{news.source}</span>}
+                      {news.source && news.date && <span>·</span>}
+                      {news.date && (
+                        <span>
+                          {new Date(news.date).toLocaleDateString("ko-KR", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -688,32 +740,97 @@ const CompanyDetail: React.FC<DetailProps> = ({
       </div>
 
       {/* 뉴스 상세 모달 */}
-      {selectedNews && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {(selectedNews || isNewsLoading2) && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setSelectedNews(null)}
+            onClick={() => !isNewsLoading2 && setSelectedNews(null)}
           ></div>
-          <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up">
-            <div className="flex justify-between items-center mb-6">
-              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">
-                News Detail
-              </span>
-              <button
-                onClick={() => setSelectedNews(null)}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={24} className="text-gray-400" />
-              </button>
-            </div>
-            <h2 className="text-2xl font-bold mb-6 text-slate-800">
-              {selectedNews.title}
-            </h2>
-            <div className="max-h-[400px] overflow-y-auto pr-2">
-              <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
-                {selectedNews.content || selectedNews.summary}
-              </p>
-            </div>
+          <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
+            {isNewsLoading2 ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="animate-spin text-blue-600" size={32} />
+              </div>
+            ) : (
+              selectedNews && (
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNews.keywords?.slice(0, 3).map((keyword, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setSelectedNews(null)}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={24} className="text-gray-400" />
+                    </button>
+                  </div>
+                  <h2 className="text-xl font-bold mb-3 text-slate-800 leading-tight">
+                    {selectedNews.title}
+                  </h2>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-100">
+                    {selectedNews.source && (
+                      <span className="font-medium text-slate-700">
+                        {selectedNews.source}
+                      </span>
+                    )}
+                    {selectedNews.author && (
+                      <span>· {selectedNews.author}</span>
+                    )}
+                    {selectedNews.date && (
+                      <span>
+                        ·{" "}
+                        {new Date(selectedNews.date).toLocaleDateString(
+                          "ko-KR",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-2 mb-4">
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-sm">
+                      {selectedNews.content || selectedNews.summary}
+                    </p>
+                  </div>
+                  {selectedNews.url && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <a
+                        href={selectedNews.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        원문 보기
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                </>
+              )
+            )}
           </div>
         </div>
       )}
