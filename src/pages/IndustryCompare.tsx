@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -47,6 +47,7 @@ import {
   getIndustryCompanies,
   getIndustryChart,
 } from "../api/industry";
+import { getCompanyFinancials } from "../api/company";
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
 const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
@@ -319,29 +320,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   );
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
 
-  const filteredIds = useMemo(() => {
-    const ids = new Set<string>();
-    SAMPLE_STOCKS.forEach((stock) => {
-      let pass = true;
-      for (const key of Object.keys(filters) as AxisKey[]) {
-        const range = filters[key];
-        if (range) {
-          // stock[key] 값을 숫자로 명시적 변환하여 비교 (ts2365 에러 해결)
-          const val = Number(stock[key]);
-          const min = range.min;
-          const max = range.max;
-
-          if (val < min || val > max) {
-            pass = false;
-            break;
-          }
-        }
-      }
-      if (pass) ids.add(stock.id);
-    });
-    return ids;
-  }, [filters]);
-
   // 현재 선택된 산업의 이름 정보 가져오기
   const currentIndustryInfo = INDUSTRY_NAMES[selectedIndustry];
 
@@ -356,6 +334,53 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     }>;
   } | null;
 
+  // 각 기업의 재무 데이터 상태 관리
+  const [financialsMap, setFinancialsMap] = useState<
+    Record<string, { roe: number; pbr: number; per: number; debtRatio: number }>
+  >({});
+
+  // 기업 목록이 변경되면 각 기업의 재무 데이터를 가져옴
+  useEffect(() => {
+    const fetchFinancials = async () => {
+      const rawData = companiesResponse?.data ?? [];
+      if (rawData.length === 0) return;
+
+      const newFinancialsMap: Record<
+        string,
+        { roe: number; pbr: number; per: number; debtRatio: number }
+      > = {};
+
+      // 병렬로 모든 기업의 재무 데이터 가져오기
+      await Promise.all(
+        rawData.map(async (company) => {
+          try {
+            const response = await getCompanyFinancials(company.stock_code);
+            const financialStatements =
+              response?.data?.data?.financial_statements;
+            if (financialStatements && financialStatements.length > 0) {
+              const latest = financialStatements[0];
+              newFinancialsMap[company.stock_code] = {
+                roe: parseFloat(latest.roe) || 0,
+                pbr: parseFloat(latest.pbr) || 0,
+                per: parseFloat(latest.per) || 0,
+                debtRatio: parseFloat(latest.debt_ratio) || 0,
+              };
+            }
+          } catch (error) {
+            console.error(
+              `Failed to fetch financials for ${company.stock_code}:`,
+              error,
+            );
+          }
+        }),
+      );
+
+      setFinancialsMap(newFinancialsMap);
+    };
+
+    fetchFinancials();
+  }, [companiesResponse]);
+
   const companiesData = useMemo(() => {
     const rawData = companiesResponse?.data ?? [];
 
@@ -365,20 +390,63 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       return formatMarketCap(uk);
     };
 
-    return rawData.map((company) => ({
-      rank: company.rank,
-      name: company.name,
-      code: company.stock_code,
-      logo: company.logo,
-      marketCap: formatAmount(company.amount),
-      // TODO: 기업 지표 API 연동 후 실제 데이터로 교체
-      price: "0",
-      change: "+0.00%",
-      per: 0,
-      pbr: 0,
-      roe: 0,
-    }));
-  }, [companiesResponse]);
+    return rawData.map((company) => {
+      const financials = financialsMap[company.stock_code];
+      return {
+        rank: company.rank,
+        name: company.name,
+        code: company.stock_code,
+        logo: company.logo,
+        marketCap: formatAmount(company.amount),
+        price: "0",
+        change: "+0.00%",
+        per: financials?.per ?? 0,
+        pbr: financials?.pbr ?? 0,
+        roe: financials?.roe ?? 0,
+        debtRatio: financials?.debtRatio ?? 0,
+      };
+    });
+  }, [companiesResponse, financialsMap]);
+
+  // Parallel Coordinates 차트에 사용할 데이터 (companiesData가 있으면 사용, 없으면 SAMPLE_STOCKS)
+  const chartStocksData = useMemo(() => {
+    if (companiesData.length > 0) {
+      return companiesData.map((c) => ({
+        id: c.code,
+        name: c.name,
+        sector: currentIndustryInfo?.name ?? "",
+        per: c.per,
+        pbr: c.pbr,
+        roe: c.roe,
+        debtRatio: c.debtRatio,
+        divYield: 0,
+        logo: c.logo ?? undefined,
+      }));
+    }
+    return SAMPLE_STOCKS;
+  }, [companiesData, currentIndustryInfo]);
+
+  const filteredIds = useMemo(() => {
+    const ids = new Set<string>();
+    chartStocksData.forEach((stock) => {
+      let pass = true;
+      for (const key of Object.keys(filters) as AxisKey[]) {
+        const range = filters[key];
+        if (range) {
+          const val = Number(stock[key as keyof typeof stock]);
+          const min = range.min;
+          const max = range.max;
+
+          if (val < min || val > max) {
+            pass = false;
+            break;
+          }
+        }
+      }
+      if (pass) ids.add(stock.id);
+    });
+    return ids;
+  }, [filters, chartStocksData]);
 
   const handleToggleStar = (e: React.MouseEvent, code: string) => {
     e.stopPropagation();
@@ -804,7 +872,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       {/* --- Parallel Coordinates Chart --- */}
       <div className="mb-10">
         <ParallelCoordinatesChart
-          data={SAMPLE_STOCKS}
+          data={chartStocksData}
           onFilterChange={setFilters}
           filters={filters}
           filteredIds={filteredIds}
@@ -822,87 +890,88 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   조건 충족 종목 리스트
                 </h3>
                 <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-2">
-                  {SAMPLE_STOCKS.filter((stock) =>
-                    filteredIds.has(stock.id),
-                  ).map((stock) => (
-                    <div
-                      key={stock.id}
-                      onClick={() => setSelectedStock(stock)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                        selectedStock?.id === stock.id
-                          ? "border-shinhan-blue bg-blue-50"
-                          : "border-slate-100 bg-slate-50 hover:border-slate-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {/* Company Logo */}
-                          <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {stock.logo ? (
-                              <img
-                                src={stock.logo}
-                                alt={stock.name}
-                                className="w-8 h-8 object-contain"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display =
-                                    "none";
-                                }}
-                              />
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400">
-                                {stock.name.slice(0, 2)}
+                  {chartStocksData
+                    .filter((stock) => filteredIds.has(stock.id))
+                    .map((stock) => (
+                      <div
+                        key={stock.id}
+                        onClick={() => setSelectedStock(stock)}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                          selectedStock?.id === stock.id
+                            ? "border-shinhan-blue bg-blue-50"
+                            : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {/* Company Logo */}
+                            <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {stock.logo ? (
+                                <img
+                                  src={stock.logo}
+                                  alt={stock.name}
+                                  className="w-8 h-8 object-contain"
+                                  onError={(e) => {
+                                    (
+                                      e.target as HTMLImageElement
+                                    ).style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-xs font-bold text-slate-400">
+                                  {stock.name.slice(0, 2)}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-800 text-sm">
+                                {stock.name}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {stock.sector}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6 text-xs">
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">PER</span>
+                              <div className="font-bold text-slate-700">
+                                {stock.per.toFixed(1)}
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">PBR</span>
+                              <div className="font-bold text-slate-700">
+                                {stock.pbr.toFixed(2)}
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">ROE</span>
+                              <div className="font-bold text-shinhan-blue">
+                                {stock.roe.toFixed(1)}%
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[50px]">
+                              <span className="text-slate-400">부채비율</span>
+                              <div className="font-bold text-slate-700">
+                                {stock.debtRatio}%
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">배당률</span>
+                              <div className="font-bold text-emerald-600">
+                                {stock.divYield.toFixed(1)}%
+                              </div>
+                            </div>
+                            {selectedStock?.id === stock.id && (
+                              <span className="px-2 py-0.5 bg-shinhan-blue text-white text-[10px] rounded-full font-bold">
+                                선택됨
                               </span>
                             )}
                           </div>
-                          <div>
-                            <div className="font-bold text-slate-800 text-sm">
-                              {stock.name}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {stock.sector}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6 text-xs">
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">PER</span>
-                            <div className="font-bold text-slate-700">
-                              {stock.per.toFixed(1)}
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">PBR</span>
-                            <div className="font-bold text-slate-700">
-                              {stock.pbr.toFixed(2)}
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">ROE</span>
-                            <div className="font-bold text-shinhan-blue">
-                              {stock.roe.toFixed(1)}%
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[50px]">
-                            <span className="text-slate-400">부채비율</span>
-                            <div className="font-bold text-slate-700">
-                              {stock.debtRatio}%
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">배당률</span>
-                            <div className="font-bold text-emerald-600">
-                              {stock.divYield.toFixed(1)}%
-                            </div>
-                          </div>
-                          {selectedStock?.id === stock.id && (
-                            <span className="px-2 py-0.5 bg-shinhan-blue text-white text-[10px] rounded-full font-bold">
-                              선택됨
-                            </span>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
@@ -1222,18 +1291,16 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
                 <Scatter
                   name="Companies"
-                  data={companiesData.map((company, idx) => ({
+                  data={companiesData.map((company) => ({
                     name: company.name,
                     roe: company.roe,
-                    debt: Math.round(50 + ((idx * 37 + company.roe * 5) % 200)),
+                    debt: company.debtRatio,
                   }))}
                   shape="circle"
                 >
                   {companiesData.map((company, index) => {
-                    const debt = Math.round(
-                      50 + ((index * 37 + company.roe * 5) % 200),
-                    );
-                    const isQuality = company.roe >= 10 && debt <= 150;
+                    const isQuality =
+                      company.roe >= 10 && company.debtRatio <= 150;
                     return (
                       <Cell
                         key={`cell-leverage-${index}`}
