@@ -319,9 +319,13 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // 기업 목록이 변경되면 각 기업의 재무 데이터를 가져옴
   useEffect(() => {
-    const fetchFinancials = async () => {
-      if (companyRankingsData.length === 0) return;
+    if (companyRankingsData.length === 0) return;
 
+    const abortController = new AbortController();
+    const requestId = Date.now();
+    let currentRequestId = requestId;
+
+    const fetchFinancials = async () => {
       const newFinancialsMap: Record<
         string,
         {
@@ -333,48 +337,80 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
       > = {};
 
-      // 병렬로 모든 기업의 재무 데이터 가져오기 (최대 100개)
-      await Promise.all(
-        companyRankingsData.map(async (company: { stock_code: string }) => {
-          let roe = 0,
-            pbr = 0,
-            per = 0,
-            debtRatio = 0,
-            divYield = 0;
+      // 동시성 제한을 위한 청크 처리 (한번에 10개씩)
+      const CONCURRENCY_LIMIT = 10;
+      const companies = companyRankingsData as Array<{ stock_code: string }>;
 
-          try {
-            const response = await getCompanyFinancials(company.stock_code);
-            const financialStatements =
-              response?.data?.data?.financial_statements;
-            if (financialStatements && financialStatements.length > 0) {
-              const latest = financialStatements[0];
-              roe = parseFloat(latest.roe) || 0;
-              pbr = parseFloat(latest.pbr) || 0;
-              per = parseFloat(latest.per) || 0;
-              debtRatio = parseFloat(latest.debt_ratio) || 0;
-              divYield = parseFloat(latest.dividend_yield) || 0;
+      for (let i = 0; i < companies.length; i += CONCURRENCY_LIMIT) {
+        // 요청이 취소되었거나 새 요청이 시작된 경우 중단
+        if (abortController.signal.aborted || currentRequestId !== requestId) {
+          return;
+        }
+
+        const chunk = companies.slice(i, i + CONCURRENCY_LIMIT);
+
+        const chunkResults = await Promise.all(
+          chunk.map(async (company) => {
+            let roe = 0,
+              pbr = 0,
+              per = 0,
+              debtRatio = 0,
+              divYield = 0;
+
+            try {
+              const response = await getCompanyFinancials(
+                company.stock_code,
+                abortController.signal,
+              );
+              const financialStatements =
+                response?.data?.data?.financial_statements;
+              if (financialStatements && financialStatements.length > 0) {
+                const latest = financialStatements[0];
+                roe = parseFloat(latest.roe) || 0;
+                pbr = parseFloat(latest.pbr) || 0;
+                per = parseFloat(latest.per) || 0;
+                debtRatio = parseFloat(latest.debt_ratio) || 0;
+                divYield = parseFloat(latest.dividend_yield) || 0;
+              }
+            } catch (error) {
+              // AbortError는 무시 (정상적인 취소)
+              if (error instanceof Error && error.name === "AbortError") {
+                return null;
+              }
+              console.error(
+                `Failed to fetch financials for ${company.stock_code}:`,
+                error,
+              );
             }
-          } catch (error) {
-            console.error(
-              `Failed to fetch financials for ${company.stock_code}:`,
-              error,
-            );
+
+            return {
+              stockCode: company.stock_code,
+              data: { roe, pbr, per, debtRatio, divYield },
+            };
+          }),
+        );
+
+        // 유효한 결과만 맵에 추가
+        chunkResults.forEach((result) => {
+          if (result) {
+            newFinancialsMap[result.stockCode] = result.data;
           }
+        });
+      }
 
-          newFinancialsMap[company.stock_code] = {
-            roe,
-            pbr,
-            per,
-            debtRatio,
-            divYield,
-          };
-        }),
-      );
-
-      setFinancialsMap(newFinancialsMap);
+      // race condition 방지: 현재 요청이 최신인 경우에만 상태 업데이트
+      if (!abortController.signal.aborted && currentRequestId === requestId) {
+        setFinancialsMap(newFinancialsMap);
+      }
     };
 
     fetchFinancials();
+
+    // cleanup: 컴포넌트 언마운트 또는 의존성 변경 시 요청 취소
+    return () => {
+      currentRequestId = 0; // race condition 방지
+      abortController.abort();
+    };
   }, [companyRankingsData]);
 
   // 차트에 표시할 주식 데이터 (API 데이터 + 재무 데이터)

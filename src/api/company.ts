@@ -93,8 +93,12 @@ export const getReportAnalysis = (stockCode: string, rceptNo: string) => {
  * 기업 재무지표 조회
  * GET /companies/{stock_code}/financials/
  */
-export const getCompanyFinancials = (stockCode: string) => {
+export const getCompanyFinancials = (
+  stockCode: string,
+  signal?: AbortSignal,
+) => {
   return api.get<ApiResponse<CompanyFinancialsData>>(
     `/companies/${stockCode}/financials/`,
+    { signal },
   );
 };

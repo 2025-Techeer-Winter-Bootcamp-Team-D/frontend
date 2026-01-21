@@ -343,6 +343,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         pbr: number;
         per: number;
         debtRatio: number;
+        divYield: number;
         price: string;
         change: string;
       }
@@ -362,6 +363,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           pbr: number;
           per: number;
           debtRatio: number;
+          divYield: number;
           price: string;
           change: string;
         }
@@ -373,7 +375,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           let roe = 0,
             pbr = 0,
             per = 0,
-            debtRatio = 0;
+            debtRatio = 0,
+            divYield = 0;
           let price = "-";
           let change = "+0.00%";
 
@@ -388,6 +391,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               pbr = parseFloat(latest.pbr) || 0;
               per = parseFloat(latest.per) || 0;
               debtRatio = parseFloat(latest.debt_ratio) || 0;
+              divYield = parseFloat(latest.dividend_yield) || 0;
             }
           } catch (error) {
             console.error(
@@ -450,6 +454,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             pbr,
             per,
             debtRatio,
+            divYield,
             price,
             change,
           };
@@ -485,6 +490,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         pbr: financials?.pbr ?? 0,
         roe: financials?.roe ?? 0,
         debtRatio: financials?.debtRatio ?? 0,
+        divYield: financials?.divYield ?? 0,
       };
     });
   }, [companiesResponse, financialsMap]);
@@ -500,7 +506,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         pbr: c.pbr,
         roe: c.roe,
         debtRatio: c.debtRatio,
-        divYield: 0,
+        divYield: c.divYield,
         logo: c.logo ?? undefined,
       }));
     }

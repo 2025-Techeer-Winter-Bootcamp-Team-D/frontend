@@ -6,7 +6,25 @@ import { getCompanyRankings } from "../../api/ranking";
 import { getIndustryRankings, getIndustryCompanies } from "../../api/industry";
 import { getStockOhlcv } from "../../api/company";
 
-// 기업 순위 데이터 타입
+// API 응답 타입: 기업 순위 API에서 받는 원시 데이터
+interface CompanyRankingApiItem {
+  rank: number;
+  name: string;
+  stock_code: string;
+  amount?: number;
+  logo?: string | null;
+}
+
+// API 응답 타입: 산업 내 기업 API에서 받는 원시 데이터
+interface IndustryCompanyApiItem {
+  rank?: number;
+  name: string;
+  stock_code: string;
+  amount: number;
+  logo?: string | null;
+}
+
+// 화면에 표시할 기업 순위 데이터 타입
 interface CompanyRankItem {
   rank: number;
   name: string;
@@ -22,6 +40,52 @@ interface IndustryRankItem {
   name: string;
   amount: number;
 }
+
+// OHLCV 응답 데이터 타입
+type OhlcvResponseData = Record<string, { data?: Array<{ close: number }> }>;
+
+// 단일 종목의 등락률을 조회하는 헬퍼
+const fetchChangePercent = async (stockCode: string): Promise<number> => {
+  try {
+    const response = await getStockOhlcv(stockCode, "");
+    const responseData = response?.data
+      ?.data as unknown as OhlcvResponseData | null;
+
+    if (!responseData) return 0;
+
+    const intervals = ["1d", "1h", "15m", "1m"];
+    for (const intv of intervals) {
+      const priceData = responseData[intv]?.data ?? [];
+      if (priceData.length > 1) {
+        const latest = priceData[0]?.close ?? 0;
+        const previous = priceData[1]?.close ?? 0;
+        if (previous > 0) {
+          return ((latest - previous) / previous) * 100;
+        }
+      }
+    }
+    return 0;
+  } catch (error) {
+    console.error(`주가 조회 실패 (${stockCode}):`, error);
+    return 0;
+  }
+};
+
+// 여러 종목의 OHLCV 데이터를 병렬로 가져오는 헬퍼
+const fetchOhlcvBatch = async (
+  stockCodes: string[],
+): Promise<Map<string, number>> => {
+  const results = await Promise.all(
+    stockCodes.map(async (code) => ({
+      code,
+      changePercent: await fetchChangePercent(code),
+    })),
+  );
+
+  return new Map(
+    results.map(({ code, changePercent }) => [code, changePercent]),
+  );
+};
 
 interface IndustryRankingCardProps {
   onCompanyClick?: (code: string) => void;
@@ -41,47 +105,25 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
     queryKey: ["companyRankings"],
     queryFn: async () => {
       const response = await getCompanyRankings();
-      const data = response?.data ?? response ?? [];
+      const data = (response?.data ??
+        response ??
+        []) as CompanyRankingApiItem[];
+      const top4 = data.slice(0, 4);
 
-      // 각 기업의 주가 등락률 조회
-      const rankingsWithChange = await Promise.all(
-        data.slice(0, 4).map(async (item: any) => {
-          let changePercent = 0;
-          try {
-            const priceResponse = await getStockOhlcv(item.stock_code, "");
-            const responseData = priceResponse?.data?.data as unknown as Record<
-              string,
-              { data?: Array<{ close: number }> }
-            > | null;
+      // 모든 종목 코드 수집 후 한번에 병렬로 OHLCV 조회
+      const stockCodes = top4.map((item) => item.stock_code);
+      const changeMap = await fetchOhlcvBatch(stockCodes);
 
-            // interval 순서대로 데이터 찾기 (1d 우선)
-            const intervals = ["1d", "1h", "15m", "1m"];
-            for (const intv of intervals) {
-              const priceData = responseData?.[intv]?.data ?? [];
-              if (priceData.length > 1) {
-                const latest = priceData[0]?.close ?? 0;
-                const previous = priceData[1]?.close ?? 0;
-                if (previous > 0) {
-                  changePercent = ((latest - previous) / previous) * 100;
-                  break;
-                }
-              }
-            }
-          } catch (error) {
-            console.error(`주가 조회 실패 (${item.stock_code}):`, error);
-          }
-
-          return {
-            rank: item.rank,
-            name: item.name,
-            code: item.stock_code,
-            sector: "-",
-            changePercent,
-          };
+      // 결과 매핑
+      return top4.map(
+        (item): CompanyRankItem => ({
+          rank: item.rank,
+          name: item.name,
+          code: item.stock_code,
+          sector: "-",
+          changePercent: changeMap.get(item.stock_code) ?? 0,
         }),
       );
-
-      return rankingsWithChange as CompanyRankItem[];
     },
     enabled: !selectedIndustry,
     staleTime: 1000 * 60 * 5,
@@ -107,47 +149,23 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
     queryFn: async () => {
       if (!selectedIndustry) return [];
       const response = await getIndustryCompanies(selectedIndustry.id);
-      const companies = response?.data ?? [];
+      const companies = (response?.data ?? []) as IndustryCompanyApiItem[];
+      const top4 = companies.slice(0, 4);
 
-      // 각 기업의 주가 등락률 조회
-      const companiesWithChange = await Promise.all(
-        companies.slice(0, 4).map(async (item: any, index: number) => {
-          let changePercent = 0;
-          try {
-            const priceResponse = await getStockOhlcv(item.stock_code, "");
-            const responseData = priceResponse?.data?.data as unknown as Record<
-              string,
-              { data?: Array<{ close: number }> }
-            > | null;
+      // 모든 종목 코드 수집 후 한번에 병렬로 OHLCV 조회
+      const stockCodes = top4.map((item) => item.stock_code);
+      const changeMap = await fetchOhlcvBatch(stockCodes);
 
-            // interval 순서대로 데이터 찾기 (1d 우선)
-            const intervals = ["1d", "1h", "15m", "1m"];
-            for (const intv of intervals) {
-              const priceData = responseData?.[intv]?.data ?? [];
-              if (priceData.length > 1) {
-                const latest = priceData[0]?.close ?? 0;
-                const previous = priceData[1]?.close ?? 0;
-                if (previous > 0) {
-                  changePercent = ((latest - previous) / previous) * 100;
-                  break;
-                }
-              }
-            }
-          } catch (error) {
-            console.error(`주가 조회 실패 (${item.stock_code}):`, error);
-          }
-
-          return {
-            rank: item.rank ?? index + 1,
-            name: item.name,
-            code: item.stock_code,
-            sector: selectedIndustry.name,
-            changePercent,
-          };
+      // 결과 매핑
+      return top4.map(
+        (item, index): CompanyRankItem => ({
+          rank: item.rank ?? index + 1,
+          name: item.name,
+          code: item.stock_code,
+          sector: selectedIndustry.name,
+          changePercent: changeMap.get(item.stock_code) ?? 0,
         }),
       );
-
-      return companiesWithChange as CompanyRankItem[];
     },
     enabled: !!selectedIndustry,
     staleTime: 1000 * 60 * 5,
