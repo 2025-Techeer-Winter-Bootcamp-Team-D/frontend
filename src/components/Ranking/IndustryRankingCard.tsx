@@ -106,9 +106,7 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
     queryKey: ["companyRankings"],
     queryFn: async () => {
       const response = await getCompanyRankings();
-      const data = (response?.data ??
-        response ??
-        []) as CompanyRankingApiItem[];
+      const data = normalizeApiResponse<CompanyRankingApiItem>(response);
       const top4 = data.slice(0, 4);
 
       // 모든 종목 코드 수집 후 한번에 병렬로 OHLCV 조회
@@ -136,7 +134,7 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
       queryKey: ["industryRankings"],
       queryFn: async () => {
         const response = await getIndustryRankings();
-        return (response?.data ?? []) as IndustryRankItem[];
+        return normalizeApiResponse<IndustryRankItem>(response);
       },
       staleTime: 1000 * 60 * 5,
     });
@@ -150,7 +148,7 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
     queryFn: async () => {
       if (!selectedIndustry) return [];
       const response = await getIndustryCompanies(selectedIndustry.id);
-      const companies = (response?.data ?? []) as IndustryCompanyApiItem[];
+      const companies = normalizeApiResponse<IndustryCompanyApiItem>(response);
       const top4 = companies.slice(0, 4);
 
       // 모든 종목 코드 수집 후 한번에 병렬로 OHLCV 조회

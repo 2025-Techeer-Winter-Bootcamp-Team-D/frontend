@@ -20,7 +20,7 @@ const fetchPriceAndChange = async (
     if (priceData.length > 0) {
       const latest = priceData[0]?.close ?? 0;
       if (latest > 0) {
-        const price = latest.toLocaleString();
+        const price = formatPrice(latest);
 
         if (priceData.length > 1) {
           const previous = priceData[1]?.close ?? 0;

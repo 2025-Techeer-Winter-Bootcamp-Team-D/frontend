@@ -352,10 +352,14 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   // 기업 목록이 변경되면 각 기업의 재무 데이터와 주가 데이터를 가져옴
   useEffect(() => {
-    const fetchFinancialsAndPrices = async () => {
-      const rawData = companiesResponse?.data ?? [];
-      if (rawData.length === 0) return;
+    const rawData = companiesResponse?.data ?? [];
+    if (rawData.length === 0) return;
 
+    const abortController = new AbortController();
+    const requestId = Date.now();
+    let currentRequestId = requestId;
+
+    const fetchFinancialsAndPrices = async () => {
       const newFinancialsMap: Record<
         string,
         {
@@ -372,6 +376,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       // 병렬로 모든 기업의 재무 데이터와 주가 데이터 가져오기
       await Promise.all(
         rawData.map(async (company) => {
+          // 요청이 취소되었으면 중단
+          if (abortController.signal.aborted) return;
+
           let roe = 0,
             pbr = 0,
             per = 0,
@@ -382,7 +389,12 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
           // 재무 데이터 가져오기
           try {
-            const response = await getCompanyFinancials(company.stock_code);
+            const response = await getCompanyFinancials(
+              company.stock_code,
+              abortController.signal,
+            );
+            if (abortController.signal.aborted) return;
+
             const financialStatements =
               response?.data?.data?.financial_statements;
             if (financialStatements && financialStatements.length > 0) {
@@ -394,6 +406,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               divYield = parseFloat(latest.dividend_yield) || 0;
             }
           } catch (error) {
+            if ((error as Error).name === "CanceledError") return;
             console.error(
               `Failed to fetch financials for ${company.stock_code}:`,
               error,
@@ -402,7 +415,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
           // 주가 데이터 가져오기 (interval 없이 호출하면 모든 interval 반환)
           try {
+            if (abortController.signal.aborted) return;
             const priceResponse = await getStockOhlcv(company.stock_code, "");
+            if (abortController.signal.aborted) return;
+
             const responseData = priceResponse?.data?.data as unknown as Record<
               string,
               { data?: Array<{ close: number }> }
@@ -443,28 +459,40 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               }
             }
           } catch (error) {
+            if ((error as Error).name === "CanceledError") return;
             console.error(
               `Failed to fetch price for ${company.stock_code}:`,
               error,
             );
           }
 
-          newFinancialsMap[company.stock_code] = {
-            roe,
-            pbr,
-            per,
-            debtRatio,
-            divYield,
-            price,
-            change,
-          };
+          // 취소되지 않은 경우에만 결과 저장
+          if (!abortController.signal.aborted) {
+            newFinancialsMap[company.stock_code] = {
+              roe,
+              pbr,
+              per,
+              debtRatio,
+              divYield,
+              price,
+              change,
+            };
+          }
         }),
       );
 
-      setFinancialsMap(newFinancialsMap);
+      // 요청이 취소되지 않았고, 현재 요청 ID가 일치하는 경우에만 상태 업데이트
+      if (!abortController.signal.aborted && currentRequestId === requestId) {
+        setFinancialsMap(newFinancialsMap);
+      }
     };
 
     fetchFinancialsAndPrices();
+
+    return () => {
+      currentRequestId = 0;
+      abortController.abort();
+    };
   }, [companiesResponse]);
 
   const companiesData = useMemo(() => {
