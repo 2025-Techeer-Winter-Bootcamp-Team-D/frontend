@@ -29,7 +29,8 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
 
-    const margin = { top: 70, right: 60, bottom: 40, left: 60 };
+    // 설명 글씨가 들어갈 공간을 확보하기 위해 상단 여백을 60으로 설정
+    const margin = { top: 60, right: 20, bottom: 30, left: 20 };
     const width = containerRef.current.clientWidth - margin.left - margin.right;
     const height = 600 - margin.top - margin.bottom;
 
@@ -37,6 +38,24 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     svg.selectAll("*").remove();
 
     const defs = svg.append("defs");
+
+    // --- 모눈종이 배경 패턴 정의 ---
+    const patternSize = 20;
+    const gridPattern = defs
+      .append("pattern")
+      .attr("id", "grid")
+      .attr("width", patternSize)
+      .attr("height", patternSize)
+      .attr("patternUnits", "userSpaceOnUse");
+
+    gridPattern
+      .append("path")
+      .attr("d", `M ${patternSize} 0 L 0 0 0 ${patternSize}`)
+      .attr("fill", "none")
+      .attr("stroke", "#f1f5f9")
+      .attr("stroke-width", "1");
+
+    // 발광 효과 필터
     const glow = defs
       .append("filter")
       .attr("id", "glow")
@@ -55,16 +74,23 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     const totalWidth = width + margin.left + margin.right;
     const totalHeight = height + margin.top + margin.bottom;
 
-    const g = svg
+    // 배경 모눈종이 추가
+    svg
       .attr("viewBox", `0 0 ${totalWidth} ${totalHeight}`)
       .attr("preserveAspectRatio", "xMidYMid meet")
+      .append("rect")
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("fill", "url(#grid)");
+
+    const g = svg
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3
       .scalePoint<AxisKey>()
       .range([0, width])
-      .padding(1)
+      .padding(0.5)
       .domain(AXES.map((d) => d.key));
 
     const y: Record<string, d3.ScaleLinear<number, number>> = {};
@@ -101,10 +127,10 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
           ? d.id === selectedStockId
             ? "#ff3366"
             : "#0046FF"
-          : "#f1f5f9",
+          : "#e2e8f0",
       )
       .style("opacity", (d) =>
-        filteredIds.has(d.id) ? (d.id === selectedStockId ? 1 : 0.6) : 0.1,
+        filteredIds.has(d.id) ? (d.id === selectedStockId ? 1 : 0.6) : 0.05,
       )
       .style("stroke-width", (d) =>
         filteredIds.has(d.id) ? (d.id === selectedStockId ? 3 : 1.2) : 1,
@@ -140,16 +166,11 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
           let left = event.clientX + 15;
           let top = event.clientY - 15;
 
-          // Boundary check - prevent going off-screen
-          if (left + tooltipWidth > window.innerWidth) {
+          if (left + tooltipWidth > window.innerWidth)
             left = event.clientX - tooltipWidth - 15;
-          }
-          if (top + tooltipHeight > window.innerHeight) {
+          if (top + tooltipHeight > window.innerHeight)
             top = event.clientY - tooltipHeight - 15;
-          }
-          if (top < 0) {
-            top = event.clientY + 15;
-          }
+          if (top < 0) top = event.clientY + 15;
 
           tooltipRef.current.style.left = left + "px";
           tooltipRef.current.style.top = top + "px";
@@ -158,9 +179,9 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
       .on("mouseout", function (_event, d) {
         if (d.id === selectedStockId) return;
         d3.select(this)
-          .style("stroke", filteredIds.has(d.id) ? "#0046FF" : "#f1f5f9")
+          .style("stroke", filteredIds.has(d.id) ? "#0046FF" : "#e2e8f0")
           .style("stroke-width", filteredIds.has(d.id) ? 1.2 : 1)
-          .style("opacity", filteredIds.has(d.id) ? 0.6 : 0.1);
+          .style("opacity", filteredIds.has(d.id) ? 0.6 : 0.05);
 
         if (tooltipRef.current) {
           tooltipRef.current.style.opacity = "0";
@@ -185,28 +206,30 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
         d3.select(this).call(d3.axisLeft(y[d.key]).ticks(5));
       });
 
+    // --- [복구] 상단 설명 텍스트 (Description) ---
     axes
       .append("text")
       .style("text-anchor", "middle")
-      .attr("y", -15)
-      .text((d) => d.label)
-      .style("fill", "#1e293b")
-      .style("font-weight", "bold")
-      .style("font-size", "14px");
-
-    axes
-      .append("text")
-      .style("text-anchor", "middle")
-      .attr("y", -35)
+      .attr("y", -32) // 지표 이름보다 조금 더 위에 배치
       .text((d) => d.description)
-      .style("fill", "#64748b")
+      .style("fill", "#94a3b8")
       .style("font-size", "10px");
+
+    // 지표 이름 (Label)
+    axes
+      .append("text")
+      .style("text-anchor", "middle")
+      .attr("y", -12)
+      .text((d) => d.label)
+      .style("fill", "#0046FF")
+      .style("font-weight", "bold")
+      .style("font-size", "13px");
 
     const brush = d3
       .brushY<AxisInfo>()
       .extent([
-        [-10, 0],
-        [10, height],
+        [-15, 0],
+        [15, height],
       ])
       .on("brush end", function (event, d) {
         if (!event.selection) {
@@ -241,11 +264,11 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
       .transition()
       .duration(300)
       .style("stroke", (d) => {
-        if (!filteredIds.has(d.id)) return "#f1f5f9";
+        if (!filteredIds.has(d.id)) return "#e2e8f0";
         return d.id === selectedStockId ? "#ff3366" : "#0046FF";
       })
       .style("opacity", (d) => {
-        if (!filteredIds.has(d.id)) return 0.1;
+        if (!filteredIds.has(d.id)) return 0.05;
         return d.id === selectedStockId ? 1 : 0.5;
       })
       .style("stroke-width", (d) => {
@@ -263,7 +286,6 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     });
   }, [filteredIds, selectedStockId]);
 
-  // 필터가 빈 객체가 되면 브러시를 클리어
   useEffect(() => {
     if (Object.keys(filters).length === 0 && svgRef.current) {
       const svg = d3.select(svgRef.current);
@@ -277,29 +299,42 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     }
   }, [filters]);
 
+  const handleReset = () => {
+    onFilterChange({});
+  };
+
   return (
     <div
       ref={containerRef}
-      className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative"
+      className="w-full bg-white rounded-lg shadow-md border border-slate-100 overflow-hidden relative p-4"
     >
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-[#0046FF]">
-          나만의 저평가 우량주 발굴 (Parallel Coordinates)
-        </h2>
-        <p className="text-sm text-slate-500">
-          각 축을 드래그하여 조건을 설정하고, 조건에 맞는 종목을 찾아보세요.
-        </p>
-      </div>
       <svg
         ref={svgRef}
-        className="w-full select-none"
-        style={{ aspectRatio: "16/9", maxHeight: "600px" }}
+        className="w-full select-none block"
+        style={{ aspectRatio: "21/9", maxHeight: "700px" }}
       ></svg>
       <div
         ref={tooltipRef}
         className="pointer-events-none fixed bg-white/95 border border-slate-200 p-3 rounded-lg shadow-2xl backdrop-blur-sm opacity-0 transition-opacity z-[9999] min-w-[150px]"
         style={{ left: 0, top: 0 }}
       ></div>
+
+      {/* 왼쪽 아래: 기업 수 표시 */}
+      <div className="absolute bottom-4 left-4">
+        <span className="text-sm text-slate-500">
+          표시 기업{" "}
+          <span className="font-bold text-[#0046FF]">{filteredIds.size}</span>
+          <span className="text-slate-400"> / {data.length}</span>
+        </span>
+      </div>
+
+      {/* 오른쪽 아래: 초기화 버튼 */}
+      <button
+        onClick={handleReset}
+        className="absolute bottom-4 right-4 text-sm font-medium text-slate-500 hover:text-red-500 transition-colors"
+      >
+        초기화
+      </button>
     </div>
   );
 };
