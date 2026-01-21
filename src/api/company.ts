@@ -11,6 +11,8 @@ import type {
   StockPricesResponse,
   CompanyApiData,
   CompanyOutlookData,
+  RecentReportItem,
+  SankeysApiResponse,
 } from "@/types";
 
 /*
@@ -113,5 +115,23 @@ export const getCompanyFinancials = (
 export const getCompanyOutlook = (stockCode: string) => {
   return api.get<ApiResponse<CompanyOutlookData>>(
     `/companies/${stockCode}/outlook/`,
+  );
+};
+
+/**
+ * 최신 보고서 10개 조회 (대시보드용)
+ * GET /companies/reports/recent/
+ */
+export const getRecentReports = () => {
+  return api.get<RecentReportItem[]>("/companies/reports/recent/");
+};
+
+/**
+ * 순익흐름도(Sankey) 데이터 조회
+ * GET /companies/sankeys/{stock_code}/
+ */
+export const getCompanySankeys = (stockCode: string) => {
+  return api.get<ApiResponse<SankeysApiResponse>>(
+    `/companies/sankeys/${stockCode}/`,
   );
 };
