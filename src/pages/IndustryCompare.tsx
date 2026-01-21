@@ -213,12 +213,21 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 }) => {
   // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 electronics
   const getInitialIndustry = (): IndustryKey => {
-    if (
-      initialIndutyCode &&
-      INDUTY_CODE_BY_KEY[initialIndutyCode as IndustryKey]
-    ) {
+    if (!initialIndutyCode) return "electronics";
+
+    // 1. initialIndutyCode가 이미 유효한 IndustryKey인지 확인
+    if (INDUTY_CODE_BY_KEY[initialIndutyCode as IndustryKey]) {
       return initialIndutyCode as IndustryKey;
     }
+
+    // 2. initialIndutyCode가 코드 값(예: "0013")인 경우 역방향 조회
+    const foundEntry = Object.entries(INDUTY_CODE_BY_KEY).find(
+      ([, code]) => code === initialIndutyCode,
+    );
+    if (foundEntry) {
+      return foundEntry[0] as IndustryKey;
+    }
+
     return "electronics";
   };
 
