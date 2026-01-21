@@ -10,6 +10,7 @@ import type {
   CompanySearchResponse,
   StockPricesResponse,
   CompanyApiData,
+  CompanyOutlookData,
 } from "@/types";
 
 /*
@@ -48,7 +49,9 @@ export const getStockOhlcv = (stock_code: string, interval: string) => {
  * GET /companies/{companyId}/news
  */
 export const getCompanyNews = (companyId: string) => {
-  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news/`);
+  return api.get<ApiResponse<{ results: NewsItem[] }>>(
+    `/companies/${companyId}/news/`,
+  );
 };
 
 /**
@@ -100,5 +103,15 @@ export const getCompanyFinancials = (
   return api.get<ApiResponse<CompanyFinancialsData>>(
     `/companies/${stockCode}/financials/`,
     { signal },
+  );
+};
+
+/**
+ * 기업 전망 분석 조회
+ * GET /companies/{stock_code}/outlook/
+ */
+export const getCompanyOutlook = (stockCode: string) => {
+  return api.get<ApiResponse<CompanyOutlookData>>(
+    `/companies/${stockCode}/outlook/`,
   );
 };
