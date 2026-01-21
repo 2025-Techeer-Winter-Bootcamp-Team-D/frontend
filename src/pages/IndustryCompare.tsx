@@ -842,9 +842,14 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       </div>
 
       {/* --- Top 3 Companies (Rankings) --- */}
-      <h3 className="text-lg font-bold text-slate-700 mb-4 px-2">
-        {currentIndustryInfo.name} 산업 기업 순위
-      </h3>
+      <div className="mb-4">
+        <h2 className="text-xl font-bold text-[#0046FF]">
+          {currentIndustryInfo.name} 산업 내 기업 순위
+        </h2>
+        <p className="text-sm text-slate-500">
+          시가총액 기준 상위 3개 기업입니다.
+        </p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
         {companiesData.slice(0, 3).map((company, index) => {
           const isFirst = index === 0;
@@ -1059,6 +1064,14 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Parallel Coordinates Chart --- */}
       <div className="mb-10">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-[#0046FF]">
+            다차원 가치 지표 분석
+          </h2>
+          <p className="text-sm text-slate-500">
+            다차원 필터를 통해 원하는 조건의 기업을 실시간으로 필터링하세요.
+          </p>
+        </div>
         <ParallelCoordinatesChart
           data={chartStocksData}
           onFilterChange={setFilters}
