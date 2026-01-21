@@ -66,23 +66,36 @@ const generateSparklineData = () => {
 // 산업명 매핑 (IndustryKey -> 산업명)
 const INDUSTRY_NAMES: Record<IndustryKey, { name: string; indexName: string }> =
   {
-    agriculture_fishery: { name: "농어업", indexName: "농어업 지수" },
-    manufacturing: { name: "제조업", indexName: "제조업 지수" },
-    food: { name: "음식료품", indexName: "음식료품 지수" },
-    chemical: { name: "화학/정유", indexName: "화학 지수" },
-    pharmaceuticals: { name: "의약품", indexName: "의약품 지수" },
-    electronics: { name: "전기전자", indexName: "전기전자 지수" },
-    transportation: { name: "운수장비", indexName: "운수장비 지수" },
-    semiconductor_kosdaq: { name: "반도체", indexName: "반도체 지수" },
-    it_parts_kosdaq: { name: "IT부품", indexName: "IT부품 지수" },
-    construction: { name: "건설업", indexName: "건설업 지수" },
-    distribution: { name: "유통업", indexName: "유통업 지수" },
-    telecom: { name: "통신업", indexName: "통신업 지수" },
-    software: { name: "소프트웨어", indexName: "소프트웨어 지수" },
-    digital_content: { name: "디지털콘텐츠", indexName: "디지털콘텐츠 지수" },
-    finance: { name: "금융업", indexName: "금융업 지수" },
+    electronics_kosdaq: {
+      name: "전기·전자(코스닥)",
+      indexName: "전기·전자 지수",
+    },
+    pharmaceuticals: { name: "제약", indexName: "제약 지수" },
+    machinery_kosdaq: {
+      name: "기계·장비(코스닥)",
+      indexName: "기계·장비 지수",
+    },
+    finance: { name: "금융", indexName: "금융 지수" },
+    food_tobacco: {
+      name: "음식료·담배(코스닥)",
+      indexName: "음식료·담배 지수",
+    },
+    chemical: { name: "화학", indexName: "화학 지수" },
+    transportation: { name: "운송장비·부품", indexName: "운송장비·부품 지수" },
+    machinery: { name: "기계·장비", indexName: "기계·장비 지수" },
+    electronics: { name: "전기·전자(코스피)", indexName: "전기·전자 지수" },
+    it_service: { name: "IT 서비스", indexName: "IT 서비스 지수" },
+    distribution: { name: "유통", indexName: "유통 지수" },
     insurance: { name: "보험", indexName: "보험 지수" },
-    service: { name: "서비스업", indexName: "서비스업 지수" },
+    entertainment: { name: "오락·문화", indexName: "오락·문화 지수" },
+    utilities: { name: "전기·가스", indexName: "전기·가스 지수" },
+    metal: { name: "금속", indexName: "금속 지수" },
+    logistics: { name: "운송·창고", indexName: "운송·창고 지수" },
+    pharmaceuticals_kosdaq: { name: "제약(코스닥)", indexName: "제약 지수" },
+    food_tobacco_kospi: {
+      name: "음식료·담배(코스피)",
+      indexName: "음식료·담배 지수",
+    },
   };
 
 // 시가총액 포맷 함수
@@ -198,7 +211,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   onToggleStar,
   setCompanyCode,
 }) => {
-  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 agriculture_fishery
+  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 electronics
   const getInitialIndustry = (): IndustryKey => {
     if (
       initialIndutyCode &&
@@ -206,7 +219,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     ) {
       return initialIndutyCode as IndustryKey;
     }
-    return "agriculture_fishery";
+    return "electronics";
   };
 
   const [selectedIndustry, setSelectedIndustry] =

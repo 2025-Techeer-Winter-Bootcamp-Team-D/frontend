@@ -18,23 +18,24 @@ import type { TimeRange, IndustryKey } from "../types";
 
 // 산업 코드 매핑
 export const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
-  agriculture_fishery: "0027", // 농어업
-  manufacturing: "1015", // 제조업
-  food: "0006", // 음식료품
-  chemical: "0009", // 화학/정유
-  pharmaceuticals: "0010", // 의약품
-  electronics: "0014", // 전기전자
-  transportation: "0015", // 운수장비
-  semiconductor_kosdaq: "1047", // 반도체(코스닥)
-  it_parts_kosdaq: "1012", // IT부품(코스닥)
-  construction: "0018", // 건설업
-  distribution: "0016", // 유통업
-  telecom: "0020", // 통신업
-  software: "1042", // 소프트웨어
-  digital_content: "1041", // 디지털콘텐츠
-  finance: "0021", // 금융업
+  electronics_kosdaq: "1028", // 전기·전자(코스닥)
+  pharmaceuticals: "0009", // 제약
+  machinery_kosdaq: "1027", // 기계·장비(코스닥)
+  finance: "0021", // 금융
+  food_tobacco: "1019", // 음식료·담배(코스닥)
+  chemical: "0008", // 화학
+  transportation: "0015", // 운송장비·부품
+  machinery: "0012", // 기계·장비
+  electronics: "0013", // 전기·전자(코스피)
+  it_service: "0029", // IT 서비스
+  distribution: "0016", // 유통
   insurance: "0025", // 보험
-  service: "0026", // 서비스업
+  entertainment: "1015", // 오락·문화
+  utilities: "0017", // 전기·가스
+  metal: "0011", // 금속
+  logistics: "0019", // 운송·창고
+  pharmaceuticals_kosdaq: "1024", // 제약(코스닥)
+  food_tobacco_kospi: "0005", // 음식료·담배(코스피)
 };
 
 // 캐시 설정 상수

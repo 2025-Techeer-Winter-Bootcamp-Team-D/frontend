@@ -459,23 +459,24 @@ export interface ReportAnalysisData {
 }
 //산업
 export type IndustryKey =
-  | "agriculture_fishery" // 농어업
-  | "manufacturing" // 제조업
-  | "food" // 음식료품
-  | "chemical" // 화학/정유
-  | "pharmaceuticals" // 의약품
-  | "electronics" // 전기전자
-  | "transportation" // 운수장비
-  | "semiconductor_kosdaq" // 반도체(코스닥)
-  | "it_parts_kosdaq" // IT부품(코스닥)
-  | "construction" // 건설업
-  | "distribution" // 유통업
-  | "telecom" // 통신업
-  | "software" // 소프트웨어
-  | "digital_content" // 디지털콘텐츠
-  | "finance" // 금융업
+  | "electronics_kosdaq" // 전기·전자(코스닥)
+  | "pharmaceuticals" // 제약
+  | "machinery_kosdaq" // 기계·장비(코스닥)
+  | "finance" // 금융
+  | "food_tobacco" // 음식료·담배(코스닥)
+  | "chemical" // 화학
+  | "transportation" // 운송장비·부품
+  | "machinery" // 기계·장비
+  | "electronics" // 전기·전자(코스피)
+  | "it_service" // IT 서비스
+  | "distribution" // 유통
   | "insurance" // 보험
-  | "service"; // 서비스업
+  | "entertainment" // 오락·문화
+  | "utilities" // 전기·가스
+  | "metal" // 금속
+  | "logistics" // 운송·창고
+  | "pharmaceuticals_kosdaq" // 제약(코스닥)
+  | "food_tobacco_kospi"; // 음식료·담배(코스피)
 
 export type TimeRange = "1M" | "3M" | "6M" | "1Y";
 
