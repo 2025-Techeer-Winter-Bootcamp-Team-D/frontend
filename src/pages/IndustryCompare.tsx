@@ -47,7 +47,7 @@ import {
   getIndustryCompanies,
   getIndustryChart,
 } from "../api/industry";
-import { getCompanyFinancials } from "../api/company";
+import { getCompanyFinancials, getStockOhlcv } from "../api/company";
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
 const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
@@ -334,37 +334,60 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     }>;
   } | null;
 
-  // 각 기업의 재무 데이터 상태 관리
+  // 각 기업의 재무 데이터 및 주가 데이터 상태 관리
   const [financialsMap, setFinancialsMap] = useState<
-    Record<string, { roe: number; pbr: number; per: number; debtRatio: number }>
+    Record<
+      string,
+      {
+        roe: number;
+        pbr: number;
+        per: number;
+        debtRatio: number;
+        price: string;
+        change: string;
+      }
+    >
   >({});
 
-  // 기업 목록이 변경되면 각 기업의 재무 데이터를 가져옴
+  // 기업 목록이 변경되면 각 기업의 재무 데이터와 주가 데이터를 가져옴
   useEffect(() => {
-    const fetchFinancials = async () => {
+    const fetchFinancialsAndPrices = async () => {
       const rawData = companiesResponse?.data ?? [];
       if (rawData.length === 0) return;
 
       const newFinancialsMap: Record<
         string,
-        { roe: number; pbr: number; per: number; debtRatio: number }
+        {
+          roe: number;
+          pbr: number;
+          per: number;
+          debtRatio: number;
+          price: string;
+          change: string;
+        }
       > = {};
 
-      // 병렬로 모든 기업의 재무 데이터 가져오기
+      // 병렬로 모든 기업의 재무 데이터와 주가 데이터 가져오기
       await Promise.all(
         rawData.map(async (company) => {
+          let roe = 0,
+            pbr = 0,
+            per = 0,
+            debtRatio = 0;
+          let price = "-";
+          let change = "+0.00%";
+
+          // 재무 데이터 가져오기
           try {
             const response = await getCompanyFinancials(company.stock_code);
             const financialStatements =
               response?.data?.data?.financial_statements;
             if (financialStatements && financialStatements.length > 0) {
               const latest = financialStatements[0];
-              newFinancialsMap[company.stock_code] = {
-                roe: parseFloat(latest.roe) || 0,
-                pbr: parseFloat(latest.pbr) || 0,
-                per: parseFloat(latest.per) || 0,
-                debtRatio: parseFloat(latest.debt_ratio) || 0,
-              };
+              roe = parseFloat(latest.roe) || 0;
+              pbr = parseFloat(latest.pbr) || 0;
+              per = parseFloat(latest.per) || 0;
+              debtRatio = parseFloat(latest.debt_ratio) || 0;
             }
           } catch (error) {
             console.error(
@@ -372,13 +395,71 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               error,
             );
           }
+
+          // 주가 데이터 가져오기 (interval 없이 호출하면 모든 interval 반환)
+          try {
+            const priceResponse = await getStockOhlcv(company.stock_code, "");
+            const responseData = priceResponse?.data?.data as unknown as Record<
+              string,
+              { data?: Array<{ close: number }> }
+            > | null;
+
+            // 1m, 15m, 1h, 1d 순서로 데이터가 있는 interval 찾기
+            let priceData: Array<{ close: number }> = [];
+            if (responseData) {
+              for (const interval of ["1m", "15m", "1h", "1d"]) {
+                const intervalData = responseData[interval]?.data;
+                if (intervalData && intervalData.length > 0) {
+                  priceData = intervalData;
+                  break;
+                }
+              }
+            }
+
+            if (priceData.length > 0) {
+              const latest = priceData[0];
+              const latestClose = latest.close ?? 0;
+
+              if (latestClose > 0) {
+                price = latestClose.toLocaleString();
+
+                // 전일 대비 등락률 계산
+                if (priceData.length > 1) {
+                  const previous = priceData[1];
+                  const prevClose = previous.close ?? 0;
+                  if (prevClose > 0) {
+                    const changePercent =
+                      ((latestClose - prevClose) / prevClose) * 100;
+                    change =
+                      changePercent >= 0
+                        ? `+${changePercent.toFixed(2)}%`
+                        : `${changePercent.toFixed(2)}%`;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(
+              `Failed to fetch price for ${company.stock_code}:`,
+              error,
+            );
+          }
+
+          newFinancialsMap[company.stock_code] = {
+            roe,
+            pbr,
+            per,
+            debtRatio,
+            price,
+            change,
+          };
         }),
       );
 
       setFinancialsMap(newFinancialsMap);
     };
 
-    fetchFinancials();
+    fetchFinancialsAndPrices();
   }, [companiesResponse]);
 
   const companiesData = useMemo(() => {
@@ -398,8 +479,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         code: company.stock_code,
         logo: company.logo,
         marketCap: formatAmount(company.amount),
-        price: "0",
-        change: "+0.00%",
+        price: financials?.price ?? "-",
+        change: financials?.change ?? "+0.00%",
         per: financials?.per ?? 0,
         pbr: financials?.pbr ?? 0,
         roe: financials?.roe ?? 0,
