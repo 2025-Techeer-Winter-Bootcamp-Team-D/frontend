@@ -44,9 +44,25 @@ interface IndustryRankItem {
 // 단일 종목의 등락률을 조회하는 헬퍼
 const fetchChangePercent = async (stockCode: string): Promise<number> => {
   try {
-    // 1m interval로 실시간 분봉 데이터 조회 (가장 빠름)
-    const response = await getStockOhlcv(stockCode, "1m");
-    const priceData = response?.data?.data?.data ?? [];
+    // interval 빈 문자열로 모든 interval 데이터 요청
+    const response = await getStockOhlcv(stockCode, "");
+    // API 응답: { data: { "1m": { data: [...] }, "15m": {...}, ... } }
+    const responseData = response?.data?.data as Record<
+      string,
+      { data?: Array<{ close: number }> }
+    > | null;
+
+    // 1m, 15m, 1h, 1d 순서로 데이터가 있는 interval 찾기
+    let priceData: Array<{ close: number }> = [];
+    if (responseData) {
+      for (const interval of ["1m", "15m", "1h", "1d"]) {
+        const intervalData = responseData[interval]?.data;
+        if (intervalData && intervalData.length > 0) {
+          priceData = intervalData;
+          break;
+        }
+      }
+    }
 
     if (priceData.length > 1) {
       const latest = priceData[0]?.close ?? 0;
@@ -134,7 +150,24 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
       queryKey: ["industryRankings"],
       queryFn: async () => {
         const response = await getIndustryRankings();
-        return normalizeApiResponse<IndustryRankItem>(response);
+        // API 응답: { rank, name, change, marketCap, id? }
+        const rawData = normalizeApiResponse<{
+          rank: number;
+          name: string;
+          change?: number;
+          marketCap?: number;
+          id?: string;
+          induty_code?: string;
+        }>(response);
+        // UI 기대 형식으로 변환
+        return rawData.map(
+          (item, index): IndustryRankItem => ({
+            rank: item.rank ?? index + 1,
+            industryId: item.induty_code ?? item.id ?? item.name,
+            name: item.name,
+            amount: item.marketCap ?? 0,
+          }),
+        );
       },
       staleTime: 1000 * 60 * 5,
     });

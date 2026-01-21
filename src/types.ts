@@ -347,11 +347,15 @@ export interface StockPriceItem {
   source: string;
 }
 
-export interface StockPricesResponse {
+export interface StockPricesIntervalData {
   stock_code: string;
   interval: string;
   total_count: number;
   data: StockPriceItem[];
+}
+
+export interface StockPricesResponse {
+  [interval: string]: StockPricesIntervalData;
 }
 // 동종업계 순위 아이템
 export interface PeerCompanyItem {
