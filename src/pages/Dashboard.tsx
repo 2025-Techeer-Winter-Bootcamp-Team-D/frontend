@@ -17,7 +17,7 @@ import { SAMPLE_STOCKS } from "../constants";
 // API & 타입
 import { getKospi, getKosdaq } from "../api/indices";
 import type { MarketIndexData } from "../api/indices";
-import { getNewsKeywords } from "../api/news";
+import { getNewsKeywords, getNewsList } from "../api/news";
 import { searchCompanies } from "../api/company";
 
 interface DashboardProps {
@@ -31,32 +31,30 @@ interface DashboardProps {
 const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
   visibleSections,
 }) => {
-  const fetchAINews = async () => [
-    {
-      tag: "방산수출",
-      time: "방금 전",
-      title: '"60조 잠수함 따자"... 한화와 정부, 캐나다 합동 방문 추진',
-      source: "국방일보",
-    },
-    {
-      tag: "삼성전자",
-      time: "1시간 전",
-      title: "삼성전자, 'HBM3E' 12단 업계 최초 양산... AI 반도체 주도권 잡나",
-      source: "테크M",
-    },
-    {
-      tag: "에코프로비엠",
-      time: "2시간 전",
-      title: "에코프로비엠, 44조원 규모 양극재 공급 계약 체결... 잭팟 터졌다",
-      source: "에너지경제",
-    },
-  ];
-
+  // 실제 뉴스 API 연동
   const { data: news = [], isLoading } = useQuery({
-    queryKey: ["aiNews"],
-    queryFn: fetchAINews,
-    refetchInterval: 60000,
+    queryKey: ["latestNews"],
+    queryFn: async () => {
+      const response = await getNewsList({ page: 1, page_size: 10 });
+      return response.data?.results ?? [];
+    },
+    refetchInterval: 60000, // 1분마다 갱신
   });
+
+  // 시간 포맷 함수
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return "방금 전";
+    if (diffMins < 60) return `${diffMins}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    return `${diffDays}일 전`;
+  };
 
   return (
     <div
@@ -79,22 +77,27 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
         </div>
       ) : (
         <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-          {news.map((item, i) => (
-            <div
-              key={i}
-              className="bg-white/5 hover:bg-white/10 border border-white/10 p-5 rounded-2xl transition-all cursor-pointer group"
+          {news.map((item) => (
+            <a
+              key={item.news_id}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-white/5 hover:bg-white/10 border border-white/10 p-5 rounded-2xl transition-all cursor-pointer group"
             >
               <div className="flex justify-between mb-2">
                 <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">
-                  {item.tag}
+                  {item.keywords?.[0] ?? item.press}
                 </span>
-                <span className="text-[10px] text-white/40">{item.time}</span>
+                <span className="text-[10px] text-white/40">
+                  {formatTimeAgo(item.published_at)}
+                </span>
               </div>
               <h4 className="text-base font-semibold leading-relaxed group-hover:text-blue-300 transition-colors">
                 {item.title}
               </h4>
-              <p className="text-[11px] text-white/30 mt-3">{item.source}</p>
-            </div>
+              <p className="text-[11px] text-white/30 mt-3">{item.press}</p>
+            </a>
           ))}
         </div>
       )}

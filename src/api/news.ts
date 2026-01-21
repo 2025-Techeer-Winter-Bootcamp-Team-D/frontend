@@ -28,3 +28,33 @@ export const getNewsKeywords = (params?: {
 }) => {
   return api.get<KeywordsResponse>("/news/keywords/", { params });
 };
+
+// 뉴스 아이템 타입
+export interface NewsListItem {
+  news_id: number;
+  title: string;
+  url: string;
+  summary: string;
+  author: string | null;
+  press: string;
+  keywords: string[];
+  sentiment: string;
+  published_at: string;
+  created_at: string;
+}
+
+export interface NewsListResponse {
+  total_count: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+  results: NewsListItem[];
+}
+
+/**
+ * 뉴스 목록 조회
+ * GET /news/
+ */
+export const getNewsList = (params?: { page?: number; page_size?: number }) => {
+  return api.get<NewsListResponse>("/news/", { params });
+};
