@@ -988,8 +988,16 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-400 w-5">
-                          {item.rank}
+                        <span
+                          className={`text-xs font-bold w-5 ${item.rank <= 3 ? "text-base" : "text-gray-400"}`}
+                        >
+                          {item.rank === 1
+                            ? "🥇"
+                            : item.rank === 2
+                              ? "🥈"
+                              : item.rank === 3
+                                ? "🥉"
+                                : item.rank}
                         </span>
                         <span className="text-sm font-bold text-slate-700">
                           {item.name}
