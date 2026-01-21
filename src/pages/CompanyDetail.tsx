@@ -292,7 +292,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
       if (!indutyCode) return [];
       const response = await getIndustryCompanies(indutyCode);
       // getIndustryCompanies는 이미 .then(res => res.data)를 하므로 response가 곧 서버 응답
-      const companies = response?.data || response?.companies || [];
+      const companies = Array.isArray(response)
+        ? response
+        : response?.data || response?.companies || [];
       return companies.map((company: IndustryCompany, index: number) => {
         // 시가총액 포맷팅 (amount를 억 단위로 변환)
         const formatMarketCap = (amount: number | string | undefined) => {
@@ -468,15 +470,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
     };
 
     // API에서 가져온 revenue_composition 사용, 없으면 기본 mock 데이터
-    const businessData =
-      financialsData.revenue_composition?.length > 0
-        ? convertRevenueComposition(financialsData.revenue_composition)
-        : [
-            { name: "주력사업", value: 45, color: "#3B82F6" },
-            { name: "신규사업", value: 25, color: "#10B981" },
-            { name: "해외사업", value: 20, color: "#F59E0B" },
-            { name: "기타", value: 10, color: "#94A3B8" },
-          ];
+    const businessData = financialsData.revenue_composition
+      ? convertRevenueComposition(financialsData.revenue_composition)
+      : [
+          { name: "주력사업", value: 45, color: "#3B82F6" },
+          { name: "신규사업", value: 25, color: "#10B981" },
+          { name: "해외사업", value: 20, color: "#F59E0B" },
+          { name: "기타", value: 10, color: "#94A3B8" },
+        ];
 
     return {
       business: businessData,
