@@ -358,8 +358,7 @@ export interface PeerCompanyItem {
   rank: number;
   name: string;
   code: string;
-  price: string;
-  change: string;
+  marketCap: string;
 }
 export interface RankingItem {
   rank: number;
@@ -550,5 +549,21 @@ export interface CompanyFinancialsData {
   company_name: string;
   market_amount: number;
   financial_statements: FinancialStatement[];
-  revenue_composition: unknown[];
+  revenue_composition: RevenueComposition[];
+}
+
+// ============================================
+// Company Outlook API Types
+// ============================================
+
+// GET /companies/{stock_code}/outlook - 기업 전망 분석
+export interface CompanyOutlookData {
+  stock_code: string;
+  company_name: string;
+  outlook_summary: string;
+  positive_factors: string[];
+  risk_factors: string[];
+  investment_opinion: string;
+  target_price?: number;
+  created_at: string;
 }

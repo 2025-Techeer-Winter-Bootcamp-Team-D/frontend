@@ -10,6 +10,7 @@ import type {
   CompanySearchResponse,
   StockPricesResponse,
   CompanyApiData,
+  CompanyOutlookData,
 } from "@/types";
 
 /*
@@ -88,5 +89,15 @@ export const getReportAnalysis = (stockCode: string, rceptNo: string) => {
 export const getCompanyFinancials = (stockCode: string) => {
   return api.get<ApiResponse<CompanyFinancialsData>>(
     `/companies/${stockCode}/financials/`,
+  );
+};
+
+/**
+ * 기업 전망 분석 조회
+ * GET /companies/{stock_code}/outlook/
+ */
+export const getCompanyOutlook = (stockCode: string) => {
+  return api.get<ApiResponse<CompanyOutlookData>>(
+    `/companies/${stockCode}/outlook/`,
   );
 };

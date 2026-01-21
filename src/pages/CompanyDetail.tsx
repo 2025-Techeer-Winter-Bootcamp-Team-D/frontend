@@ -8,6 +8,7 @@ import {
   getCompanyReports,
   getReportAnalysis,
   getCompanyFinancials,
+  getCompanyOutlook,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
 import GlassCard from "../components/Layout/GlassCard";
@@ -24,6 +25,8 @@ import type {
   OhlcvItem,
   CompanyReportItem,
   CompanyFinancialsData,
+  CompanyOutlookData,
+  RevenueComposition,
 } from "../types";
 
 import {
@@ -36,7 +39,16 @@ import {
   PieChart,
   Pie,
 } from "recharts";
-import { Star, User, X, HelpCircle, Loader2 } from "lucide-react";
+import {
+  Star,
+  User,
+  X,
+  HelpCircle,
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Target,
+} from "lucide-react";
 
 interface DetailProps {
   setPage: (page: PageView) => void;
@@ -57,6 +69,32 @@ const DEFAULT_COMPANY = {
   desc: "-",
   logo: "--",
 };
+
+// 재무 지표 설명 툴팁
+const FINANCIAL_TOOLTIPS: Record<string, string> = {
+  사업분석:
+    "기업의 사업 부문별 매출 구성 비율을 보여줍니다. 주력사업, 신규사업, 해외사업 등으로 분류하여 수익 다각화 정도를 파악할 수 있습니다.",
+  매출액:
+    "기업이 제품이나 서비스를 판매하여 얻은 총 수익입니다. 기업의 규모와 성장성을 나타내는 가장 기본적인 지표입니다.",
+  영업이익:
+    "매출액에서 매출원가, 판매비, 관리비 등 영업비용을 뺀 이익입니다. 기업의 핵심 영업활동 수익성을 보여줍니다.",
+  당기순이익:
+    "영업이익에서 이자비용, 세금 등 모든 비용을 차감한 최종 순이익입니다. 주주에게 귀속되는 실제 이익을 나타냅니다.",
+};
+
+// 툴팁 컴포넌트
+const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({
+  text,
+  children,
+}) => (
+  <div className="relative group inline-flex">
+    {children}
+    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-3 py-2 bg-white text-slate-700 text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-64 text-left z-50 shadow-lg border border-gray-200 pointer-events-none">
+      {text}
+      <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white"></div>
+    </div>
+  </div>
+);
 
 // 데이터가 없을 때를 대비한 Mock Data 생성 함수
 const generateFinancialData = (
@@ -221,14 +259,29 @@ const CompanyDetail: React.FC<DetailProps> = ({
       const indutyCode = apiCompanyData?.industry?.induty_code;
       if (!indutyCode) return [];
       const response = await getIndustryCompanies(indutyCode);
-      const companies = response?.data?.data?.companies || [];
-      return companies.map((company: any, index: number) => ({
-        rank: company.rank || index + 1,
-        name: company.name,
-        code: company.stockCode,
-        price: "-",
-        change: "-",
-      })) as PeerCompanyItem[];
+      // getIndustryCompanies는 이미 .then(res => res.data)를 하므로 response가 곧 서버 응답
+      const companies = response?.data || response?.companies || [];
+      return companies.map((company: any, index: number) => {
+        // 시가총액 포맷팅 (amount를 억 단위로 변환)
+        const formatMarketCap = (amount: number | undefined) => {
+          if (!amount) return "-";
+          const billion = Math.floor(amount / 100000000);
+          if (billion >= 10000) {
+            const trillion = Math.floor(billion / 10000);
+            const remainBillion = billion % 10000;
+            return remainBillion > 0
+              ? `${trillion}조 ${remainBillion.toLocaleString()}억`
+              : `${trillion}조`;
+          }
+          return `${billion.toLocaleString()}억`;
+        };
+        return {
+          rank: company.rank || index + 1,
+          name: company.name,
+          code: company.stock_code,
+          marketCap: formatMarketCap(company.amount),
+        };
+      }) as PeerCompanyItem[];
     },
     enabled: !!apiCompanyData?.industry?.induty_code,
   });
@@ -250,11 +303,20 @@ const CompanyDetail: React.FC<DetailProps> = ({
     },
   });
 
+  const { data: outlookData, isLoading: isOutlookLoading } = useQuery({
+    queryKey: ["company", "outlook", companyCode],
+    queryFn: async () => {
+      const response = await getCompanyOutlook(companyCode);
+      return response.data.data as CompanyOutlookData;
+    },
+  });
+
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
   const newsRef = useRef<HTMLDivElement>(null);
   const disclosureRef = useRef<HTMLDivElement>(null);
+  const outlookRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -276,6 +338,34 @@ const CompanyDetail: React.FC<DetailProps> = ({
       logo: apiCompanyData.company_name.substring(0, 2),
     };
   }, [apiCompanyData]);
+
+  // 사업분석 색상 팔레트
+  const BUSINESS_COLORS = [
+    "#3B82F6",
+    "#10B981",
+    "#F59E0B",
+    "#8B5CF6",
+    "#EF4444",
+    "#06B6D4",
+    "#94A3B8",
+  ];
+
+  // revenue_composition을 차트 데이터로 변환하는 함수
+  const convertRevenueComposition = (composition: RevenueComposition[]) => {
+    if (!composition || composition.length === 0) {
+      return [{ name: "데이터 없음", value: 100, color: "#94A3B8" }];
+    }
+    return composition
+      .filter((item) => item && item.segment && item.ratio > 0)
+      .map((item, index) => ({
+        name: item.segment || "기타",
+        value:
+          typeof item.ratio === "number"
+            ? item.ratio
+            : parseFloat(item.ratio) || 0,
+        color: BUSINESS_COLORS[index % BUSINESS_COLORS.length],
+      }));
+  };
 
   // --- 재무 데이터 가공 로직 (수정됨) ---
   const financialData = useMemo(() => {
@@ -330,13 +420,19 @@ const CompanyDetail: React.FC<DetailProps> = ({
         }));
     };
 
+    // API에서 가져온 revenue_composition 사용, 없으면 기본 mock 데이터
+    const businessData =
+      financialsData.revenue_composition?.length > 0
+        ? convertRevenueComposition(financialsData.revenue_composition)
+        : [
+            { name: "주력사업", value: 45, color: "#3B82F6" },
+            { name: "신규사업", value: 25, color: "#10B981" },
+            { name: "해외사업", value: 20, color: "#F59E0B" },
+            { name: "기타", value: 10, color: "#94A3B8" },
+          ];
+
     return {
-      business: [
-        { name: "주력사업", value: 45, color: "#3B82F6" },
-        { name: "신규사업", value: 25, color: "#10B981" },
-        { name: "해외사업", value: 20, color: "#F59E0B" },
-        { name: "기타", value: 10, color: "#94A3B8" },
-      ],
+      business: businessData,
       revenue: {
         current: formatMoney(latestStatement.revenue),
         yoy: calculateYoY(latestStatement.revenue, previousStatement?.revenue),
@@ -401,6 +497,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "info", label: "기업정보", ref: infoRef },
     { id: "price", label: "주가", ref: priceRef },
     { id: "financial", label: "재무분석", ref: financialRef },
+    { id: "outlook", label: "기업전망", ref: outlookRef },
     { id: "news", label: "뉴스", ref: newsRef },
     { id: "disclosure", label: "공시", ref: disclosureRef },
   ];
@@ -421,7 +518,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
       <div className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col h-full shadow-sm">
         <div className="flex items-center gap-1 mb-4">
           <h4 className="font-bold text-slate-800 text-lg">{title}</h4>
-          <HelpCircle size={14} className="text-gray-300 cursor-help" />
+          <Tooltip text={FINANCIAL_TOOLTIPS[title] || ""}>
+            <HelpCircle
+              size={14}
+              className="text-gray-400 cursor-help hover:text-blue-500 transition-colors"
+            />
+          </Tooltip>
         </div>
         <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-50">
           <div>
@@ -487,7 +589,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
       <div className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col h-full shadow-sm">
         <div className="flex items-center gap-1 mb-4">
           <h4 className="font-bold text-slate-800 text-lg">사업분석</h4>
-          <HelpCircle size={14} className="text-gray-300 cursor-help" />
+          <Tooltip text={FINANCIAL_TOOLTIPS["사업분석"]}>
+            <HelpCircle
+              size={14}
+              className="text-gray-400 cursor-help hover:text-blue-500 transition-colors"
+            />
+          </Tooltip>
         </div>
         <div className="flex-1 flex items-center min-h-[180px]">
           <div className="w-1/2">
@@ -680,10 +787,17 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       onClick={() => handleCompanyClick(item.code)}
                       className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
                     >
-                      <span className="text-sm font-bold text-slate-700">
-                        {item.name}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400 w-5">
+                          {item.rank}
+                        </span>
+                        <span className="text-sm font-bold text-slate-700">
+                          {item.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {item.marketCap}
                       </span>
-                      <span className="text-xs text-gray-400">{item.code}</span>
                     </div>
                   ))}
                 </div>
@@ -714,6 +828,93 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     financialData.netIncome,
                   )}
                 </div>
+              </div>
+            )}
+          </GlassCard>
+        </div>
+
+        <div ref={outlookRef} className="scroll-mt-32">
+          <GlassCard className="p-6">
+            <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <Target size={24} className="text-blue-600" />
+              기업 전망 분석
+            </h3>
+            {isOutlookLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-blue-600" />
+              </div>
+            ) : outlookData ? (
+              <div className="space-y-6">
+                {/* 전망 요약 */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                  <h4 className="text-lg font-bold text-slate-800 mb-3">
+                    전망 요약
+                  </h4>
+                  <p className="text-slate-700 leading-relaxed">
+                    {outlookData.outlook_summary}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 긍정적 요인 */}
+                  <div className="bg-green-50 rounded-xl p-5 border border-green-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <TrendingUp size={20} className="text-green-600" />
+                      <h4 className="font-bold text-green-800">긍정적 요인</h4>
+                    </div>
+                    <ul className="space-y-2">
+                      {outlookData.positive_factors?.map((factor, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-start gap-2 text-sm text-green-700"
+                        >
+                          <span className="text-green-500 mt-1">•</span>
+                          <span>{factor}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* 리스크 요인 */}
+                  <div className="bg-red-50 rounded-xl p-5 border border-red-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <TrendingDown size={20} className="text-red-600" />
+                      <h4 className="font-bold text-red-800">리스크 요인</h4>
+                    </div>
+                    <ul className="space-y-2">
+                      {outlookData.risk_factors?.map((factor, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-start gap-2 text-sm text-red-700"
+                        >
+                          <span className="text-red-500 mt-1">•</span>
+                          <span>{factor}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* 투자 의견 */}
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <h4 className="font-bold text-slate-800 mb-3">투자 의견</h4>
+                  <p className="text-slate-700 leading-relaxed">
+                    {outlookData.investment_opinion}
+                  </p>
+                  {outlookData.target_price && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <span className="text-sm text-gray-500">목표 주가: </span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {outlookData.target_price.toLocaleString()}원
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <Target size={48} className="mb-3 opacity-50" />
+                <p className="text-sm">기업 전망 데이터가 없습니다.</p>
               </div>
             )}
           </GlassCard>
