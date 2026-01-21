@@ -590,14 +590,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   return (
     <div className="animate-fade-in pb-12 relative">
-      <button
-        onClick={() => setPage(PageView.DASHBOARD)}
-        className="flex items-center text-slate-500 hover:text-shinhan-blue mb-4 transition-colors"
-      >
-        <ArrowLeft size={16} className="mr-1" />
-        대시보드로 돌아가기
-      </button>
-
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
