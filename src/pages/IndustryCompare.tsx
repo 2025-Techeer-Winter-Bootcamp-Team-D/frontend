@@ -662,21 +662,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   return (
     <div className="animate-fade-in pb-12 relative">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            산업 분석
-            <span className="text-gray-300">|</span>
-            <span className="text-shinhan-blue">
-              {currentIndustryInfo.name}
-            </span>
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            {currentIndustryInfo.indexName} 및 주요 구성 종목 심층 분석
-          </p>
-        </div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          산업 분석
+          <span className="text-gray-300">|</span>
+          <span className="text-shinhan-blue">{currentIndustryInfo.name}</span>
+        </h1>
         <div className="relative">
-          {/* Rounded-md */}
           <select
             value={selectedIndustry}
             onChange={(e) => setSelectedIndustry(e.target.value as IndustryKey)}
@@ -695,8 +687,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       </div>
 
       {/* Sector Overview Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-        <GlassCard className="p-6 col-span-2 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 items-stretch">
+        <div className="lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -796,51 +788,77 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </GlassCard>
+        </div>
 
-        <GlassCard className="p-6" variant="dark">
-          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-            <Info size={18} className="text-shinhan-gold" />
-            산업분야 전망
-          </h3>
-          {loading ? (
-            <p className="text-white/60 text-sm">로딩 중...</p>
-          ) : error ? (
-            <p className="text-red-300 text-sm">{error}</p>
-          ) : (
-            <div className="space-y-3">
-              {/* 분석 내용 글라스 카드 */}
-              <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-4">
-                <p className="text-white text-sm leading-relaxed">
-                  {analysisData?.scenarios?.neutral?.analysis ??
-                    "전망 정보가 없습니다."}
-                </p>
-              </div>
-              {analysisData?.scenarios && (
-                <div className="space-y-2">
-                  <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                      긍정
-                    </span>
-                    <p className="text-xs text-white leading-relaxed">
-                      {analysisData?.scenarios?.optimistic?.analysis ??
-                        "정보 없음"}
-                    </p>
-                  </div>
-                  <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                      리스크
-                    </span>
-                    <p className="text-xs text-white leading-relaxed">
-                      {analysisData?.scenarios?.pessimistic?.analysis ??
-                        "정보 없음"}
-                    </p>
-                  </div>
+        {/* Liquid Glass Card - 산업분야 전망 */}
+        <div
+          className="
+            relative overflow-hidden rounded-3xl h-full
+            bg-[#0046FF]/80
+            backdrop-blur-3xl backdrop-saturate-200
+            border border-white/30
+            shadow-[inset_0_1px_0_0_rgba(255,255,255,0.7),inset_1px_0_0_0_rgba(255,255,255,0.5),inset_0_-1px_0_0_rgba(255,255,255,0.1)]
+          "
+        >
+          {/* Internal Light Layers */}
+          <div className="pointer-events-none absolute -top-[60px] -left-[60px] h-[250px] w-[250px] rounded-full bg-white/25 blur-[60px]" />
+          <div className="pointer-events-none absolute -bottom-[80px] -right-[80px] h-[300px] w-[300px] rounded-full bg-blue-400/30 blur-[70px]" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-3xl" />
+
+          {/* Content */}
+          <div className="relative z-10 p-6 flex flex-col h-full">
+            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+              <Info size={18} className="text-shinhan-gold" />
+              산업분야 전망
+            </h3>
+            {loading ? (
+              <p className="text-white/60 text-sm">로딩 중...</p>
+            ) : error ? (
+              <p className="text-red-300 text-sm">{error}</p>
+            ) : (
+              <div className="space-y-3 flex-1">
+                {/* 분석 내용 - Liquid Glass */}
+                <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
+                  <div className="pointer-events-none absolute -top-4 -left-4 h-16 w-16 rounded-full bg-white/20 blur-xl" />
+                  <p className="relative z-10 text-white text-sm leading-relaxed">
+                    {analysisData?.scenarios?.neutral?.analysis ??
+                      "전망 정보가 없습니다."}
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
-        </GlassCard>
+                {analysisData?.scenarios && (
+                  <div className="space-y-2">
+                    {/* 긍정 - Liquid Glass */}
+                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                      <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
+                      <div className="relative z-10 flex items-start gap-2">
+                        <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          긍정
+                        </span>
+                        <p className="text-xs text-white/90 leading-relaxed">
+                          {analysisData?.scenarios?.optimistic?.analysis ??
+                            "정보 없음"}
+                        </p>
+                      </div>
+                    </div>
+                    {/* 리스크 - Liquid Glass */}
+                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                      <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
+                      <div className="relative z-10 flex items-start gap-2">
+                        <span className="px-2 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          리스크
+                        </span>
+                        <p className="text-xs text-white/90 leading-relaxed">
+                          {analysisData?.scenarios?.pessimistic?.analysis ??
+                            "정보 없음"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* --- Top 3 Companies (Rankings) --- */}
