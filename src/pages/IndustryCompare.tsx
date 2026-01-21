@@ -48,6 +48,7 @@ import {
   getIndustryChart,
 } from "../api/industry";
 import { getCompanyFinancials, getStockOhlcv } from "../api/company";
+import { format } from "date-fns";
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
 const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
@@ -134,6 +135,72 @@ const MiniChart = ({ color }: { color: string }) => {
   );
 };
 
+// 주 단위 데이터 샘플링 (매주 월요일 또는 가장 가까운 날짜)
+function sampleWeekly(data: Array<{ time: string; value: number }>) {
+  if (data.length === 0) return data;
+  const result: Array<{ time: string; value: number }> = [];
+  let lastWeek = -1;
+  for (const item of data) {
+    const date = new Date(item.time);
+    const week = Math.floor(date.getTime() / (7 * 24 * 60 * 60 * 1000));
+    if (week !== lastWeek) {
+      result.push(item);
+      lastWeek = week;
+    }
+  }
+  return result;
+}
+
+// 월 단위 데이터 샘플링 (매월 첫 번째 데이터)
+function sampleMonthly(data: Array<{ time: string; value: number }>) {
+  if (data.length === 0) return data;
+  const result: Array<{ time: string; value: number }> = [];
+  let lastMonth = "";
+  for (const item of data) {
+    const date = new Date(item.time);
+    const month = `${date.getFullYear()}-${date.getMonth()}`;
+    if (month !== lastMonth) {
+      result.push(item);
+      lastMonth = month;
+    }
+  }
+  return result;
+}
+
+function getAxisPropsByRange(range: TimeRange) {
+  switch (range) {
+    case "1M":
+      // 일단위 데이터, X축은 주 단위로 레이블 표시 (12.12 형식)
+      return {
+        interval: "preserveStartEnd" as const,
+        minTickGap: 50,
+        formatter: (t: string) => format(new Date(t), "M.d"),
+        sampler: sampleWeekly,
+      };
+    case "3M":
+    case "6M":
+      // 주단위: 12.12 형식
+      return {
+        interval: "preserveStartEnd" as const,
+        minTickGap: 40,
+        formatter: (t: string) => format(new Date(t), "M.d"),
+        sampler: sampleWeekly,
+      };
+    case "1Y":
+      // 월단위: 25.12 형식 (yy.MM)
+      return {
+        interval: "preserveStartEnd" as const,
+        minTickGap: 40,
+        formatter: (t: string) => format(new Date(t), "yy.M"),
+        sampler: sampleMonthly,
+      };
+    default:
+      return {
+        sampler: (data: Array<{ time: string; value: number }>) => data,
+      };
+  }
+}
+
 const IndustryAnalysis: React.FC<AnalysisProps> = ({
   setPage,
   initialIndutyCode,
@@ -155,6 +222,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedIndustry, setSelectedIndustry] =
     useState<IndustryKey>(getInitialIndustry);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
+  const xAxisProps = getAxisPropsByRange(timeRange);
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
@@ -578,15 +646,18 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const trendData = useMemo(() => {
     // API 차트 데이터가 있으면 사용
     if (chartData && chartData.length > 0) {
-      return chartData.map((item) => ({
+      const rawData = chartData.map((item) => ({
         time: item.date,
         value: item.close,
       }));
+      // timeRange에 따라 샘플링 적용
+      const sampler = xAxisProps.sampler;
+      return sampler ? sampler(rawData) : rawData;
     }
 
     // API 데이터가 없으면 빈 배열 반환
     return [];
-  }, [chartData]);
+  }, [chartData, xAxisProps.sampler]);
 
   return (
     <div className="animate-fade-in pb-12 relative">
@@ -717,6 +788,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: "#94A3B8" }}
+                  interval={xAxisProps.interval}
+                  minTickGap={xAxisProps.minTickGap}
+                  tickFormatter={xAxisProps.formatter}
                 />
                 <YAxis hide domain={["auto", "auto"]} />
               </AreaChart>
