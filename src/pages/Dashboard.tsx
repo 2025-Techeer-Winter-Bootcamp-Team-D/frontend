@@ -648,7 +648,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                             />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">
-                              {company.company_name.charAt(0)}
+                              {(company.company_name &&
+                                company.company_name.charAt(0)) ||
+                                (company.stock_code &&
+                                  company.stock_code.charAt(0)) ||
+                                "?"}
                             </div>
                           )}
                         </div>

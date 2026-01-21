@@ -65,7 +65,9 @@ const CandleStickShape = (props: CandleStickShapeProps) => {
   const isUp = close >= open;
   const color = isUp ? "#EF4444" : "#3B82F6";
 
-  const ratio = height / (high - low);
+  const range = high - low;
+  const safeRange = range === 0 ? Number.EPSILON : range;
+  const ratio = height / safeRange;
   const bodyTop = y + (high - Math.max(open, close)) * ratio;
   const bodyHeight = Math.abs(open - close) * ratio;
 
