@@ -133,6 +133,7 @@ export function useCompareOhlcv(
         "1Y": "1d",
       };
 
+      // stock_code를 키로 사용하여 동명 기업 충돌 방지
       const results: Record<string, OhlcvItem[]> = {};
 
       await Promise.all(
@@ -145,7 +146,7 @@ export function useCompareOhlcv(
 
             const rawData = response.data?.data ?? [];
 
-            results[company.companyName] = (rawData as unknown as OhlcvData[])
+            results[company.stock_code] = (rawData as unknown as OhlcvData[])
               .map((item) => {
                 const dateObj = new Date(item.date);
                 const timeStamp = isNaN(dateObj.getTime())
@@ -164,8 +165,8 @@ export function useCompareOhlcv(
               })
               .filter((item) => item.time !== 0);
           } catch (innerError) {
-            console.warn(`${company.companyName} OHLCV 변환 실패`, innerError);
-            results[company.companyName] = [];
+            console.warn(`${company.stock_code} OHLCV 변환 실패`, innerError);
+            results[company.stock_code] = [];
           }
         }),
       );

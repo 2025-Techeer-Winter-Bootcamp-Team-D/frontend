@@ -463,10 +463,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     const hasOhlcvData = Object.keys(ohlcvData).length > 0;
 
     if (hasOhlcvData) {
-      // 모든 기업의 데이터 길이 중 최소값 찾기
+      // 모든 기업의 데이터 길이 중 최소값 찾기 (stock_code로 조회)
       const minLength = Math.min(
         ...activeComparison.companies.map(
-          (c) => ohlcvData[c.companyName]?.length ?? 0,
+          (c) => ohlcvData[c.stock_code]?.length ?? 0,
         ),
       );
       const actualPoints = Math.min(minLength, maxPoints);
@@ -477,7 +477,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       for (let i = 0; i < actualPoints; i++) {
         const point: Record<string, string | number> = {};
         activeComparison.companies.forEach((company) => {
-          const companyOhlcv = ohlcvData[company.companyName];
+          // stock_code로 OHLCV 데이터 조회, 차트에는 companyName으로 표시
+          const companyOhlcv = ohlcvData[company.stock_code];
           if (companyOhlcv && companyOhlcv[i]) {
             // 첫 번째 항목에서만 날짜 설정
             if (!point.date) {
