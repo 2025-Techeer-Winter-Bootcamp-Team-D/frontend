@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search, Loader2, TrendingUp, Bell } from "lucide-react";
+import { ArrowRight, Search, Loader2, TrendingUp, Bell, X } from "lucide-react";
 
 // Components
 import GlassCard from "../components/Layout/GlassCard";
@@ -17,8 +17,10 @@ import { SAMPLE_STOCKS } from "../constants";
 // API & 타입
 import { getKospi, getKosdaq } from "../api/indices";
 import type { MarketIndexData } from "../api/indices";
-import { getNewsKeywords, getNewsList } from "../api/news";
-import { searchCompanies } from "../api/company";
+import { getNewsKeywords, getNewsList, getNewsDetail } from "../api/news";
+import type { NewsDetailItem } from "../api/news";
+import { searchCompanies, getCompanyFinancials } from "../api/company";
+import { getCompanyRankings } from "../api/ranking";
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
@@ -31,6 +33,10 @@ interface DashboardProps {
 const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
   visibleSections,
 }) => {
+  // 선택된 뉴스 상태 (모달용 - 상세 데이터)
+  const [selectedNews, setSelectedNews] = useState<NewsDetailItem | null>(null);
+  const [isNewsDetailLoading, setIsNewsDetailLoading] = useState(false);
+
   // 실제 뉴스 API 연동
   const { data: news = [], isLoading } = useQuery({
     queryKey: ["latestNews"],
@@ -40,6 +46,19 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
     },
     refetchInterval: 60000, // 1분마다 갱신
   });
+
+  // 뉴스 상세 조회 핸들러
+  const handleNewsClick = async (newsId: number) => {
+    setIsNewsDetailLoading(true);
+    try {
+      const response = await getNewsDetail(newsId);
+      setSelectedNews(response.data);
+    } catch (error) {
+      console.error("뉴스 상세 조회 실패:", error);
+    } finally {
+      setIsNewsDetailLoading(false);
+    }
+  };
 
   // 시간 포맷 함수
   const formatTimeAgo = (dateString: string) => {
@@ -56,52 +75,147 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
     return `${diffDays}일 전`;
   };
 
+  // 날짜 포맷 함수 (모달용)
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   return (
-    <div
-      className={`bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col h-[600px] transition-all duration-700 ${visibleSections.has("ai-issue") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-    >
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <span className="text-blue-400 text-xs font-bold tracking-widest uppercase mb-1 block">
-            Real-time Signals
-          </span>
-          <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+    <>
+      <div
+        className={`bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col h-[600px] transition-all duration-700 ${visibleSections.has("ai-issue") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+      >
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <span className="text-blue-400 text-xs font-bold tracking-widest uppercase mb-1 block">
+              Real-time Signals
+            </span>
+            <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+          </div>
+          <div className="p-2 bg-red-500/20 rounded-full">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+          </div>
         </div>
-        <div className="p-2 bg-red-500/20 rounded-full">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-        </div>
-      </div>
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="animate-spin" />
-        </div>
-      ) : (
-        <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-          {news.map((item) => (
-            <a
-              key={item.news_id}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block bg-white/5 hover:bg-white/10 border border-white/10 p-5 rounded-2xl transition-all cursor-pointer group"
-            >
-              <div className="flex justify-between mb-2">
-                <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">
-                  {item.keywords?.[0] ?? item.press}
-                </span>
-                <span className="text-[10px] text-white/40">
-                  {formatTimeAgo(item.published_at)}
-                </span>
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : (
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+            {news.map((item) => (
+              <div
+                key={item.news_id}
+                onClick={() => handleNewsClick(item.news_id)}
+                className="block bg-white/5 hover:bg-white/10 border border-white/10 p-5 rounded-2xl transition-all cursor-pointer group"
+              >
+                <div className="flex justify-between mb-2">
+                  <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">
+                    {item.keywords?.[0] ?? item.press}
+                  </span>
+                  <span className="text-[10px] text-white/40">
+                    {formatTimeAgo(item.published_at)}
+                  </span>
+                </div>
+                <h4 className="text-base font-semibold leading-relaxed group-hover:text-blue-300 transition-colors">
+                  {item.title}
+                </h4>
+                <p className="text-[11px] text-white/30 mt-3">{item.press}</p>
               </div>
-              <h4 className="text-base font-semibold leading-relaxed group-hover:text-blue-300 transition-colors">
-                {item.title}
-              </h4>
-              <p className="text-[11px] text-white/30 mt-3">{item.press}</p>
-            </a>
-          ))}
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 뉴스 상세 모달 */}
+      {(selectedNews || isNewsDetailLoading) && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !isNewsDetailLoading && setSelectedNews(null)}
+          ></div>
+          <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
+            {isNewsDetailLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="animate-spin text-blue-600" size={32} />
+              </div>
+            ) : (
+              selectedNews && (
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNews.keywords?.slice(0, 3).map((keyword, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setSelectedNews(null)}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={24} className="text-gray-400" />
+                    </button>
+                  </div>
+                  <h2 className="text-xl font-bold mb-3 text-slate-800 leading-tight">
+                    {selectedNews.title}
+                  </h2>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-100">
+                    {selectedNews.press && (
+                      <span className="font-medium text-slate-700">
+                        {selectedNews.press}
+                      </span>
+                    )}
+                    {selectedNews.author && (
+                      <span>· {selectedNews.author}</span>
+                    )}
+                    {selectedNews.published_at && (
+                      <span>· {formatDate(selectedNews.published_at)}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-2 mb-4">
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-sm">
+                      {selectedNews.content || selectedNews.summary}
+                    </p>
+                  </div>
+                  {selectedNews.url && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <a
+                        href={selectedNews.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        원문 보기
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                </>
+              )
+            )}
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
@@ -176,11 +290,121 @@ const Dashboard: React.FC<DashboardProps> = ({
     retry: 2,
   });
 
-  // 2. 주식 데이터 및 필터 (평형좌표계용)
-  const { data: stocks = [], isLoading: isStocksLoading } = useQuery({
-    queryKey: ["stocks"],
-    queryFn: async () => SAMPLE_STOCKS,
-  });
+  // 2. 기업 랭킹 데이터 조회 (평형좌표계용)
+  const { data: companyRankingsData = [], isLoading: isRankingsLoading } =
+    useQuery({
+      queryKey: ["dashboardCompanyRankings"],
+      queryFn: async () => {
+        const response = await getCompanyRankings();
+        const data = response?.data ?? response ?? [];
+        // 상위 100개만 가져오기
+        return data.slice(0, 100);
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+
+  // 각 기업의 재무 데이터 상태 관리
+  const [financialsMap, setFinancialsMap] = useState<
+    Record<
+      string,
+      {
+        roe: number;
+        pbr: number;
+        per: number;
+        debtRatio: number;
+        divYield: number;
+      }
+    >
+  >({});
+
+  // 기업 목록이 변경되면 각 기업의 재무 데이터를 가져옴
+  useEffect(() => {
+    const fetchFinancials = async () => {
+      if (companyRankingsData.length === 0) return;
+
+      const newFinancialsMap: Record<
+        string,
+        {
+          roe: number;
+          pbr: number;
+          per: number;
+          debtRatio: number;
+          divYield: number;
+        }
+      > = {};
+
+      // 병렬로 모든 기업의 재무 데이터 가져오기 (최대 100개)
+      await Promise.all(
+        companyRankingsData.map(async (company: { stock_code: string }) => {
+          let roe = 0,
+            pbr = 0,
+            per = 0,
+            debtRatio = 0,
+            divYield = 0;
+
+          try {
+            const response = await getCompanyFinancials(company.stock_code);
+            const financialStatements =
+              response?.data?.data?.financial_statements;
+            if (financialStatements && financialStatements.length > 0) {
+              const latest = financialStatements[0];
+              roe = parseFloat(latest.roe) || 0;
+              pbr = parseFloat(latest.pbr) || 0;
+              per = parseFloat(latest.per) || 0;
+              debtRatio = parseFloat(latest.debt_ratio) || 0;
+              divYield = parseFloat(latest.dividend_yield) || 0;
+            }
+          } catch (error) {
+            console.error(
+              `Failed to fetch financials for ${company.stock_code}:`,
+              error,
+            );
+          }
+
+          newFinancialsMap[company.stock_code] = {
+            roe,
+            pbr,
+            per,
+            debtRatio,
+            divYield,
+          };
+        }),
+      );
+
+      setFinancialsMap(newFinancialsMap);
+    };
+
+    fetchFinancials();
+  }, [companyRankingsData]);
+
+  // 차트에 표시할 주식 데이터 (API 데이터 + 재무 데이터)
+  const stocks = useMemo(() => {
+    if (companyRankingsData.length === 0) return SAMPLE_STOCKS;
+
+    return companyRankingsData.map(
+      (company: {
+        stock_code: string;
+        name: string;
+        sector?: string;
+        logo?: string;
+      }) => {
+        const financials = financialsMap[company.stock_code];
+        return {
+          id: company.stock_code,
+          name: company.name,
+          sector: company.sector ?? "-",
+          per: financials?.per ?? 0,
+          pbr: financials?.pbr ?? 0,
+          roe: financials?.roe ?? 0,
+          debtRatio: financials?.debtRatio ?? 0,
+          divYield: financials?.divYield ?? 0,
+          logo: company.logo,
+        };
+      },
+    );
+  }, [companyRankingsData, financialsMap]);
+
+  const isStocksLoading = isRankingsLoading;
 
   // 3. 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
   const { data: keywordsData } = useQuery({
@@ -199,7 +423,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const filteredIds = useMemo(() => {
     const ids = new Set<string>();
-    stocks.forEach((stock) => {
+    stocks.forEach((stock: Stock) => {
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];

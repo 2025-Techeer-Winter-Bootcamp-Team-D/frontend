@@ -58,3 +58,27 @@ export interface NewsListResponse {
 export const getNewsList = (params?: { page?: number; page_size?: number }) => {
   return api.get<NewsListResponse>("/news/", { params });
 };
+
+// 뉴스 상세 타입 (본문 포함)
+export interface NewsDetailItem {
+  news_id: number;
+  title: string;
+  url: string;
+  summary: string;
+  content: string;
+  author: string | null;
+  press: string;
+  keywords: string[];
+  sentiment: string;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * 뉴스 상세 조회
+ * GET /news/{news_id}/
+ */
+export const getNewsDetail = (newsId: number) => {
+  return api.get<NewsDetailItem>(`/news/${newsId}/`);
+};
