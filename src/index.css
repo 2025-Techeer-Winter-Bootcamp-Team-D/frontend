@@ -18,6 +18,13 @@ body,
   scrollbar-width: none;
 }
 
+/* Remove focus outline/shadow on mouse click, preserve for keyboard */
+button:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
 /* Custom colors */
 :root {
   --color-shinhan-blue: #0046ff;
