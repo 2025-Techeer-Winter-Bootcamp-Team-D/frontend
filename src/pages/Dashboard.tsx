@@ -17,6 +17,7 @@ import { SAMPLE_STOCKS } from "../constants";
 // API & 타입
 import { getKospi, getKosdaq } from "../api/indices";
 import type { MarketIndexData } from "../api/indices";
+import { getNewsKeywords } from "../api/news";
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
@@ -140,6 +141,16 @@ const Dashboard: React.FC<DashboardProps> = ({
   const { data: stocks = [], isLoading: isStocksLoading } = useQuery({
     queryKey: ["stocks"],
     queryFn: async () => SAMPLE_STOCKS,
+  });
+
+  // 3. 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
+  const { data: keywordsData } = useQuery({
+    queryKey: ["newsKeywords"],
+    queryFn: async () => {
+      const response = await getNewsKeywords({ size: 15 });
+      return response.data?.data?.keywords ?? [];
+    },
+    refetchInterval: 60000 * 5, // 5분마다 갱신
   });
 
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -452,7 +463,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </p>
               </div>
               <div className="bg-slate-50 rounded-3xl p-4 border border-slate-100">
-                <AIBubbleChart />
+                <AIBubbleChart keywords={keywordsData} />
               </div>
             </div>
             <AINewsBriefing visibleSections={visibleSections} />
