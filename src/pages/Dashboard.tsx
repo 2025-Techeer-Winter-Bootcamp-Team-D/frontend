@@ -475,7 +475,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     queryKey: ["recentReports"],
     queryFn: async () => {
       const response = await getRecentReports();
-      return response.data ?? [];
+      return response.data.data ?? [];
     },
     refetchInterval: 60000 * 5, // 5분마다 갱신
   });

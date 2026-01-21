@@ -123,7 +123,7 @@ export const getCompanyOutlook = (stockCode: string) => {
  * GET /companies/reports/recent/
  */
 export const getRecentReports = () => {
-  return api.get<RecentReportItem[]>("/companies/reports/recent/");
+  return api.get<ApiResponse<RecentReportItem[]>>("/companies/reports/recent/");
 };
 
 /**
