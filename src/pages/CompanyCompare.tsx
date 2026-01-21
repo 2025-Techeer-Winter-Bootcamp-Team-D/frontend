@@ -1343,31 +1343,38 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   검색 중...
                 </div>
               ) : searchResults.length > 0 ? (
-                searchResults.map((company) => (
-                  <button
-                    key={company.stock_code}
-                    onClick={() => handleAddCompany(company.stock_code)}
-                    disabled={addCompanyMutation.isPending}
-                    className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      {company.logo_url && (
-                        <img
-                          src={company.logo_url}
-                          alt={company.company_name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      )}
-                      <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
-                        {company.company_name}
-                      </span>
-                    </div>
-                    <Plus
-                      size={18}
-                      className="text-gray-400 group-hover:text-shinhan-blue"
-                    />
-                  </button>
-                ))
+                searchResults
+                  .filter(
+                    (company) =>
+                      !activeComparison?.companies?.some(
+                        (c) => c.stock_code === company.stock_code,
+                      ),
+                  )
+                  .map((company) => (
+                    <button
+                      key={company.stock_code}
+                      onClick={() => handleAddCompany(company.stock_code)}
+                      disabled={addCompanyMutation.isPending}
+                      className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left disabled:opacity-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        {company.logo_url && (
+                          <img
+                            src={company.logo_url}
+                            alt={company.company_name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
+                          {company.company_name}
+                        </span>
+                      </div>
+                      <Plus
+                        size={18}
+                        className="text-gray-400 group-hover:text-shinhan-blue"
+                      />
+                    </button>
+                  ))
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">
                   검색 결과가 없습니다.
