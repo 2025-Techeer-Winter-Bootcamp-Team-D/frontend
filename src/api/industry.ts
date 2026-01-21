@@ -6,7 +6,7 @@ import { api } from "./axios";
  */
 
 export const getIndustryNews = (indutyCode: string) => {
-  return api.get(`/industries/${indutyCode}/news`).then((res) => res.data);
+  return api.get(`/industries/${indutyCode}/news/`).then((res) => res.data);
 };
 
 /**

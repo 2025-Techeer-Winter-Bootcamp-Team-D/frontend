@@ -239,8 +239,38 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   } | null;
 
   const analysisData = analysisResponse?.data;
-  const newsResponse = newsQuery.data as { items?: IndustryNewsItem[] } | null;
-  const industryNews = newsResponse?.items ?? [];
+  // API 응답: { data: { industry_name, news: [...] } }
+  const newsResponse = newsQuery.data as {
+    data?: {
+      industry_name?: string;
+      news?: Array<{
+        news_id: number;
+        title: string;
+        summary: string;
+        url: string;
+        author: string | null;
+        press: string;
+        keywords: string[];
+        sentiment: string;
+        published_at: string;
+      }>;
+    };
+  } | null;
+
+  const industryNews: IndustryNewsItem[] = useMemo(() => {
+    const newsData = newsResponse?.data?.news ?? [];
+    return newsData.map((item) => ({
+      id: item.news_id,
+      title: item.title,
+      content: item.summary,
+      source: item.press,
+      time: new Date(item.published_at).toLocaleDateString("ko-KR", {
+        month: "short",
+        day: "numeric",
+      }),
+      url: item.url,
+    }));
+  }, [newsResponse]);
 
   // 차트 데이터
   const chartData = useMemo(() => {
@@ -1270,23 +1300,23 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             industryNews.slice(0, 6).map((news) => (
               <GlassCard
                 key={news.id}
-                className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"
-                onClick={() => setSelectedNews(news)}
+                className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
+                onClick={() =>
+                  news.url
+                    ? window.open(news.url, "_blank")
+                    : setSelectedNews(news)
+                }
               >
-                <div className="flex-1">
-                  <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors">
-                    {news.title}
-                  </h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>{news.source}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>{news.time}</span>
-                  </div>
-                </div>
-                {/* Rounded-md */}
-                <div className="w-20 h-20 bg-gray-200 rounded-md flex-shrink-0 overflow-hidden">
-                  {/* Placeholder for news image */}
-                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200"></div>
+                <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
+                  {news.title}
+                </h4>
+                <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                  {news.content}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
+                  <span>{news.source}</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                  <span>{news.time}</span>
                 </div>
               </GlassCard>
             ))
