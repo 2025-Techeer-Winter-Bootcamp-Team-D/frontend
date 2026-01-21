@@ -982,24 +982,33 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- All Companies Ranking Table --- */}
       <div className="mb-10">
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left table-fixed">
+              <colgroup>
+                <col className="w-10" />
+                <col className="w-16" />
+                <col className="w-12" />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col className="w-32" />
+              </colgroup>
               <thead className="text-xs text-gray-400 border-b border-gray-100">
                 <tr>
-                  <th className="pl-6 pr-2 py-3 font-normal w-12"></th>
-                  <th className="px-2 py-3 font-normal text-center w-10">
-                    순위
-                  </th>
-                  <th className="px-6 py-3 font-normal w-16"></th>
-                  <th className="px-6 py-3 font-normal text-center">기업명</th>
-                  <th className="px-6 py-3 font-normal text-center">주가</th>
-                  <th className="px-6 py-3 font-normal text-center">변동</th>
-                  <th className="px-6 py-3 font-normal text-center">
+                  <th className="pl-3 pr-1 py-3 font-normal"></th>
+                  <th className="px-1 py-3 font-normal text-center">순위</th>
+                  <th className="px-2 py-3 font-normal"></th>
+                  <th className="px-3 py-3 font-normal text-center">기업명</th>
+                  <th className="px-3 py-3 font-normal text-center">주가</th>
+                  <th className="px-3 py-3 font-normal text-center">변동</th>
+                  <th className="px-3 py-3 font-normal text-center">
                     미니차트
                   </th>
-                  <th className="px-6 py-3 font-normal text-center">ROE</th>
-                  <th className="px-6 py-3 font-normal text-center">
+                  <th className="px-3 py-3 font-normal text-center">ROE</th>
+                  <th className="px-3 py-3 font-normal text-center">
                     시가총액
                   </th>
                 </tr>
@@ -1011,7 +1020,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
                     onClick={() => handleCompanyClick(company.code)}
                   >
-                    <td className="pl-6 pr-2 py-4">
+                    <td className="pl-3 pr-1 py-4">
                       <button
                         onClick={(e) => handleToggleStar(e, company.code)}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -1021,28 +1030,28 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         />
                       </button>
                     </td>
-                    <td className="px-2 py-4 text-center">
+                    <td className="px-1 py-4 text-center">
                       <span className="font-bold text-slate-600 text-lg">
                         {index + 1}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-2 py-4 text-center">
                       <span className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center font-bold text-slate-600 text-xs shadow-sm">
                         {company.name.charAt(0)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center font-bold text-slate-800 text-base">
+                    <td className="px-3 py-4 text-center font-bold text-slate-800 text-base">
                       {company.name}
                     </td>
-                    <td className="px-6 py-4 text-center font-medium text-slate-700 text-base">
+                    <td className="px-3 py-4 text-center font-medium text-slate-700 text-base">
                       {company.price}
                     </td>
                     <td
-                      className={`px-6 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                      className={`px-3 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                     >
                       {company.change}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-3 py-4 text-center">
                       <div className="inline-block">
                         <MiniChart
                           color={
@@ -1053,11 +1062,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center font-medium text-slate-800">
+                    <td className="px-3 py-4 text-center font-medium text-slate-800">
                       {company.roe >= 0 ? "+" : ""}
                       {company.roe}%
                     </td>
-                    <td className="px-6 py-4 text-center text-slate-600 font-medium">
+                    <td className="px-3 py-4 text-center text-slate-600 font-medium whitespace-nowrap">
                       {company.marketCap}
                     </td>
                   </tr>
@@ -1238,19 +1247,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Valuation Position Map --- */}
       <div className="mb-10">
-        <div className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-[#0046FF]">
-              산업 내 밸류에이션 포지셔닝
-            </h2>
-            <p className="text-sm text-slate-500">
-              X축: 수익성(ROE) / Y축: 저평가(PBR) / 크기: 시가총액
-            </p>
-          </div>
-          <div className="h-[500px] w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-[#0046FF]">
+            산업 내 밸류에이션 포지셔닝
+          </h2>
+          <p className="text-sm text-slate-500">
+            X축: 수익성(ROE) / Y축: 저평가(PBR) / 크기: 시가총액
+          </p>
+        </div>
+        <div className="w-full bg-white rounded-xl overflow-hidden relative">
+          <div className="h-[500px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart
-                margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1395,20 +1404,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Efficiency vs Leverage (ROE vs Debt) --- */}
       <div className="mb-10">
-        <div className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
-              <div className="text-shinhan-blue" />
-              기업 성격 분류 (ROE vs 부채비율)
-            </h2>
-            <p className="text-sm text-slate-500">
-              X축: 부채비율 (안전성) / Y축: ROE (수익성)
-            </p>
-          </div>
-          <div className="h-[500px] w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
+            기업 성격 분류 (ROE vs 부채비율)
+          </h2>
+          <p className="text-sm text-slate-500">
+            X축: 부채비율 (안전성) / Y축: ROE (수익성)
+          </p>
+        </div>
+        <div className="w-full bg-white rounded-xl overflow-hidden relative">
+          <div className="h-[500px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart
-                margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1420,14 +1428,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   dataKey="debt"
                   name="부채비율"
                   unit="%"
-                  label={{
-                    value: "부채비율 (%)",
-                    position: "insideBottom",
-                    offset: -5,
-                    fontSize: 11,
-                    fill: "#475569",
-                    fontWeight: 600,
-                  }}
                   tick={{ fontSize: 11, fill: "#64748b" }}
                   domain={[0, "auto"]}
                   axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
@@ -1437,14 +1437,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   dataKey="roe"
                   name="ROE"
                   unit="%"
-                  label={{
-                    value: "ROE (%)",
-                    angle: -90,
-                    position: "insideLeft",
-                    fontSize: 11,
-                    fill: "#475569",
-                    fontWeight: 600,
-                  }}
                   tick={{ fontSize: 11, fill: "#64748b" }}
                   axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
                 />
@@ -1558,7 +1550,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- News Section --- */}
       <div className="mb-8">
-        <h3 className="text-lg font-bold text-slate-700 mb-4 px-2 flex items-center gap-2">
+        <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
           뉴스 <ChevronRight size={18} />
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
