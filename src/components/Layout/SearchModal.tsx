@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { PageView } from "../../types";
+import { PageView, type CompanySearchItem } from "../../types";
 import { Search, X, ChevronRight, TrendingUp, Loader2 } from "lucide-react";
 import GlassCard from "./GlassCard";
-import { searchCompanies, type CompanySearchItem } from "../../api/company";
+import { searchCompanies } from "../../api/company";
 import { getCompanyRankings } from "../../api/ranking";
 
 // 시가총액 포맷 함수
@@ -71,7 +71,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [topCompanies, setTopCompanies] = useState<TopCompany[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 컴포넌트 마운트 시 최근 검색어 로드 및 시가총액 TOP 4 조회
   useEffect(() => {
@@ -124,9 +124,8 @@ const SearchModal: React.FC<SearchModalProps> = ({
     debounceRef.current = setTimeout(async () => {
       try {
         const response = await searchCompanies(searchQuery);
-        // API 응답 구조에 따라 results 추출
-        const data = response.data;
-        const results = data?.data?.results ?? data?.results ?? [];
+        // API 응답 구조: response.data.data.results
+        const results = response.data?.data?.results ?? [];
         setSearchResults(results);
       } catch (error) {
         console.error("검색 실패:", error);
@@ -154,9 +153,11 @@ const SearchModal: React.FC<SearchModalProps> = ({
     }
 
     if (onSearchSelect) {
+      // onSearchSelect에서 navigate를 처리하므로 setPage 호출 불필요
       onSearchSelect(code);
+    } else {
+      setPage(PageView.COMPANY_DETAIL);
     }
-    setPage(PageView.COMPANY_DETAIL);
     onClose();
     setSearchQuery("");
     setSearchResults([]);

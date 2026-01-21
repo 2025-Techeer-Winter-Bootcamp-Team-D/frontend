@@ -15,6 +15,7 @@ import { getIndustryCompanies } from "../api/industry";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
+import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
 
 import type {
   NewsItem,
@@ -29,6 +30,7 @@ import type {
   CompanyOutlookData,
   RevenueComposition,
   IndustryCompany,
+  SankeyData,
 } from "../types";
 
 import {
@@ -70,6 +72,10 @@ const DEFAULT_COMPANY = {
   industry: "-",
   desc: "-",
   logo: "--",
+  market: "-",
+  establishmentDate: "-",
+  homepage: "",
+  address: "-",
 };
 
 // 재무 지표 설명 툴팁
@@ -385,6 +391,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
       industry: apiCompanyData.industry?.name || "-",
       desc: apiCompanyData.description,
       logo: apiCompanyData.company_name.substring(0, 2),
+      market: apiCompanyData.market || "-",
+      establishmentDate: apiCompanyData.establishment_date || "-",
+      homepage: apiCompanyData.homepage_url || "",
+      address: apiCompanyData.address || "-",
     };
   }, [apiCompanyData]);
 
@@ -507,6 +517,99 @@ const CompanyDetail: React.FC<DetailProps> = ({
       },
     } as FinancialData;
   }, [financialsData, selectedYear, selectedQuarter]);
+
+  // Sankey 차트 데이터 생성
+  const sankeyChartData = useMemo((): {
+    data: SankeyData;
+    totalRevenue: number;
+  } | null => {
+    if (!financialsData?.financial_statements?.length) {
+      return null;
+    }
+
+    const statements = financialsData.financial_statements;
+    const sortedStatements = [...statements].sort(
+      (a, b) => b.fiscal_year - a.fiscal_year,
+    );
+    const latest = sortedStatements[0];
+
+    const revenue = latest.revenue || 0;
+    const operatingProfit = latest.operating_profit || 0;
+    const netIncome = latest.net_income || 0;
+
+    // 비용 계산 (매출 - 영업이익 = 영업비용)
+    const operatingExpense = revenue - operatingProfit;
+    // 영업외비용 (영업이익 - 당기순이익)
+    const nonOperatingExpense = operatingProfit - netIncome;
+
+    const nodes = [
+      {
+        id: "revenue",
+        name: "매출액",
+        color: "#3B82F6",
+        category: "Revenue" as const,
+      },
+      {
+        id: "hub",
+        name: "손익구조",
+        color: "#64748B",
+        category: "Hub" as const,
+      },
+      {
+        id: "operating_expense",
+        name: "영업비용",
+        color: "#EF4444",
+        category: "Expense" as const,
+      },
+      {
+        id: "operating_profit",
+        name: "영업이익",
+        color: "#10B981",
+        category: "Profit" as const,
+      },
+      {
+        id: "non_operating",
+        name: "영업외비용",
+        color: "#F59E0B",
+        category: "Expense" as const,
+      },
+      {
+        id: "net_income",
+        name: "당기순이익",
+        color: "#8B5CF6",
+        category: "Profit" as const,
+      },
+    ];
+
+    const links = [
+      { source: "revenue", target: "hub", value: revenue },
+      {
+        source: "hub",
+        target: "operating_expense",
+        value: Math.max(0, operatingExpense),
+      },
+      {
+        source: "hub",
+        target: "operating_profit",
+        value: Math.max(0, operatingProfit),
+      },
+      {
+        source: "operating_profit",
+        target: "non_operating",
+        value: Math.max(0, nonOperatingExpense),
+      },
+      {
+        source: "operating_profit",
+        target: "net_income",
+        value: Math.max(0, netIncome),
+      },
+    ].filter((link) => link.value > 0);
+
+    return {
+      data: { nodes, links },
+      totalRevenue: revenue,
+    };
+  }, [financialsData]);
 
   const filteredReports = useMemo(() => {
     if (!companyReports || companyReports.length === 0) return [];
@@ -764,23 +867,72 @@ const CompanyDetail: React.FC<DetailProps> = ({
             <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-gray-100 pb-3">
               기업정보
             </h3>
-            <div className="grid grid-cols-2 gap-y-6 gap-x-12">
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500 text-xs">산업</span>
+            <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-xs min-w-[60px]">산업</span>
                 <span className="font-bold text-slate-800 text-sm">
                   {currentCompany.industry}
                 </span>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500 text-xs">대표자</span>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-xs min-w-[60px]">시장</span>
+                <span className="font-bold text-slate-800 text-sm">
+                  {currentCompany.market}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-xs min-w-[60px]">
+                  대표자
+                </span>
                 <span className="font-bold text-slate-800 text-sm flex items-center gap-1">
                   <User size={14} /> {currentCompany.ceo}
                 </span>
               </div>
-              <div className="flex flex-col gap-1 col-span-2">
-                <span className="text-gray-500 text-xs">주요사업</span>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-xs min-w-[60px]">
+                  시가총액
+                </span>
+                <span className="font-bold text-slate-800 text-sm">
+                  {currentCompany.marketCap}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-xs min-w-[60px]">
+                  설립일
+                </span>
+                <span className="font-bold text-slate-800 text-sm">
+                  {currentCompany.establishmentDate}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-xs min-w-[60px]">
+                  홈페이지
+                </span>
+                {currentCompany.homepage ? (
+                  <a
+                    href={currentCompany.homepage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-blue-600 text-sm hover:underline truncate"
+                  >
+                    {currentCompany.homepage.replace(/^https?:\/\//, "")}
+                  </a>
+                ) : (
+                  <span className="font-bold text-slate-800 text-sm">-</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 col-span-2">
+                <span className="text-gray-500 text-xs min-w-[60px]">주소</span>
+                <span className="font-bold text-slate-800 text-sm">
+                  {currentCompany.address}
+                </span>
+              </div>
+              <div className="flex items-start gap-3 col-span-2">
+                <span className="text-gray-500 text-xs min-w-[60px] pt-0.5">
+                  주요사업
+                </span>
                 <span className="font-bold text-slate-800 text-sm leading-relaxed">
-                  {currentCompany.desc}
+                  {currentCompany.desc || "-"}
                 </span>
               </div>
             </div>
@@ -836,8 +988,16 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-400 w-5">
-                          {item.rank}
+                        <span
+                          className={`text-xs font-bold w-5 ${item.rank <= 3 ? "text-base" : "text-gray-400"}`}
+                        >
+                          {item.rank === 1
+                            ? "🥇"
+                            : item.rank === 2
+                              ? "🥈"
+                              : item.rank === 3
+                                ? "🥉"
+                                : item.rank}
                         </span>
                         <span className="text-sm font-bold text-slate-700">
                           {item.name}
@@ -879,6 +1039,25 @@ const CompanyDetail: React.FC<DetailProps> = ({
               </div>
             )}
           </GlassCard>
+
+          {/* 손익 구조 Sankey 차트 */}
+          {sankeyChartData && (
+            <GlassCard className="p-6 mt-6">
+              <h3 className="text-xl font-bold text-slate-800 mb-4">
+                손익 구조 분석
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                매출액이 어떻게 비용과 이익으로 분배되는지 시각적으로
+                보여줍니다.
+              </p>
+              <div className="h-[500px]">
+                <IncomeSankeyChart
+                  data={sankeyChartData.data}
+                  totalRevenue={sankeyChartData.totalRevenue}
+                />
+              </div>
+            </GlassCard>
+          )}
         </div>
 
         <div ref={outlookRef} className="scroll-mt-32">
