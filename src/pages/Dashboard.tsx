@@ -22,6 +22,9 @@ import type { NewsDetailItem } from "../api/news";
 import { searchCompanies, getCompanyFinancials } from "../api/company";
 import { getCompanyRankings } from "../api/ranking";
 
+// Constants
+const MAX_SEARCH_RESULTS = 8;
+
 interface DashboardProps {
   setPage: (page: PageView) => void;
   onIndustryClick: (indutyCode: string) => void;
@@ -724,41 +727,43 @@ const Dashboard: React.FC<DashboardProps> = ({
                         />
                       </div>
                     ) : searchResults.length > 0 ? (
-                      searchResults.slice(0, 8).map((company) => (
-                        <button
-                          key={company.stock_code}
-                          onClick={() =>
-                            handleCompanySelect(company.stock_code)
-                          }
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-b border-slate-100 last:border-b-0"
-                        >
-                          <div className="w-8 h-8 flex-shrink-0">
-                            {company.logo_url ? (
-                              <img
-                                src={company.logo_url}
-                                alt={company.company_name}
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">
-                                {(company.company_name &&
-                                  company.company_name.charAt(0)) ||
-                                  (company.stock_code &&
-                                    company.stock_code.charAt(0)) ||
-                                  "?"}
+                      searchResults
+                        .slice(0, MAX_SEARCH_RESULTS)
+                        .map((company) => (
+                          <button
+                            key={company.stock_code}
+                            onClick={() =>
+                              handleCompanySelect(company.stock_code)
+                            }
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-b border-slate-100 last:border-b-0"
+                          >
+                            <div className="w-8 h-8 flex-shrink-0">
+                              {company.logo_url ? (
+                                <img
+                                  src={company.logo_url}
+                                  alt={company.company_name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">
+                                  {(company.company_name &&
+                                    company.company_name.charAt(0)) ||
+                                    (company.stock_code &&
+                                      company.stock_code.charAt(0)) ||
+                                    "?"}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-slate-800 truncate">
+                                {company.company_name}
                               </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-bold text-slate-800 truncate">
-                              {company.company_name}
+                              <div className="text-xs text-slate-500">
+                                {company.stock_code}
+                              </div>
                             </div>
-                            <div className="text-xs text-slate-500">
-                              {company.stock_code}
-                            </div>
-                          </div>
-                        </button>
-                      ))
+                          </button>
+                        ))
                     ) : (
                       <div className="py-8 text-center text-slate-400 text-sm">
                         검색 결과가 없습니다
