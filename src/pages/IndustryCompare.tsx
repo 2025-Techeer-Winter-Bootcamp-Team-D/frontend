@@ -40,28 +40,12 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from "recharts";
-import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
-  getIndustryNews,
-  getIndustryAnalysis,
-  getIndustryCompanies,
-  getIndustryChart,
-} from "../api/industry";
-import { getCompanyFinancials, getStockOhlcv } from "../api/company";
-
-// 산업 코드 매핑 (IndustryKey -> API induty_code)
-const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
-  agriculture_fishery: "0027", // 농어업
-  manufacturing_kosdaq: "1015", //제조업
-  food: "0006", //음식료품
-  chemical: "0009", // 화학/정유
-  pharmaceuticals: "0010", //의약품
-  battery: "0014", // 전기전자 (배터리는 전기전자에 포함)
-  auto: "0015", // 운수장비 (자동차/조선)
-  semiconductor_kosdaq: "1047", //반도체(코스닥)
-  it_kosdaq: "1012", //it 산업(코스닥)
-  insurance: "0025", //보험
-};
+  useIndustryData,
+  INDUTY_CODE_BY_KEY,
+} from "../hooks/useIndustryQueries";
+import { getStockOhlcv, getCompanyFinancials } from "../api/company";
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -82,16 +66,36 @@ const generateSparklineData = () => {
 // 산업명 매핑 (IndustryKey -> 산업명)
 const INDUSTRY_NAMES: Record<IndustryKey, { name: string; indexName: string }> =
   {
-    agriculture_fishery: { name: "농어업", indexName: "농어업 지수" },
-    manufacturing_kosdaq: { name: "제조업", indexName: "제조업 지수" },
-    food: { name: "음식료품", indexName: "음식료품 지수" },
-    chemical: { name: "화학/정유", indexName: "화학 지수" },
-    pharmaceuticals: { name: "의약품", indexName: "의약품 지수" },
-    battery: { name: "전기전자", indexName: "전기전자 지수" },
-    auto: { name: "운수장비", indexName: "운수장비 지수" },
-    semiconductor_kosdaq: { name: "반도체", indexName: "반도체 지수" },
-    it_kosdaq: { name: "IT산업", indexName: "IT 지수" },
+    electronics_kosdaq: {
+      name: "전기·전자(코스닥)",
+      indexName: "전기·전자 지수",
+    },
+    pharmaceuticals: { name: "제약", indexName: "제약 지수" },
+    machinery_kosdaq: {
+      name: "기계·장비(코스닥)",
+      indexName: "기계·장비 지수",
+    },
+    finance: { name: "금융", indexName: "금융 지수" },
+    food_tobacco: {
+      name: "음식료·담배(코스닥)",
+      indexName: "음식료·담배 지수",
+    },
+    chemical: { name: "화학", indexName: "화학 지수" },
+    transportation: { name: "운송장비·부품", indexName: "운송장비·부품 지수" },
+    machinery: { name: "기계·장비", indexName: "기계·장비 지수" },
+    electronics: { name: "전기·전자(코스피)", indexName: "전기·전자 지수" },
+    it_service: { name: "IT 서비스", indexName: "IT 서비스 지수" },
+    distribution: { name: "유통", indexName: "유통 지수" },
     insurance: { name: "보험", indexName: "보험 지수" },
+    entertainment: { name: "오락·문화", indexName: "오락·문화 지수" },
+    utilities: { name: "전기·가스", indexName: "전기·가스 지수" },
+    metal: { name: "금속", indexName: "금속 지수" },
+    logistics: { name: "운송·창고", indexName: "운송·창고 지수" },
+    pharmaceuticals_kosdaq: { name: "제약(코스닥)", indexName: "제약 지수" },
+    food_tobacco_kospi: {
+      name: "음식료·담배(코스피)",
+      indexName: "음식료·담배 지수",
+    },
   };
 
 // 시가총액 포맷 함수
@@ -134,6 +138,72 @@ const MiniChart = ({ color }: { color: string }) => {
   );
 };
 
+// 주 단위 데이터 샘플링 (매주 월요일 또는 가장 가까운 날짜)
+function sampleWeekly(data: Array<{ time: string; value: number }>) {
+  if (data.length === 0) return data;
+  const result: Array<{ time: string; value: number }> = [];
+  let lastWeek = -1;
+  for (const item of data) {
+    const date = new Date(item.time);
+    const week = Math.floor(date.getTime() / (7 * 24 * 60 * 60 * 1000));
+    if (week !== lastWeek) {
+      result.push(item);
+      lastWeek = week;
+    }
+  }
+  return result;
+}
+
+// 월 단위 데이터 샘플링 (매월 첫 번째 데이터)
+function sampleMonthly(data: Array<{ time: string; value: number }>) {
+  if (data.length === 0) return data;
+  const result: Array<{ time: string; value: number }> = [];
+  let lastMonth = "";
+  for (const item of data) {
+    const date = new Date(item.time);
+    const month = `${date.getFullYear()}-${date.getMonth()}`;
+    if (month !== lastMonth) {
+      result.push(item);
+      lastMonth = month;
+    }
+  }
+  return result;
+}
+
+function getAxisPropsByRange(range: TimeRange) {
+  switch (range) {
+    case "1M":
+      // 일단위 데이터, X축은 주 단위로 레이블 표시 (12.12 형식)
+      return {
+        interval: "preserveStartEnd" as const,
+        minTickGap: 50,
+        formatter: (t: string) => format(new Date(t), "M.d"),
+        sampler: sampleWeekly,
+      };
+    case "3M":
+    case "6M":
+      // 주단위: 12.12 형식
+      return {
+        interval: "preserveStartEnd" as const,
+        minTickGap: 40,
+        formatter: (t: string) => format(new Date(t), "M.d"),
+        sampler: sampleWeekly,
+      };
+    case "1Y":
+      // 월단위: 25.12 형식 (yy.MM)
+      return {
+        interval: "preserveStartEnd" as const,
+        minTickGap: 40,
+        formatter: (t: string) => format(new Date(t), "yy.M"),
+        sampler: sampleMonthly,
+      };
+    default:
+      return {
+        sampler: (data: Array<{ time: string; value: number }>) => data,
+      };
+  }
+}
+
 const IndustryAnalysis: React.FC<AnalysisProps> = ({
   setPage,
   initialIndutyCode,
@@ -141,74 +211,46 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   onToggleStar,
   setCompanyCode,
 }) => {
-  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 agriculture_fishery
+  // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 electronics
   const getInitialIndustry = (): IndustryKey => {
-    if (
-      initialIndutyCode &&
-      INDUTY_CODE_BY_KEY[initialIndutyCode as IndustryKey]
-    ) {
+    if (!initialIndutyCode) return "electronics";
+
+    // 1. initialIndutyCode가 이미 유효한 IndustryKey인지 확인
+    if (INDUTY_CODE_BY_KEY[initialIndutyCode as IndustryKey]) {
       return initialIndutyCode as IndustryKey;
     }
-    return "agriculture_fishery";
+
+    // 2. initialIndutyCode가 코드 값(예: "0013")인 경우 역방향 조회
+    const foundEntry = Object.entries(INDUTY_CODE_BY_KEY).find(
+      ([, code]) => code === initialIndutyCode,
+    );
+    if (foundEntry) {
+      return foundEntry[0] as IndustryKey;
+    }
+
+    return "electronics";
   };
 
   const [selectedIndustry, setSelectedIndustry] =
     useState<IndustryKey>(getInitialIndustry);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
+  const xAxisProps = getAxisPropsByRange(timeRange);
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
 
-  // 산업 코드
-  const indutyCode = INDUTY_CODE_BY_KEY[selectedIndustry];
-
   // -----------------------------
-  // TanStack Query - API 데이터 조회
+  // TanStack Query - 커스텀 훅 사용
+  // (accessToken 없으면 요청 안함, 캐시 재사용, 기간 변경 시 깜빡임 방지)
   // -----------------------------
-  const analysisQuery = useQuery({
-    queryKey: ["industryAnalysis", indutyCode],
-    queryFn: () => getIndustryAnalysis(indutyCode),
-    enabled: !!indutyCode,
-  });
-
-  const companiesQuery = useQuery({
-    queryKey: ["industryCompanies", indutyCode],
-    queryFn: () => getIndustryCompanies(indutyCode),
-    enabled: !!indutyCode,
-  });
-
-  const newsQuery = useQuery({
-    queryKey: ["industryNews", indutyCode],
-    queryFn: () => getIndustryNews(indutyCode),
-    enabled: !!indutyCode,
-  });
-
-  // 산업 지수 차트 조회 (기간별)
-  const chartPeriodMap: Record<TimeRange, "1m" | "3m" | "6m" | "1y"> = {
-    "1M": "1m",
-    "3M": "3m",
-    "6M": "6m",
-    "1Y": "1y",
-  };
-
-  const chartQuery = useQuery({
-    queryKey: ["industryChart", indutyCode, timeRange],
-    queryFn: () => getIndustryChart(indutyCode, chartPeriodMap[timeRange]),
-    enabled: !!indutyCode,
-  });
-
-  // 쿼리 상태 추출
-  const loading =
-    analysisQuery.isLoading ||
-    companiesQuery.isLoading ||
-    newsQuery.isLoading ||
-    chartQuery.isLoading;
-  const error =
-    analysisQuery.error?.message ||
-    companiesQuery.error?.message ||
-    newsQuery.error?.message ||
-    chartQuery.error?.message ||
-    null;
+  const {
+    analysisQuery,
+    companiesQuery,
+    newsQuery,
+    chartQuery,
+    isLoading: loading,
+    error,
+  } = useIndustryData(selectedIndustry, timeRange);
   // API 응답 구조에 맞게 타입 정의
   const analysisResponse = analysisQuery.data as {
     data?: {
@@ -578,42 +620,35 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const trendData = useMemo(() => {
     // API 차트 데이터가 있으면 사용
     if (chartData && chartData.length > 0) {
-      return chartData.map((item) => ({
+      const rawData = chartData.map((item) => ({
         time: item.date,
         value: item.close,
       }));
+
+      // 날짜 기준 오름차순 정렬 (과거 → 최신)
+      const rawDataSorted = rawData.sort(
+        (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+      );
+
+      // timeRange에 따라 샘플링 적용
+      const sampler = xAxisProps.sampler;
+      return sampler ? sampler(rawDataSorted) : rawDataSorted;
     }
 
     // API 데이터가 없으면 빈 배열 반환
     return [];
-  }, [chartData]);
+  }, [chartData, xAxisProps.sampler]);
 
   return (
     <div className="animate-fade-in pb-12 relative">
-      <button
-        onClick={() => setPage(PageView.DASHBOARD)}
-        className="flex items-center text-slate-500 hover:text-shinhan-blue mb-4 transition-colors"
-      >
-        <ArrowLeft size={16} className="mr-1" />
-        대시보드로 돌아가기
-      </button>
-
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            산업 분석
-            <span className="text-gray-300">|</span>
-            <span className="text-shinhan-blue">
-              {currentIndustryInfo.name}
-            </span>
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            {currentIndustryInfo.indexName} 및 주요 구성 종목 심층 분석
-          </p>
-        </div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          산업 분석
+          <span className="text-gray-300">|</span>
+          <span className="text-shinhan-blue">{currentIndustryInfo.name}</span>
+        </h1>
         <div className="relative">
-          {/* Rounded-md */}
           <select
             value={selectedIndustry}
             onChange={(e) => setSelectedIndustry(e.target.value as IndustryKey)}
@@ -632,8 +667,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       </div>
 
       {/* Sector Overview Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-        <GlassCard className="p-6 col-span-2 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 items-stretch">
+        <div className="lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -725,56 +760,85 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: "#94A3B8" }}
+                  interval={xAxisProps.interval}
+                  minTickGap={xAxisProps.minTickGap}
+                  tickFormatter={xAxisProps.formatter}
                 />
                 <YAxis hide domain={["auto", "auto"]} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </GlassCard>
+        </div>
 
-        <GlassCard className="p-6" variant="dark">
-          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-            <Info size={18} className="text-shinhan-gold" />
-            산업분야 전망
-          </h3>
-          {loading ? (
-            <p className="text-white/60 text-sm">로딩 중...</p>
-          ) : error ? (
-            <p className="text-red-300 text-sm">{error}</p>
-          ) : (
-            <div className="space-y-3">
-              {/* 분석 내용 글라스 카드 */}
-              <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-4">
-                <p className="text-white text-sm leading-relaxed">
-                  {analysisData?.scenarios?.neutral?.analysis ??
-                    "전망 정보가 없습니다."}
-                </p>
-              </div>
-              {analysisData?.scenarios && (
-                <div className="space-y-2">
-                  <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                      긍정
-                    </span>
-                    <p className="text-xs text-white leading-relaxed">
-                      {analysisData?.scenarios?.optimistic?.analysis ??
-                        "정보 없음"}
-                    </p>
-                  </div>
-                  <div className="bg-white/25 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                      리스크
-                    </span>
-                    <p className="text-xs text-white leading-relaxed">
-                      {analysisData?.scenarios?.pessimistic?.analysis ??
-                        "정보 없음"}
-                    </p>
-                  </div>
+        {/* Liquid Glass Card - 산업분야 전망 */}
+        <div
+          className="
+            relative overflow-hidden rounded-3xl h-full
+            bg-[#0046FF]/80
+            backdrop-blur-3xl backdrop-saturate-200
+            border border-white/30
+            shadow-[inset_0_1px_0_0_rgba(255,255,255,0.7),inset_1px_0_0_0_rgba(255,255,255,0.5),inset_0_-1px_0_0_rgba(255,255,255,0.1)]
+          "
+        >
+          {/* Internal Light Layers */}
+          <div className="pointer-events-none absolute -top-[60px] -left-[60px] h-[250px] w-[250px] rounded-full bg-white/25 blur-[60px]" />
+          <div className="pointer-events-none absolute -bottom-[80px] -right-[80px] h-[300px] w-[300px] rounded-full bg-blue-400/30 blur-[70px]" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-3xl" />
+
+          {/* Content */}
+          <div className="relative z-10 p-6 flex flex-col h-full">
+            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+              <Info size={18} className="text-shinhan-gold" />
+              산업분야 전망
+            </h3>
+            {loading ? (
+              <p className="text-white/60 text-sm">로딩 중...</p>
+            ) : error ? (
+              <p className="text-red-300 text-sm">{error}</p>
+            ) : (
+              <div className="space-y-3 flex-1">
+                {/* 분석 내용 - Liquid Glass */}
+                <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
+                  <div className="pointer-events-none absolute -top-4 -left-4 h-16 w-16 rounded-full bg-white/20 blur-xl" />
+                  <p className="relative z-10 text-white text-sm leading-relaxed">
+                    {analysisData?.scenarios?.neutral?.analysis ??
+                      "전망 정보가 없습니다."}
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
-        </GlassCard>
+                {analysisData?.scenarios && (
+                  <div className="space-y-2">
+                    {/* 긍정 - Liquid Glass */}
+                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                      <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
+                      <div className="relative z-10 flex items-start gap-2">
+                        <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          긍정
+                        </span>
+                        <p className="text-xs text-white/90 leading-relaxed">
+                          {analysisData?.scenarios?.optimistic?.analysis ??
+                            "정보 없음"}
+                        </p>
+                      </div>
+                    </div>
+                    {/* 리스크 - Liquid Glass */}
+                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                      <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
+                      <div className="relative z-10 flex items-start gap-2">
+                        <span className="px-2 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          리스크
+                        </span>
+                        <p className="text-xs text-white/90 leading-relaxed">
+                          {analysisData?.scenarios?.pessimistic?.analysis ??
+                            "정보 없음"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* --- Top 3 Companies (Rankings) --- */}
@@ -898,24 +962,33 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- All Companies Ranking Table --- */}
       <div className="mb-10">
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left table-fixed">
+              <colgroup>
+                <col className="w-10" />
+                <col className="w-16" />
+                <col className="w-12" />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col className="w-32" />
+              </colgroup>
               <thead className="text-xs text-gray-400 border-b border-gray-100">
                 <tr>
-                  <th className="pl-6 pr-2 py-3 font-normal w-12"></th>
-                  <th className="px-2 py-3 font-normal text-center w-10">
-                    순위
-                  </th>
-                  <th className="px-6 py-3 font-normal w-16"></th>
-                  <th className="px-6 py-3 font-normal text-center">기업명</th>
-                  <th className="px-6 py-3 font-normal text-center">주가</th>
-                  <th className="px-6 py-3 font-normal text-center">변동</th>
-                  <th className="px-6 py-3 font-normal text-center">
+                  <th className="pl-3 pr-1 py-3 font-normal"></th>
+                  <th className="px-1 py-3 font-normal text-center">순위</th>
+                  <th className="px-2 py-3 font-normal"></th>
+                  <th className="px-3 py-3 font-normal text-center">기업명</th>
+                  <th className="px-3 py-3 font-normal text-center">주가</th>
+                  <th className="px-3 py-3 font-normal text-center">변동</th>
+                  <th className="px-3 py-3 font-normal text-center">
                     미니차트
                   </th>
-                  <th className="px-6 py-3 font-normal text-center">ROE</th>
-                  <th className="px-6 py-3 font-normal text-center">
+                  <th className="px-3 py-3 font-normal text-center">ROE</th>
+                  <th className="px-3 py-3 font-normal text-center">
                     시가총액
                   </th>
                 </tr>
@@ -927,7 +1000,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
                     onClick={() => handleCompanyClick(company.code)}
                   >
-                    <td className="pl-6 pr-2 py-4">
+                    <td className="pl-3 pr-1 py-4">
                       <button
                         onClick={(e) => handleToggleStar(e, company.code)}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -937,28 +1010,28 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         />
                       </button>
                     </td>
-                    <td className="px-2 py-4 text-center">
+                    <td className="px-1 py-4 text-center">
                       <span className="font-bold text-slate-600 text-lg">
                         {index + 1}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-2 py-4 text-center">
                       <span className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center font-bold text-slate-600 text-xs shadow-sm">
                         {company.name.charAt(0)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center font-bold text-slate-800 text-base">
+                    <td className="px-3 py-4 text-center font-bold text-slate-800 text-base">
                       {company.name}
                     </td>
-                    <td className="px-6 py-4 text-center font-medium text-slate-700 text-base">
+                    <td className="px-3 py-4 text-center font-medium text-slate-700 text-base">
                       {company.price}
                     </td>
                     <td
-                      className={`px-6 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
+                      className={`px-3 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                     >
                       {company.change}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-3 py-4 text-center">
                       <div className="inline-block">
                         <MiniChart
                           color={
@@ -969,11 +1042,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center font-medium text-slate-800">
+                    <td className="px-3 py-4 text-center font-medium text-slate-800">
                       {company.roe >= 0 ? "+" : ""}
                       {company.roe}%
                     </td>
-                    <td className="px-6 py-4 text-center text-slate-600 font-medium">
+                    <td className="px-3 py-4 text-center text-slate-600 font-medium whitespace-nowrap">
                       {company.marketCap}
                     </td>
                   </tr>
@@ -1154,19 +1227,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Valuation Position Map --- */}
       <div className="mb-10">
-        <div className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-[#0046FF]">
-              산업 내 밸류에이션 포지셔닝
-            </h2>
-            <p className="text-sm text-slate-500">
-              X축: 수익성(ROE) / Y축: 저평가(PBR) / 크기: 시가총액
-            </p>
-          </div>
-          <div className="h-[500px] w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-[#0046FF]">
+            산업 내 밸류에이션 포지셔닝
+          </h2>
+          <p className="text-sm text-slate-500">
+            X축: 수익성(ROE) / Y축: 저평가(PBR) / 크기: 시가총액
+          </p>
+        </div>
+        <div className="w-full bg-white rounded-xl overflow-hidden relative">
+          <div className="h-[500px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart
-                margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1311,20 +1384,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- Efficiency vs Leverage (ROE vs Debt) --- */}
       <div className="mb-10">
-        <div className="w-full bg-white rounded-xl p-4 shadow-xl border border-slate-100 overflow-hidden relative">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
-              <div className="text-shinhan-blue" />
-              기업 성격 분류 (ROE vs 부채비율)
-            </h2>
-            <p className="text-sm text-slate-500">
-              X축: 부채비율 (안전성) / Y축: ROE (수익성)
-            </p>
-          </div>
-          <div className="h-[500px] w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
+            기업 성격 분류 (ROE vs 부채비율)
+          </h2>
+          <p className="text-sm text-slate-500">
+            X축: 부채비율 (안전성) / Y축: ROE (수익성)
+          </p>
+        </div>
+        <div className="w-full bg-white rounded-xl overflow-hidden relative">
+          <div className="h-[500px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart
-                margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1336,14 +1408,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   dataKey="debt"
                   name="부채비율"
                   unit="%"
-                  label={{
-                    value: "부채비율 (%)",
-                    position: "insideBottom",
-                    offset: -5,
-                    fontSize: 11,
-                    fill: "#475569",
-                    fontWeight: 600,
-                  }}
                   tick={{ fontSize: 11, fill: "#64748b" }}
                   domain={[0, "auto"]}
                   axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
@@ -1353,14 +1417,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   dataKey="roe"
                   name="ROE"
                   unit="%"
-                  label={{
-                    value: "ROE (%)",
-                    angle: -90,
-                    position: "insideLeft",
-                    fontSize: 11,
-                    fill: "#475569",
-                    fontWeight: 600,
-                  }}
                   tick={{ fontSize: 11, fill: "#64748b" }}
                   axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
                 />
@@ -1474,7 +1530,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
       {/* --- News Section --- */}
       <div className="mb-8">
-        <h3 className="text-lg font-bold text-slate-700 mb-4 px-2 flex items-center gap-2">
+        <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
           뉴스 <ChevronRight size={18} />
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
