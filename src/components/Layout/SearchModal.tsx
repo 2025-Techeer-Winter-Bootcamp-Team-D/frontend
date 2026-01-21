@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PageView, type CompanySearchItem } from "../../types";
 import { Search, X, ChevronRight, TrendingUp, Loader2 } from "lucide-react";
-import { searchCompanies, type CompanySearchItem } from "../../api/company";
-import GlassCard from "./GlassCard";
 import { searchCompanies } from "../../api/company";
 import { getCompanyRankings } from "../../api/ranking";
 
