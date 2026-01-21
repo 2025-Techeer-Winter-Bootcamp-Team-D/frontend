@@ -785,7 +785,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                     </div>
                   ))}
-                  <div
+                  <button
+                    type="button"
                     onClick={() => navigate("/disclosures")}
                     className="pt-2 flex items-center justify-center gap-2 cursor-pointer group"
                   >
@@ -805,7 +806,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         d="M9 5l7 7-7 7"
                       />
                     </svg>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>

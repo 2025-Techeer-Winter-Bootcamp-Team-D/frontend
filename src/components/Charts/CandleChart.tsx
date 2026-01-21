@@ -46,7 +46,20 @@ const getYDomain = (): [number, number] => {
 
 const yDomain = getYDomain();
 
-const CandleStickShape = (props: any) => {
+type CandleStickShapeProps = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  payload: {
+    open: number;
+    close: number;
+    high: number;
+    low: number;
+  };
+};
+
+const CandleStickShape = (props: CandleStickShapeProps) => {
   const { x, y, width, height, payload } = props;
   const { open, close, high, low } = payload;
   const isUp = close >= open;
