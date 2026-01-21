@@ -998,18 +998,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 ) : (
                   filteredReports.map(
                     (item: CompanyReportItem, idx: number) => (
-                      <div
+                      <a
                         key={item.rcept_no || idx}
-                        onClick={() => {
-                          if (item.report_url) {
-                            window.open(
-                              item.report_url,
-                              "_blank",
-                              "noopener,noreferrer",
-                            );
-                          }
-                        }}
-                        className="grid grid-cols-12 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                        href={item.report_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="grid grid-cols-12 border-b border-gray-200 hover:bg-gray-50 transition-colors"
                       >
                         <div className="col-span-2 px-4 py-3 text-sm text-gray-700">
                           {item.submitted_at
@@ -1022,7 +1016,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                         <div className="col-span-7 px-4 py-3 text-sm text-gray-700">
                           {item.report_name}
                         </div>
-                      </div>
+                      </a>
                     ),
                   )
                 )}
