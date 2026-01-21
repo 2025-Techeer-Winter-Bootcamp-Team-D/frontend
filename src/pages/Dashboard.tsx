@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search, Loader2, TrendingUp, Bell, X } from "lucide-react";
+import { Search, Loader2, TrendingUp, Bell, X } from "lucide-react";
 
 // Components
 import GlassCard from "../components/Layout/GlassCard";
@@ -538,16 +538,15 @@ const Dashboard: React.FC<DashboardProps> = ({
             <br />
             기업의 <span className="text-blue-300">미래 가치</span>
           </h1>
-          <button
-            onClick={() =>
-              document
-                .getElementById("parallel-coordinates")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="px-10 py-4 bg-white text-blue-600 font-bold rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center gap-3 mx-auto"
-          >
-            분석 도구 시작 <ArrowRight size={20} />
-          </button>
+          {/* 스크롤 다운 인디케이터 */}
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60">
+            <span className="text-xs tracking-widest uppercase">
+              Scroll Down
+            </span>
+            <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center pt-2">
+              <div className="w-1.5 h-3 bg-white/60 rounded-full animate-bounce"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -604,14 +603,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                 주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
               </p>
             </div>
-            <div className="relative w-full md:w-96" ref={searchRef}>
+            <div
+              className="relative w-full md:w-96 flex items-center"
+              ref={searchRef}
+            >
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10"
+                className="absolute left-4 text-slate-400 z-10 pointer-events-none"
                 size={20}
               />
               <input
                 type="text"
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-none shadow-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:border-blue-400 transition-all leading-none"
                 placeholder="기업명 혹은 종목코드"
                 value={searchQuery}
                 onChange={(e) => {
@@ -637,13 +639,23 @@ const Dashboard: React.FC<DashboardProps> = ({
                         onClick={() => handleCompanySelect(company.stock_code)}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-b border-slate-100 last:border-b-0"
                       >
-                        {company.logo_url && (
-                          <img
-                            src={company.logo_url}
-                            alt={company.company_name}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        )}
+                        <div className="w-8 h-8 flex-shrink-0">
+                          {company.logo_url ? (
+                            <img
+                              src={company.logo_url}
+                              alt={company.company_name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">
+                              {(company.company_name &&
+                                company.company_name.charAt(0)) ||
+                                (company.stock_code &&
+                                  company.stock_code.charAt(0)) ||
+                                "?"}
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-slate-800 truncate">
                             {company.company_name}
@@ -762,11 +774,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <Bell size={20} className="text-blue-600" /> 자본시장 공시
                 </h3>
                 <div className="space-y-6">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className="pb-4 border-b border-slate-50 last:border-0"
-                    >
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="pb-4 border-b border-slate-50">
                       <span className="text-[10px] font-bold text-blue-600 uppercase">
                         공시
                       </span>
@@ -780,6 +789,28 @@ const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                     </div>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/disclosures")}
+                    className="pt-2 flex items-center justify-center gap-2 cursor-pointer group"
+                  >
+                    <span className="text-sm font-semibold text-slate-500 group-hover:text-blue-600 transition-colors">
+                      전체공시 보기
+                    </span>
+                    <svg
+                      className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>

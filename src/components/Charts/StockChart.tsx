@@ -20,6 +20,17 @@ const StockChart: React.FC<StockChartProps> = ({
   showAxes = true,
   period = "1D",
 }) => {
+  // Y축 domain을 데이터에 밀착시키기 위한 함수
+  const getYDomain = (data: { price: number }[]): [number, number] => {
+    const prices = data.map((d) => d.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min;
+    // 변동폭의 5%만 패딩으로 추가하여 변화가 더 잘 보이도록 함
+    const padding = range * 0.05;
+    return [min - padding, max + padding];
+  };
+
   const data = useMemo(() => {
     switch (period) {
       case "1W":
@@ -64,6 +75,9 @@ const StockChart: React.FC<StockChartProps> = ({
     }
   }, [period]);
 
+  // Y축 domain 계산
+  const yDomain = useMemo(() => getYDomain(data), [data]);
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart
@@ -87,23 +101,23 @@ const StockChart: React.FC<StockChartProps> = ({
             stroke="#E5E7EB"
           />
         )}
+        {/* Y축: showAxes가 false여도 domain 적용을 위해 hidden으로 렌더링 */}
+        <YAxis
+          domain={yDomain}
+          orientation="right"
+          axisLine={false}
+          tickLine={false}
+          tick={showAxes ? { fontSize: 12, fill: "#94A3B8" } : false}
+          tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+          hide={!showAxes}
+        />
         {showAxes && (
-          <>
-            <XAxis
-              dataKey="time"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#94A3B8" }}
-            />
-            <YAxis
-              domain={["auto", "auto"]}
-              orientation="right"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#94A3B8" }}
-              tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-            />
-          </>
+          <XAxis
+            dataKey="time"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 12, fill: "#94A3B8" }}
+          />
         )}
         <Tooltip
           contentStyle={{
