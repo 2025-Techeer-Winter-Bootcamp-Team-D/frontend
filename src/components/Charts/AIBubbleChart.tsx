@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ScatterChart,
   Scatter,
@@ -11,8 +11,8 @@ import {
 } from "recharts";
 import type { AITrend } from "../../types";
 
-const data: AITrend[] = [
-  // Center Major Trend
+// 기본 샘플 데이터 (API 데이터가 없을 때 사용)
+const SAMPLE_DATA: AITrend[] = [
   {
     keyword: "AI 반도체",
     score: 98,
@@ -21,8 +21,6 @@ const data: AITrend[] = [
     y: 50,
     size: 1400,
   },
-
-  // Primary Cluster
   { keyword: "HBM", score: 94, category: "Memory", x: 32, y: 40, size: 900 },
   {
     keyword: "온디바이스AI",
@@ -41,8 +39,6 @@ const data: AITrend[] = [
     y: 28,
     size: 750,
   },
-
-  // Secondary Cluster
   {
     keyword: "자율주행",
     score: 82,
@@ -75,8 +71,6 @@ const data: AITrend[] = [
     y: 30,
     size: 480,
   },
-
-  // Tertiary / Peripheral
   {
     keyword: "데이터센터",
     score: 70,
@@ -118,6 +112,12 @@ const data: AITrend[] = [
     size: 300,
   },
 ];
+
+export interface KeywordData {
+  keyword: string;
+  count: number;
+  doc_count: number;
+}
 
 const COLORS = [
   "#0046FF", // Shinhan Blue
@@ -260,7 +260,48 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const AIBubbleChart: React.FC = () => {
+interface AIBubbleChartProps {
+  keywords?: KeywordData[];
+}
+
+// API 키워드 데이터를 버블 차트 데이터로 변환
+const convertKeywordsToChartData = (keywords: KeywordData[]): AITrend[] => {
+  if (!keywords || keywords.length === 0) return SAMPLE_DATA;
+
+  const maxCount = Math.max(...keywords.map((k) => k.count));
+
+  // 버블 위치를 골든 앵글 패턴으로 배치 (더 균일한 분포)
+  return keywords.map((item, index) => {
+    // 스코어: count 기반으로 100점 만점 환산
+    const score = Math.round((item.count / maxCount) * 100);
+
+    // 버블 크기: count에 비례
+    const size = 300 + (item.count / maxCount) * 1100;
+
+    // 골든 앵글 기반 위치 계산 (중앙 집중형)
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    const angle = index * goldenAngle;
+    const radius = 15 + (index / keywords.length) * 30;
+
+    const x = 50 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+
+    return {
+      keyword: item.keyword,
+      score,
+      category: "Trend",
+      x: Math.max(10, Math.min(90, x)),
+      y: Math.max(10, Math.min(90, y)),
+      size,
+    };
+  });
+};
+
+const AIBubbleChart: React.FC<AIBubbleChartProps> = ({ keywords }) => {
+  const chartData = useMemo(() => {
+    return convertKeywordsToChartData(keywords ?? []);
+  }, [keywords]);
+
   return (
     <div className="w-full h-[400px] select-none">
       <ResponsiveContainer width="100%" height="100%">
@@ -272,8 +313,8 @@ const AIBubbleChart: React.FC = () => {
             content={<CustomTooltip />}
             cursor={{ strokeDasharray: "3 3" }}
           />
-          <Scatter name="AI Trends" data={data} shape={<CustomBubble />}>
-            {data.map((entry, index) => (
+          <Scatter name="AI Trends" data={chartData} shape={<CustomBubble />}>
+            {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS[index % COLORS.length]}

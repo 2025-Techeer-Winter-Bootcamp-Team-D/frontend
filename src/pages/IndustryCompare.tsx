@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -47,6 +47,7 @@ import {
   getIndustryCompanies,
   getIndustryChart,
 } from "../api/industry";
+import { getCompanyFinancials, getStockOhlcv } from "../api/company";
 
 // 산업 코드 매핑 (IndustryKey -> API induty_code)
 const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
@@ -239,8 +240,38 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   } | null;
 
   const analysisData = analysisResponse?.data;
-  const newsResponse = newsQuery.data as { items?: IndustryNewsItem[] } | null;
-  const industryNews = newsResponse?.items ?? [];
+  // API 응답: { data: { industry_name, news: [...] } }
+  const newsResponse = newsQuery.data as {
+    data?: {
+      industry_name?: string;
+      news?: Array<{
+        news_id: number;
+        title: string;
+        summary: string;
+        url: string;
+        author: string | null;
+        press: string;
+        keywords: string[];
+        sentiment: string;
+        published_at: string;
+      }>;
+    };
+  } | null;
+
+  const industryNews: IndustryNewsItem[] = useMemo(() => {
+    const newsData = newsResponse?.data?.news ?? [];
+    return newsData.map((item) => ({
+      id: item.news_id,
+      title: item.title,
+      content: item.summary,
+      source: item.press,
+      time: new Date(item.published_at).toLocaleDateString("ko-KR", {
+        month: "short",
+        day: "numeric",
+      }),
+      url: item.url,
+    }));
+  }, [newsResponse]);
 
   // 차트 데이터
   const chartData = useMemo(() => {
@@ -289,29 +320,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   );
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
 
-  const filteredIds = useMemo(() => {
-    const ids = new Set<string>();
-    SAMPLE_STOCKS.forEach((stock) => {
-      let pass = true;
-      for (const key of Object.keys(filters) as AxisKey[]) {
-        const range = filters[key];
-        if (range) {
-          // stock[key] 값을 숫자로 명시적 변환하여 비교 (ts2365 에러 해결)
-          const val = Number(stock[key]);
-          const min = range.min;
-          const max = range.max;
-
-          if (val < min || val > max) {
-            pass = false;
-            break;
-          }
-        }
-      }
-      if (pass) ids.add(stock.id);
-    });
-    return ids;
-  }, [filters]);
-
   // 현재 선택된 산업의 이름 정보 가져오기
   const currentIndustryInfo = INDUSTRY_NAMES[selectedIndustry];
 
@@ -326,6 +334,167 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     }>;
   } | null;
 
+  // 각 기업의 재무 데이터 및 주가 데이터 상태 관리
+  const [financialsMap, setFinancialsMap] = useState<
+    Record<
+      string,
+      {
+        roe: number;
+        pbr: number;
+        per: number;
+        debtRatio: number;
+        divYield: number;
+        price: string;
+        change: string;
+      }
+    >
+  >({});
+
+  // 기업 목록이 변경되면 각 기업의 재무 데이터와 주가 데이터를 가져옴
+  useEffect(() => {
+    const rawData = companiesResponse?.data ?? [];
+    if (rawData.length === 0) return;
+
+    const abortController = new AbortController();
+    const requestId = Date.now();
+    let currentRequestId = requestId;
+
+    const fetchFinancialsAndPrices = async () => {
+      const newFinancialsMap: Record<
+        string,
+        {
+          roe: number;
+          pbr: number;
+          per: number;
+          debtRatio: number;
+          divYield: number;
+          price: string;
+          change: string;
+        }
+      > = {};
+
+      // 병렬로 모든 기업의 재무 데이터와 주가 데이터 가져오기
+      await Promise.all(
+        rawData.map(async (company) => {
+          // 요청이 취소되었으면 중단
+          if (abortController.signal.aborted) return;
+
+          let roe = 0,
+            pbr = 0,
+            per = 0,
+            debtRatio = 0,
+            divYield = 0;
+          let price = "-";
+          let change = "+0.00%";
+
+          // 재무 데이터 가져오기
+          try {
+            const response = await getCompanyFinancials(
+              company.stock_code,
+              abortController.signal,
+            );
+            if (abortController.signal.aborted) return;
+
+            const financialStatements =
+              response?.data?.data?.financial_statements;
+            if (financialStatements && financialStatements.length > 0) {
+              const latest = financialStatements[0];
+              roe = parseFloat(latest.roe) || 0;
+              pbr = parseFloat(latest.pbr) || 0;
+              per = parseFloat(latest.per) || 0;
+              debtRatio = parseFloat(latest.debt_ratio) || 0;
+              divYield = parseFloat(latest.dividend_yield) || 0;
+            }
+          } catch (error) {
+            if ((error as Error).name === "CanceledError") return;
+            console.error(
+              `Failed to fetch financials for ${company.stock_code}:`,
+              error,
+            );
+          }
+
+          // 주가 데이터 가져오기 (interval 없이 호출하면 모든 interval 반환)
+          try {
+            if (abortController.signal.aborted) return;
+            const priceResponse = await getStockOhlcv(company.stock_code, "");
+            if (abortController.signal.aborted) return;
+
+            const responseData = priceResponse?.data?.data as unknown as Record<
+              string,
+              { data?: Array<{ close: number }> }
+            > | null;
+
+            // 1m, 15m, 1h, 1d 순서로 데이터가 있는 interval 찾기
+            let priceData: Array<{ close: number }> = [];
+            if (responseData) {
+              for (const interval of ["1m", "15m", "1h", "1d"]) {
+                const intervalData = responseData[interval]?.data;
+                if (intervalData && intervalData.length > 0) {
+                  priceData = intervalData;
+                  break;
+                }
+              }
+            }
+
+            if (priceData.length > 0) {
+              const latest = priceData[0];
+              const latestClose = latest.close ?? 0;
+
+              if (latestClose > 0) {
+                price = latestClose.toLocaleString();
+
+                // 전일 대비 등락률 계산
+                if (priceData.length > 1) {
+                  const previous = priceData[1];
+                  const prevClose = previous.close ?? 0;
+                  if (prevClose > 0) {
+                    const changePercent =
+                      ((latestClose - prevClose) / prevClose) * 100;
+                    change =
+                      changePercent >= 0
+                        ? `+${changePercent.toFixed(2)}%`
+                        : `${changePercent.toFixed(2)}%`;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            if ((error as Error).name === "CanceledError") return;
+            console.error(
+              `Failed to fetch price for ${company.stock_code}:`,
+              error,
+            );
+          }
+
+          // 취소되지 않은 경우에만 결과 저장
+          if (!abortController.signal.aborted) {
+            newFinancialsMap[company.stock_code] = {
+              roe,
+              pbr,
+              per,
+              debtRatio,
+              divYield,
+              price,
+              change,
+            };
+          }
+        }),
+      );
+
+      // 요청이 취소되지 않았고, 현재 요청 ID가 일치하는 경우에만 상태 업데이트
+      if (!abortController.signal.aborted && currentRequestId === requestId) {
+        setFinancialsMap(newFinancialsMap);
+      }
+    };
+
+    fetchFinancialsAndPrices();
+
+    return () => {
+      currentRequestId = 0;
+      abortController.abort();
+    };
+  }, [companiesResponse]);
+
   const companiesData = useMemo(() => {
     const rawData = companiesResponse?.data ?? [];
 
@@ -335,20 +504,64 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       return formatMarketCap(uk);
     };
 
-    return rawData.map((company) => ({
-      rank: company.rank,
-      name: company.name,
-      code: company.stock_code,
-      logo: company.logo,
-      marketCap: formatAmount(company.amount),
-      // TODO: 기업 지표 API 연동 후 실제 데이터로 교체
-      price: "0",
-      change: "+0.00%",
-      per: 0,
-      pbr: 0,
-      roe: 0,
-    }));
-  }, [companiesResponse]);
+    return rawData.map((company) => {
+      const financials = financialsMap[company.stock_code];
+      return {
+        rank: company.rank,
+        name: company.name,
+        code: company.stock_code,
+        logo: company.logo,
+        marketCap: formatAmount(company.amount),
+        price: financials?.price ?? "-",
+        change: financials?.change ?? "+0.00%",
+        per: financials?.per ?? 0,
+        pbr: financials?.pbr ?? 0,
+        roe: financials?.roe ?? 0,
+        debtRatio: financials?.debtRatio ?? 0,
+        divYield: financials?.divYield ?? 0,
+      };
+    });
+  }, [companiesResponse, financialsMap]);
+
+  // Parallel Coordinates 차트에 사용할 데이터 (companiesData가 있으면 사용, 없으면 SAMPLE_STOCKS)
+  const chartStocksData = useMemo(() => {
+    if (companiesData.length > 0) {
+      return companiesData.map((c) => ({
+        id: c.code,
+        name: c.name,
+        sector: currentIndustryInfo?.name ?? "",
+        per: c.per,
+        pbr: c.pbr,
+        roe: c.roe,
+        debtRatio: c.debtRatio,
+        divYield: c.divYield,
+        logo: c.logo ?? undefined,
+      }));
+    }
+    return SAMPLE_STOCKS;
+  }, [companiesData, currentIndustryInfo]);
+
+  const filteredIds = useMemo(() => {
+    const ids = new Set<string>();
+    chartStocksData.forEach((stock) => {
+      let pass = true;
+      for (const key of Object.keys(filters) as AxisKey[]) {
+        const range = filters[key];
+        if (range) {
+          const val = Number(stock[key as keyof typeof stock]);
+          const min = range.min;
+          const max = range.max;
+
+          if (val < min || val > max) {
+            pass = false;
+            break;
+          }
+        }
+      }
+      if (pass) ids.add(stock.id);
+    });
+    return ids;
+  }, [filters, chartStocksData]);
 
   const handleToggleStar = (e: React.MouseEvent, code: string) => {
     e.stopPropagation();
@@ -774,7 +987,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       {/* --- Parallel Coordinates Chart --- */}
       <div className="mb-10">
         <ParallelCoordinatesChart
-          data={SAMPLE_STOCKS}
+          data={chartStocksData}
           onFilterChange={setFilters}
           filters={filters}
           filteredIds={filteredIds}
@@ -792,87 +1005,88 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   조건 충족 종목 리스트
                 </h3>
                 <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-2">
-                  {SAMPLE_STOCKS.filter((stock) =>
-                    filteredIds.has(stock.id),
-                  ).map((stock) => (
-                    <div
-                      key={stock.id}
-                      onClick={() => setSelectedStock(stock)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                        selectedStock?.id === stock.id
-                          ? "border-shinhan-blue bg-blue-50"
-                          : "border-slate-100 bg-slate-50 hover:border-slate-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {/* Company Logo */}
-                          <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {stock.logo ? (
-                              <img
-                                src={stock.logo}
-                                alt={stock.name}
-                                className="w-8 h-8 object-contain"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display =
-                                    "none";
-                                }}
-                              />
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400">
-                                {stock.name.slice(0, 2)}
+                  {chartStocksData
+                    .filter((stock) => filteredIds.has(stock.id))
+                    .map((stock) => (
+                      <div
+                        key={stock.id}
+                        onClick={() => setSelectedStock(stock)}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                          selectedStock?.id === stock.id
+                            ? "border-shinhan-blue bg-blue-50"
+                            : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {/* Company Logo */}
+                            <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {stock.logo ? (
+                                <img
+                                  src={stock.logo}
+                                  alt={stock.name}
+                                  className="w-8 h-8 object-contain"
+                                  onError={(e) => {
+                                    (
+                                      e.target as HTMLImageElement
+                                    ).style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-xs font-bold text-slate-400">
+                                  {stock.name.slice(0, 2)}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-800 text-sm">
+                                {stock.name}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {stock.sector}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6 text-xs">
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">PER</span>
+                              <div className="font-bold text-slate-700">
+                                {stock.per.toFixed(1)}
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">PBR</span>
+                              <div className="font-bold text-slate-700">
+                                {stock.pbr.toFixed(2)}
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">ROE</span>
+                              <div className="font-bold text-shinhan-blue">
+                                {stock.roe.toFixed(1)}%
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[50px]">
+                              <span className="text-slate-400">부채비율</span>
+                              <div className="font-bold text-slate-700">
+                                {stock.debtRatio}%
+                              </div>
+                            </div>
+                            <div className="text-center min-w-[40px]">
+                              <span className="text-slate-400">배당률</span>
+                              <div className="font-bold text-emerald-600">
+                                {stock.divYield.toFixed(1)}%
+                              </div>
+                            </div>
+                            {selectedStock?.id === stock.id && (
+                              <span className="px-2 py-0.5 bg-shinhan-blue text-white text-[10px] rounded-full font-bold">
+                                선택됨
                               </span>
                             )}
                           </div>
-                          <div>
-                            <div className="font-bold text-slate-800 text-sm">
-                              {stock.name}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {stock.sector}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6 text-xs">
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">PER</span>
-                            <div className="font-bold text-slate-700">
-                              {stock.per.toFixed(1)}
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">PBR</span>
-                            <div className="font-bold text-slate-700">
-                              {stock.pbr.toFixed(2)}
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">ROE</span>
-                            <div className="font-bold text-shinhan-blue">
-                              {stock.roe.toFixed(1)}%
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[50px]">
-                            <span className="text-slate-400">부채비율</span>
-                            <div className="font-bold text-slate-700">
-                              {stock.debtRatio}%
-                            </div>
-                          </div>
-                          <div className="text-center min-w-[40px]">
-                            <span className="text-slate-400">배당률</span>
-                            <div className="font-bold text-emerald-600">
-                              {stock.divYield.toFixed(1)}%
-                            </div>
-                          </div>
-                          {selectedStock?.id === stock.id && (
-                            <span className="px-2 py-0.5 bg-shinhan-blue text-white text-[10px] rounded-full font-bold">
-                              선택됨
-                            </span>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
@@ -1192,18 +1406,16 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
                 <Scatter
                   name="Companies"
-                  data={companiesData.map((company, idx) => ({
+                  data={companiesData.map((company) => ({
                     name: company.name,
                     roe: company.roe,
-                    debt: Math.round(50 + ((idx * 37 + company.roe * 5) % 200)),
+                    debt: company.debtRatio,
                   }))}
                   shape="circle"
                 >
                   {companiesData.map((company, index) => {
-                    const debt = Math.round(
-                      50 + ((index * 37 + company.roe * 5) % 200),
-                    );
-                    const isQuality = company.roe >= 10 && debt <= 150;
+                    const isQuality =
+                      company.roe >= 10 && company.debtRatio <= 150;
                     return (
                       <Cell
                         key={`cell-leverage-${index}`}
@@ -1270,23 +1482,23 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             industryNews.slice(0, 6).map((news) => (
               <GlassCard
                 key={news.id}
-                className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex items-start gap-4"
-                onClick={() => setSelectedNews(news)}
+                className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
+                onClick={() =>
+                  news.url
+                    ? window.open(news.url, "_blank")
+                    : setSelectedNews(news)
+                }
               >
-                <div className="flex-1">
-                  <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors">
-                    {news.title}
-                  </h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>{news.source}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>{news.time}</span>
-                  </div>
-                </div>
-                {/* Rounded-md */}
-                <div className="w-20 h-20 bg-gray-200 rounded-md flex-shrink-0 overflow-hidden">
-                  {/* Placeholder for news image */}
-                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200"></div>
+                <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
+                  {news.title}
+                </h4>
+                <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                  {news.content}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
+                  <span>{news.source}</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                  <span>{news.time}</span>
                 </div>
               </GlassCard>
             ))

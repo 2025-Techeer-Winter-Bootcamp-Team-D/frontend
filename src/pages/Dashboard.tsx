@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search, Loader2, TrendingUp, Bell } from "lucide-react";
+import { ArrowRight, Search, Loader2, TrendingUp, Bell, X } from "lucide-react";
 
 // Components
 import GlassCard from "../components/Layout/GlassCard";
@@ -17,6 +17,10 @@ import { SAMPLE_STOCKS } from "../constants";
 // API & 타입
 import { getKospi, getKosdaq } from "../api/indices";
 import type { MarketIndexData } from "../api/indices";
+import { getNewsKeywords, getNewsList, getNewsDetail } from "../api/news";
+import type { NewsDetailItem } from "../api/news";
+import { searchCompanies, getCompanyFinancials } from "../api/company";
+import { getCompanyRankings } from "../api/ranking";
 
 interface DashboardProps {
   setPage: (page: PageView) => void;
@@ -29,74 +33,189 @@ interface DashboardProps {
 const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
   visibleSections,
 }) => {
-  const fetchAINews = async () => [
-    {
-      tag: "방산수출",
-      time: "방금 전",
-      title: '"60조 잠수함 따자"... 한화와 정부, 캐나다 합동 방문 추진',
-      source: "국방일보",
-    },
-    {
-      tag: "삼성전자",
-      time: "1시간 전",
-      title: "삼성전자, 'HBM3E' 12단 업계 최초 양산... AI 반도체 주도권 잡나",
-      source: "테크M",
-    },
-    {
-      tag: "에코프로비엠",
-      time: "2시간 전",
-      title: "에코프로비엠, 44조원 규모 양극재 공급 계약 체결... 잭팟 터졌다",
-      source: "에너지경제",
-    },
-  ];
+  // 선택된 뉴스 상태 (모달용 - 상세 데이터)
+  const [selectedNews, setSelectedNews] = useState<NewsDetailItem | null>(null);
+  const [isNewsDetailLoading, setIsNewsDetailLoading] = useState(false);
 
+  // 실제 뉴스 API 연동
   const { data: news = [], isLoading } = useQuery({
-    queryKey: ["aiNews"],
-    queryFn: fetchAINews,
-    refetchInterval: 60000,
+    queryKey: ["latestNews"],
+    queryFn: async () => {
+      const response = await getNewsList({ page: 1, page_size: 10 });
+      return response.data?.results ?? [];
+    },
+    refetchInterval: 60000, // 1분마다 갱신
   });
 
+  // 뉴스 상세 조회 핸들러
+  const handleNewsClick = async (newsId: number) => {
+    setIsNewsDetailLoading(true);
+    try {
+      const response = await getNewsDetail(newsId);
+      setSelectedNews(response.data);
+    } catch (error) {
+      console.error("뉴스 상세 조회 실패:", error);
+    } finally {
+      setIsNewsDetailLoading(false);
+    }
+  };
+
+  // 시간 포맷 함수
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return "방금 전";
+    if (diffMins < 60) return `${diffMins}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    return `${diffDays}일 전`;
+  };
+
+  // 날짜 포맷 함수 (모달용)
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   return (
-    <div
-      className={`bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col h-[600px] transition-all duration-700 ${visibleSections.has("ai-issue") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-    >
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <span className="text-blue-400 text-xs font-bold tracking-widest uppercase mb-1 block">
-            Real-time Signals
-          </span>
-          <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+    <>
+      <div
+        className={`bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col h-[600px] transition-all duration-700 ${visibleSections.has("ai-issue") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+      >
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <span className="text-blue-400 text-xs font-bold tracking-widest uppercase mb-1 block">
+              Real-time Signals
+            </span>
+            <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+          </div>
+          <div className="p-2 bg-red-500/20 rounded-full">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+          </div>
         </div>
-        <div className="p-2 bg-red-500/20 rounded-full">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-        </div>
-      </div>
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="animate-spin" />
-        </div>
-      ) : (
-        <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-          {news.map((item, i) => (
-            <div
-              key={i}
-              className="bg-white/5 hover:bg-white/10 border border-white/10 p-5 rounded-2xl transition-all cursor-pointer group"
-            >
-              <div className="flex justify-between mb-2">
-                <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">
-                  {item.tag}
-                </span>
-                <span className="text-[10px] text-white/40">{item.time}</span>
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : (
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+            {news.map((item) => (
+              <div
+                key={item.news_id}
+                onClick={() => handleNewsClick(item.news_id)}
+                className="block bg-white/5 hover:bg-white/10 border border-white/10 p-5 rounded-2xl transition-all cursor-pointer group"
+              >
+                <div className="flex justify-between mb-2">
+                  <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">
+                    {item.keywords?.[0] ?? item.press}
+                  </span>
+                  <span className="text-[10px] text-white/40">
+                    {formatTimeAgo(item.published_at)}
+                  </span>
+                </div>
+                <h4 className="text-base font-semibold leading-relaxed group-hover:text-blue-300 transition-colors">
+                  {item.title}
+                </h4>
+                <p className="text-[11px] text-white/30 mt-3">{item.press}</p>
               </div>
-              <h4 className="text-base font-semibold leading-relaxed group-hover:text-blue-300 transition-colors">
-                {item.title}
-              </h4>
-              <p className="text-[11px] text-white/30 mt-3">{item.source}</p>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 뉴스 상세 모달 */}
+      {(selectedNews || isNewsDetailLoading) && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !isNewsDetailLoading && setSelectedNews(null)}
+          ></div>
+          <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
+            {isNewsDetailLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="animate-spin text-blue-600" size={32} />
+              </div>
+            ) : (
+              selectedNews && (
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNews.keywords?.slice(0, 3).map((keyword, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setSelectedNews(null)}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={24} className="text-gray-400" />
+                    </button>
+                  </div>
+                  <h2 className="text-xl font-bold mb-3 text-slate-800 leading-tight">
+                    {selectedNews.title}
+                  </h2>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-100">
+                    {selectedNews.press && (
+                      <span className="font-medium text-slate-700">
+                        {selectedNews.press}
+                      </span>
+                    )}
+                    {selectedNews.author && (
+                      <span>· {selectedNews.author}</span>
+                    )}
+                    {selectedNews.published_at && (
+                      <span>· {formatDate(selectedNews.published_at)}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-2 mb-4">
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-sm">
+                      {selectedNews.content || selectedNews.summary}
+                    </p>
+                  </div>
+                  {selectedNews.url && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <a
+                        href={selectedNews.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        원문 보기
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                </>
+              )
+            )}
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
@@ -107,11 +226,46 @@ const Dashboard: React.FC<DashboardProps> = ({
   onShowNavbar,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [visibleSections, setVisibleSections] = useState<Set<string>>(
     new Set(["hero"]),
   );
+
+  // 기업 검색 쿼리
+  const { data: searchResults = [], isLoading: isSearching } = useQuery({
+    queryKey: ["companySearch", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery.trim()) return [];
+      const response = await searchCompanies(searchQuery);
+      return response.data?.data?.results ?? [];
+    },
+    enabled: searchQuery.trim().length > 0,
+    staleTime: 1000 * 60,
+  });
+
+  // 검색 결과 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 기업 클릭 핸들러
+  const handleCompanySelect = (stockCode: string) => {
+    setShowSearchResults(false);
+    setSearchQuery("");
+    navigate(`/company/${stockCode}`);
+  };
 
   // 1. 시장 지수 데이터 (수정된 타입 적용)
   const {
@@ -136,10 +290,169 @@ const Dashboard: React.FC<DashboardProps> = ({
     retry: 2,
   });
 
-  // 2. 주식 데이터 및 필터 (평형좌표계용)
-  const { data: stocks = [], isLoading: isStocksLoading } = useQuery({
-    queryKey: ["stocks"],
-    queryFn: async () => SAMPLE_STOCKS,
+  // 2. 기업 랭킹 데이터 조회 (평형좌표계용)
+  const { data: companyRankingsData = [], isLoading: isRankingsLoading } =
+    useQuery({
+      queryKey: ["dashboardCompanyRankings"],
+      queryFn: async () => {
+        const response = await getCompanyRankings();
+        const data = response?.data ?? response ?? [];
+        // 상위 100개만 가져오기
+        return data.slice(0, 100);
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+
+  // 각 기업의 재무 데이터 상태 관리
+  const [financialsMap, setFinancialsMap] = useState<
+    Record<
+      string,
+      {
+        roe: number;
+        pbr: number;
+        per: number;
+        debtRatio: number;
+        divYield: number;
+      }
+    >
+  >({});
+
+  // 기업 목록이 변경되면 각 기업의 재무 데이터를 가져옴
+  useEffect(() => {
+    if (companyRankingsData.length === 0) return;
+
+    const abortController = new AbortController();
+    const requestId = Date.now();
+    let currentRequestId = requestId;
+
+    const fetchFinancials = async () => {
+      const newFinancialsMap: Record<
+        string,
+        {
+          roe: number;
+          pbr: number;
+          per: number;
+          debtRatio: number;
+          divYield: number;
+        }
+      > = {};
+
+      // 동시성 제한을 위한 청크 처리 (한번에 10개씩)
+      const CONCURRENCY_LIMIT = 10;
+      const companies = companyRankingsData as Array<{ stock_code: string }>;
+
+      for (let i = 0; i < companies.length; i += CONCURRENCY_LIMIT) {
+        // 요청이 취소되었거나 새 요청이 시작된 경우 중단
+        if (abortController.signal.aborted || currentRequestId !== requestId) {
+          return;
+        }
+
+        const chunk = companies.slice(i, i + CONCURRENCY_LIMIT);
+
+        const chunkResults = await Promise.all(
+          chunk.map(async (company) => {
+            let roe = 0,
+              pbr = 0,
+              per = 0,
+              debtRatio = 0,
+              divYield = 0;
+
+            try {
+              const response = await getCompanyFinancials(
+                company.stock_code,
+                abortController.signal,
+              );
+              const financialStatements =
+                response?.data?.data?.financial_statements;
+              if (financialStatements && financialStatements.length > 0) {
+                const latest = financialStatements[0];
+                roe = parseFloat(latest.roe) || 0;
+                pbr = parseFloat(latest.pbr) || 0;
+                per = parseFloat(latest.per) || 0;
+                debtRatio = parseFloat(latest.debt_ratio) || 0;
+                divYield = parseFloat(latest.dividend_yield) || 0;
+              }
+            } catch (error) {
+              // AbortError/CanceledError는 무시 (정상적인 취소)
+              if (
+                error instanceof Error &&
+                (error.name === "AbortError" || error.name === "CanceledError")
+              ) {
+                return null;
+              }
+              console.error(
+                `Failed to fetch financials for ${company.stock_code}:`,
+                error,
+              );
+            }
+
+            return {
+              stockCode: company.stock_code,
+              data: { roe, pbr, per, debtRatio, divYield },
+            };
+          }),
+        );
+
+        // 유효한 결과만 맵에 추가
+        chunkResults.forEach((result) => {
+          if (result) {
+            newFinancialsMap[result.stockCode] = result.data;
+          }
+        });
+      }
+
+      // race condition 방지: 현재 요청이 최신인 경우에만 상태 업데이트
+      if (!abortController.signal.aborted && currentRequestId === requestId) {
+        setFinancialsMap(newFinancialsMap);
+      }
+    };
+
+    fetchFinancials();
+
+    // cleanup: 컴포넌트 언마운트 또는 의존성 변경 시 요청 취소
+    return () => {
+      currentRequestId = 0; // race condition 방지
+      abortController.abort();
+    };
+  }, [companyRankingsData]);
+
+  // 차트에 표시할 주식 데이터 (API 데이터 + 재무 데이터)
+  const stocks = useMemo(() => {
+    if (companyRankingsData.length === 0) return SAMPLE_STOCKS;
+
+    return companyRankingsData.map(
+      (company: {
+        stock_code: string;
+        name: string;
+        sector?: string;
+        logo?: string;
+      }) => {
+        const financials = financialsMap[company.stock_code];
+        return {
+          id: company.stock_code,
+          name: company.name,
+          sector: company.sector ?? "-",
+          per: financials?.per ?? 0,
+          pbr: financials?.pbr ?? 0,
+          roe: financials?.roe ?? 0,
+          debtRatio: financials?.debtRatio ?? 0,
+          divYield: financials?.divYield ?? 0,
+          logo: company.logo,
+        };
+      },
+    );
+  }, [companyRankingsData, financialsMap]);
+
+  const isStocksLoading = isRankingsLoading;
+
+  // 3. 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
+  const { data: keywordsData } = useQuery({
+    queryKey: ["newsKeywords"],
+    queryFn: async () => {
+      const response = await getNewsKeywords({ size: 15 });
+      return response.data?.data?.keywords ?? [];
+    },
+    refetchInterval: 60000 * 5, // 5분마다 갱신
   });
 
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
@@ -149,7 +462,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const filteredIds = useMemo(() => {
     const ids = new Set<string>();
-    stocks.forEach((stock) => {
+    stocks.forEach((stock: Stock) => {
       let pass = true;
       for (const key of Object.keys(filters) as AxisKey[]) {
         const range = filters[key];
@@ -291,9 +604,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
               </p>
             </div>
-            <div className="relative w-full md:w-96">
+            <div className="relative w-full md:w-96" ref={searchRef}>
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10"
                 size={20}
               />
               <input
@@ -301,8 +614,53 @@ const Dashboard: React.FC<DashboardProps> = ({
                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-none shadow-lg focus:ring-2 focus:ring-blue-500 transition-all"
                 placeholder="기업명 혹은 종목코드"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchResults(true);
+                }}
+                onFocus={() => setShowSearchResults(true)}
               />
+              {/* 검색 결과 드롭다운 */}
+              {showSearchResults && searchQuery.trim() && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 max-h-80 overflow-y-auto z-50">
+                  {isSearching ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2
+                        className="animate-spin text-blue-500"
+                        size={24}
+                      />
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.slice(0, 8).map((company) => (
+                      <button
+                        key={company.stock_code}
+                        onClick={() => handleCompanySelect(company.stock_code)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-b border-slate-100 last:border-b-0"
+                      >
+                        {company.logo_url && (
+                          <img
+                            src={company.logo_url}
+                            alt={company.company_name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-slate-800 truncate">
+                            {company.company_name}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {company.stock_code}
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-slate-400 text-sm">
+                      검색 결과가 없습니다
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -452,7 +810,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </p>
               </div>
               <div className="bg-slate-50 rounded-3xl p-4 border border-slate-100">
-                <AIBubbleChart />
+                <AIBubbleChart keywords={keywordsData} />
               </div>
             </div>
             <AINewsBriefing visibleSections={visibleSections} />

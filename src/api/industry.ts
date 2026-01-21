@@ -6,7 +6,7 @@ import { api } from "./axios";
  */
 
 export const getIndustryNews = (indutyCode: string) => {
-  return api.get(`/industries/${indutyCode}/news`).then((res) => res.data);
+  return api.get(`/industries/${indutyCode}/news/`).then((res) => res.data);
 };
 
 /**
@@ -48,4 +48,12 @@ export const getIndustryChart = (
   return api
     .get(`/industries/${indutyCode}/chart/`, { params: { period } })
     .then((res) => res.data);
+};
+
+/**
+ * 전체 산업 순위 조회
+ * GET /industries/rankings/industries/
+ */
+export const getIndustryRankings = () => {
+  return api.get(`/industries/rankings/industries/`).then((res) => res.data);
 };

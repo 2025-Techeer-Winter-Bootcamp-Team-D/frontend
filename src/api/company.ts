@@ -48,7 +48,15 @@ export const getStockOhlcv = (stock_code: string, interval: string) => {
  * GET /companies/{companyId}/news
  */
 export const getCompanyNews = (companyId: string) => {
-  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news`);
+  return api.get<ApiResponse<NewsItem[]>>(`/companies/${companyId}/news/`);
+};
+
+/**
+ * 기업 뉴스 상세 조회
+ * GET /companies/{stock_code}/news/{news_id}/
+ */
+export const getCompanyNewsDetail = (stockCode: string, newsId: number) => {
+  return api.get(`/companies/${stockCode}/news/${newsId}/`);
 };
 /**
  * 보고서 목록 조회
@@ -85,8 +93,12 @@ export const getReportAnalysis = (stockCode: string, rceptNo: string) => {
  * 기업 재무지표 조회
  * GET /companies/{stock_code}/financials/
  */
-export const getCompanyFinancials = (stockCode: string) => {
+export const getCompanyFinancials = (
+  stockCode: string,
+  signal?: AbortSignal,
+) => {
   return api.get<ApiResponse<CompanyFinancialsData>>(
     `/companies/${stockCode}/financials/`,
+    { signal },
   );
 };
