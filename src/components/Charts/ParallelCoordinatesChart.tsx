@@ -80,7 +80,7 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
       const lineGenerator = d3
         .line<AxisKey>()
         .x((key) => x(key) ?? 0)
-        .y((key) => y[key](stock[key]));
+        .y((key) => y[key](stock[key] as number));
       return lineGenerator(AXES.map((axis) => axis.key));
     };
 
