@@ -579,3 +579,42 @@ export interface CompanyOutlookData {
   target_price?: number;
   created_at: string;
 }
+
+// ============================================
+// Recent Reports API Types (Dashboard)
+// ============================================
+
+// GET /companies/reports/recent/ - 최신 보고서 10개 조회
+export interface RecentReportItem {
+  id: number;
+  company_name: string;
+  report_name: string;
+  submitted_at: string;
+  report_url: string;
+}
+
+// ============================================
+// Sankey Chart API Types
+// ============================================
+
+// GET /companies/sankeys/{stock_code}/ - 순익흐름도 데이터
+export interface SankeySegment {
+  name: string;
+  value: number;
+}
+
+export interface SankeyExpenses {
+  원가비용: number;
+  판관비: number;
+  순수익: number;
+  기타비용: number;
+}
+
+export interface SankeysApiResponse {
+  company_name: string;
+  fiscal_year: string;
+  total_revenue: number;
+  is_loss: boolean;
+  segments: SankeySegment[];
+  expenses: SankeyExpenses;
+}

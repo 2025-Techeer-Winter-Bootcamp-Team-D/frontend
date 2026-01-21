@@ -10,6 +10,7 @@ import {
   getReportAnalysis,
   getCompanyFinancials,
   getCompanyOutlook,
+  getCompanySankeys,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
 import GlassCard from "../components/Layout/GlassCard";
@@ -31,6 +32,7 @@ import type {
   RevenueComposition,
   IndustryCompany,
   SankeyData,
+  SankeysApiResponse,
 } from "../types";
 
 import {
@@ -366,6 +368,16 @@ const CompanyDetail: React.FC<DetailProps> = ({
     },
   });
 
+  const { data: sankeysData, isLoading: isSankeysLoading } = useQuery({
+    queryKey: ["company", "sankeys", companyCode],
+    queryFn: async () => {
+      const response = await getCompanySankeys(companyCode);
+      // API가 직접 데이터를 반환하는 경우와 ApiResponse로 감싸는 경우 모두 처리
+      const data = response.data;
+      return (data?.data ?? data) as SankeysApiResponse;
+    },
+  });
+
   const infoRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const financialRef = useRef<HTMLDivElement>(null);
@@ -518,98 +530,145 @@ const CompanyDetail: React.FC<DetailProps> = ({
     } as FinancialData;
   }, [financialsData, selectedYear, selectedQuarter]);
 
-  // Sankey 차트 데이터 생성
+  // Sankey 차트 데이터 생성 (새 API 사용)
   const sankeyChartData = useMemo((): {
     data: SankeyData;
     totalRevenue: number;
+    fiscalYear: string;
+    isLoss: boolean;
   } | null => {
-    if (!financialsData?.financial_statements?.length) {
+    if (!sankeysData) {
       return null;
     }
 
-    const statements = financialsData.financial_statements;
-    const sortedStatements = [...statements].sort(
-      (a, b) => b.fiscal_year - a.fiscal_year,
-    );
-    const latest = sortedStatements[0];
+    const totalRevenue = sankeysData.total_revenue;
+    const { segments, expenses, is_loss, fiscal_year } = sankeysData;
 
-    const revenue = latest.revenue || 0;
-    const operatingProfit = latest.operating_profit || 0;
-    const netIncome = latest.net_income || 0;
+    // 색상 팔레트 (매출 부문용)
+    const segmentColors = [
+      "#3B82F6", // blue
+      "#10B981", // green
+      "#F59E0B", // amber
+      "#8B5CF6", // purple
+      "#EC4899", // pink
+      "#06B6D4", // cyan
+      "#84CC16", // lime
+    ];
 
-    // 비용 계산 (매출 - 영업이익 = 영업비용)
-    const operatingExpense = revenue - operatingProfit;
-    // 영업외비용 (영업이익 - 당기순이익)
-    const nonOperatingExpense = operatingProfit - netIncome;
-
-    const nodes = [
+    // 노드 생성
+    const nodes: SankeyData["nodes"] = [
+      // 총매출 노드
       {
-        id: "revenue",
-        name: "매출액",
-        color: "#3B82F6",
+        id: "total_revenue",
+        name: "총매출",
+        color: "#1E40AF",
         category: "Revenue" as const,
       },
+      // 매출 부문 노드들
+      ...segments.map((seg, idx) => ({
+        id: `segment_${idx}`,
+        name: seg.name,
+        color: segmentColors[idx % segmentColors.length],
+        category: "Revenue" as const,
+      })),
+      // 비용 구조 허브
       {
-        id: "hub",
-        name: "손익구조",
+        id: "expense_hub",
+        name: "비용구조",
         color: "#64748B",
         category: "Hub" as const,
       },
+      // 비용 노드들
       {
-        id: "operating_expense",
-        name: "영업비용",
+        id: "cost_of_sales",
+        name: "원가비용",
         color: "#EF4444",
         category: "Expense" as const,
       },
       {
-        id: "operating_profit",
-        name: "영업이익",
-        color: "#10B981",
-        category: "Profit" as const,
-      },
-      {
-        id: "non_operating",
-        name: "영업외비용",
-        color: "#F59E0B",
+        id: "sg_and_a",
+        name: "판관비",
+        color: "#F97316",
         category: "Expense" as const,
       },
+      // 순수익 노드
       {
-        id: "net_income",
-        name: "당기순이익",
-        color: "#8B5CF6",
+        id: "net_profit",
+        name: is_loss ? "순손실" : "순수익",
+        color: is_loss ? "#DC2626" : "#10B981",
         category: "Profit" as const,
       },
     ];
 
-    const links = [
-      { source: "revenue", target: "hub", value: revenue },
-      {
-        source: "hub",
-        target: "operating_expense",
-        value: Math.max(0, operatingExpense),
-      },
-      {
-        source: "hub",
-        target: "operating_profit",
-        value: Math.max(0, operatingProfit),
-      },
-      {
-        source: "operating_profit",
-        target: "non_operating",
-        value: Math.max(0, nonOperatingExpense),
-      },
-      {
-        source: "operating_profit",
-        target: "net_income",
-        value: Math.max(0, netIncome),
-      },
-    ].filter((link) => link.value > 0);
+    // 기타비용이 있으면 노드 추가
+    if (expenses.기타비용 > 0) {
+      nodes.push({
+        id: "other_expense",
+        name: "기타비용",
+        color: "#6B7280",
+        category: "Expense" as const,
+      });
+    }
+
+    // 링크 생성
+    const links: SankeyData["links"] = [];
+
+    // 각 부문에서 총매출로 연결
+    segments.forEach((seg, idx) => {
+      if (seg.value > 0) {
+        links.push({
+          source: `segment_${idx}`,
+          target: "total_revenue",
+          value: seg.value,
+        });
+      }
+    });
+
+    // 총매출에서 비용구조 허브로
+    links.push({
+      source: "total_revenue",
+      target: "expense_hub",
+      value: totalRevenue,
+    });
+
+    // 비용구조에서 각 비용으로
+    if (expenses.원가비용 > 0) {
+      links.push({
+        source: "expense_hub",
+        target: "cost_of_sales",
+        value: expenses.원가비용,
+      });
+    }
+    if (expenses.판관비 > 0) {
+      links.push({
+        source: "expense_hub",
+        target: "sg_and_a",
+        value: expenses.판관비,
+      });
+    }
+    if (expenses.기타비용 > 0) {
+      links.push({
+        source: "expense_hub",
+        target: "other_expense",
+        value: expenses.기타비용,
+      });
+    }
+    // 순수익
+    if (expenses.순수익 !== 0) {
+      links.push({
+        source: "expense_hub",
+        target: "net_profit",
+        value: Math.abs(expenses.순수익),
+      });
+    }
 
     return {
       data: { nodes, links },
-      totalRevenue: revenue,
+      totalRevenue,
+      fiscalYear: fiscal_year,
+      isLoss: is_loss,
     };
-  }, [financialsData]);
+  }, [sankeysData]);
 
   const filteredReports = useMemo(() => {
     if (!companyReports || companyReports.length === 0) return [];
@@ -1041,23 +1100,56 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
 
           {/* 손익 구조 Sankey 차트 */}
-          {sankeyChartData && (
-            <GlassCard className="p-6 mt-6">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">
-                손익 구조 분석
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                매출액이 어떻게 비용과 이익으로 분배되는지 시각적으로
-                보여줍니다.
-              </p>
+          <GlassCard className="p-6 mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-800">순익흐름도</h3>
+              {sankeyChartData && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">
+                    {sankeyChartData.fiscalYear}년 기준
+                  </span>
+                  {sankeyChartData.isLoss && (
+                    <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded-full">
+                      손실
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              매출 부문별 구성과 비용 구조를 통해 최종 순익이 어떻게 형성되는지
+              시각적으로 보여줍니다.
+            </p>
+            {isSankeysLoading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="animate-spin text-blue-600" />
+              </div>
+            ) : sankeyChartData ? (
               <div className="h-[500px]">
                 <IncomeSankeyChart
                   data={sankeyChartData.data}
                   totalRevenue={sankeyChartData.totalRevenue}
                 />
               </div>
-            </GlassCard>
-          )}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <svg
+                  className="w-12 h-12 mb-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                <p className="text-sm">순익흐름도 데이터가 없습니다.</p>
+              </div>
+            )}
+          </GlassCard>
         </div>
 
         <div ref={outlookRef} className="scroll-mt-32">

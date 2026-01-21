@@ -11,7 +11,13 @@ import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesCh
 import IndustryRankingCard from "../components/Ranking/IndustryRankingCard";
 
 // Types
-import type { PageView, Stock, AxisKey, BrushRange } from "../types";
+import type {
+  PageView,
+  Stock,
+  AxisKey,
+  BrushRange,
+  RecentReportItem,
+} from "../types";
 import { SAMPLE_STOCKS } from "../constants";
 
 // API & 타입
@@ -19,7 +25,11 @@ import { getKospi, getKosdaq } from "../api/indices";
 import type { MarketIndexData } from "../api/indices";
 import { getNewsKeywords, getNewsList, getNewsDetail } from "../api/news";
 import type { NewsDetailItem } from "../api/news";
-import { searchCompanies, getCompanyFinancials } from "../api/company";
+import {
+  searchCompanies,
+  getCompanyFinancials,
+  getRecentReports,
+} from "../api/company";
 import { getCompanyRankings } from "../api/ranking";
 
 // Constants
@@ -458,6 +468,20 @@ const Dashboard: React.FC<DashboardProps> = ({
     refetchInterval: 60000 * 5, // 5분마다 갱신
   });
 
+  // 4. 최신 보고서 데이터 (자본시장 공시용)
+  const {
+    data: recentReports = [],
+    isLoading: isReportsLoading,
+    isError: isReportsError,
+  } = useQuery<RecentReportItem[]>({
+    queryKey: ["recentReports"],
+    queryFn: async () => {
+      const response = await getRecentReports();
+      return response.data.data ?? [];
+    },
+    refetchInterval: 60000 * 5, // 5분마다 갱신
+  });
+
   const [filters, setFilters] = useState<Partial<Record<AxisKey, BrushRange>>>(
     {},
   );
@@ -779,21 +803,46 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <Bell size={20} className="text-blue-600" /> 자본시장 공시
                 </h3>
                 <div className="space-y-6">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="pb-4 border-b border-slate-50">
-                      <span className="text-[10px] font-bold text-blue-600 uppercase">
-                        공시
-                      </span>
-                      <p className="text-sm font-semibold text-slate-800 mt-1 line-clamp-2 hover:text-blue-600 cursor-pointer">
-                        {i % 2 === 0
-                          ? "[기재정정] 사업보고서 (2025.12)"
-                          : "주요사항보고서 (유상증자 결정)"}
-                      </p>
-                      <span className="text-[11px] text-slate-400 mt-2 block">
-                        14:2{i} | 금융감독원
-                      </span>
+                  {isReportsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2
+                        className="animate-spin text-blue-500"
+                        size={24}
+                      />
                     </div>
-                  ))}
+                  ) : isReportsError ? (
+                    <div className="py-8 text-center text-slate-400 text-sm">
+                      공시 데이터를 불러오지 못했습니다
+                    </div>
+                  ) : recentReports.length > 0 ? (
+                    recentReports.slice(0, 4).map((report) => (
+                      <div
+                        key={report.id}
+                        className="pb-4 border-b border-slate-50"
+                      >
+                        <span className="text-[10px] font-bold text-blue-600 uppercase">
+                          {report.company_name}
+                        </span>
+                        <a
+                          href={report.report_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-semibold text-slate-800 mt-1 line-clamp-2 hover:text-blue-600 cursor-pointer block"
+                        >
+                          {report.report_name}
+                        </a>
+                        <span className="text-[11px] text-slate-400 mt-2 block">
+                          {new Date(report.submitted_at).toLocaleDateString(
+                            "ko-KR",
+                          )}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-slate-400 text-sm">
+                      최신 공시가 없습니다
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate("/disclosures")}
