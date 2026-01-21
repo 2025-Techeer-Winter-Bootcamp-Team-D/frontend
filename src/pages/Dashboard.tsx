@@ -469,9 +469,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   });
 
   // 4. 최신 보고서 데이터 (자본시장 공시용)
-  const { data: recentReports = [], isLoading: isReportsLoading } = useQuery<
-    RecentReportItem[]
-  >({
+  const {
+    data: recentReports = [],
+    isLoading: isReportsLoading,
+    isError: isReportsError,
+  } = useQuery<RecentReportItem[]>({
     queryKey: ["recentReports"],
     queryFn: async () => {
       const response = await getRecentReports();
