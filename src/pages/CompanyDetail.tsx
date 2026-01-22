@@ -1008,7 +1008,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   <span className="font-bold text-slate-800 text-sm">-</span>
                 )}
               </div>
-              <div className="flex items-center gap-3 col-span-3">
+              <div className="flex items-center gap-3 col-span-full">
                 <span className="text-gray-500 text-xs min-w-[60px]">주소</span>
                 <span className="font-bold text-slate-800 text-sm">
                   {currentCompany.address}
