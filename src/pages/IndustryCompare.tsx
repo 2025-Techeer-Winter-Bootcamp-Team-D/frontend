@@ -1272,6 +1272,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     {/* Highlight the 'Target' Quadrant (High ROE, Low PBR) */}
                     <ReferenceArea
                       x1={10}
+                      x2={100}
+                      y1={0}
                       y2={1}
                       fill="#0046FF"
                       fillOpacity={0.08}
@@ -1415,6 +1417,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       x1={0}
                       x2={150}
                       y1={10}
+                      y2={100}
                       fill="#10B981"
                       fillOpacity={0.08}
                     />
