@@ -660,13 +660,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
 
   return (
     <div className="animate-fade-in pb-12 relative">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          기업 비교
-        </h1>
-      </div>
-
       <div className="flex flex-col lg:flex-row gap-8">
         {/* -- Left Sidebar for Sets -- */}
         <div className="lg:w-64 flex-shrink-0">

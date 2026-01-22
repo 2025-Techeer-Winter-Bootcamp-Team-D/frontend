@@ -119,12 +119,18 @@ const parseMarketCap = (marketCap: string): number => {
 };
 
 // -- Mini Sparkline Component --
-const MiniChart = ({ color }: { color: string }) => {
-  const data = generateSparklineData();
+const MiniChart = ({
+  color,
+  data,
+}: {
+  color: string;
+  data?: Array<{ value: number }>;
+}) => {
+  const chartData = data && data.length > 0 ? data : generateSparklineData();
   return (
     <div className="h-8 w-24">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart data={chartData}>
           <Line
             type="monotone"
             dataKey="value"
@@ -393,6 +399,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         divYield: number;
         price: string;
         change: string;
+        chartData: Array<{ value: number }>;
       }
     >
   >({});
@@ -417,6 +424,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           divYield: number;
           price: string;
           change: string;
+          chartData: Array<{ value: number }>;
         }
       > = {};
 
@@ -433,6 +441,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             divYield = 0;
           let price = "-";
           let change = "+0.00%";
+          let chartData: Array<{ value: number }> = [];
 
           // 재무 데이터 가져오기
           try {
@@ -504,6 +513,12 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   }
                 }
               }
+
+              // 미니차트용 데이터 (최근 20개)
+              chartData = priceData
+                .slice(0, 20)
+                .reverse()
+                .map((d) => ({ value: d.close }));
             }
           } catch (error) {
             if ((error as Error).name === "CanceledError") return;
@@ -523,6 +538,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               divYield,
               price,
               change,
+              chartData,
             };
           }
         }),
@@ -566,6 +582,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         roe: financials?.roe ?? 0,
         debtRatio: financials?.debtRatio ?? 0,
         divYield: financials?.divYield ?? 0,
+        chartData: financials?.chartData ?? [],
       };
     });
   }, [companiesResponse, financialsMap]);
@@ -938,9 +955,27 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       </span>
                     </td>
                     <td className="px-2 py-4 text-center">
-                      <span className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center font-bold text-slate-600 text-xs shadow-sm">
-                        {company.name.charAt(0)}
-                      </span>
+                      <div className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center overflow-hidden shadow-sm">
+                        {company.logo ? (
+                          <img
+                            src={company.logo}
+                            alt={company.name}
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                              (
+                                e.target as HTMLImageElement
+                              ).nextElementSibling?.classList.remove("hidden");
+                            }}
+                          />
+                        ) : null}
+                        <span
+                          className={`font-bold text-slate-600 text-xs ${company.logo ? "hidden" : ""}`}
+                        >
+                          {company.name.charAt(0)}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-3 py-4 text-center font-bold text-slate-800 text-base">
                       {company.name}
@@ -961,6 +996,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                               ? "#EF4444"
                               : "#3B82F6"
                           }
+                          data={company.chartData}
                         />
                       </div>
                     </td>
@@ -1204,7 +1240,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             <p className="text-sm text-slate-500 mb-4">
               X축: 수익성(ROE) / Y축: 저평가(PBR) / 크기: 시가총액
             </p>
-            <div className="w-full bg-white rounded-xl overflow-hidden relative">
+            <div className="w-full bg-white rounded-xl overflow-hidden relative [&_circle]:outline-none [&_.recharts-scatter-symbol]:outline-none">
               <div className="h-[500px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart
@@ -1243,11 +1279,20 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     />
                     <Tooltip
                       cursor={{ strokeDasharray: "3 3" }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
+                      content={({ active, payload, coordinate }) => {
+                        if (active && payload && payload.length && coordinate) {
                           const data = payload[0].payload;
                           return (
-                            <div className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs">
+                            <div
+                              className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
+                              style={{
+                                position: "absolute",
+                                left: coordinate.x + 15,
+                                top: coordinate.y - 40,
+                                pointerEvents: "none",
+                                minWidth: "120px",
+                              }}
+                            >
                               <div className="font-bold mb-1 text-slate-800 text-sm">
                                 {data.name}
                               </div>
@@ -1359,7 +1404,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             <p className="text-sm text-slate-500 mb-4">
               X축: 부채비율 (안전성) / Y축: ROE (수익성)
             </p>
-            <div className="w-full bg-white rounded-xl overflow-hidden relative">
+            <div className="w-full bg-white rounded-xl overflow-hidden relative [&_circle]:outline-none [&_.recharts-scatter-symbol]:outline-none">
               <div className="h-[500px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart
@@ -1389,11 +1434,20 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     />
                     <Tooltip
                       cursor={{ strokeDasharray: "3 3" }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
+                      content={({ active, payload, coordinate }) => {
+                        if (active && payload && payload.length && coordinate) {
                           const data = payload[0].payload;
                           return (
-                            <div className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs">
+                            <div
+                              className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
+                              style={{
+                                position: "absolute",
+                                left: coordinate.x + 15,
+                                top: coordinate.y - 40,
+                                pointerEvents: "none",
+                                minWidth: "120px",
+                              }}
+                            >
                               <div className="font-bold mb-1 text-slate-800 text-sm">
                                 {data.name}
                               </div>
