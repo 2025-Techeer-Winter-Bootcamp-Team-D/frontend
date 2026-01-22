@@ -644,33 +644,35 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   return (
     <div className="animate-fade-in pb-12 relative">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          산업 분석
-          <span className="text-gray-300">|</span>
-          <span className="text-shinhan-blue">{currentIndustryInfo.name}</span>
-        </h1>
-        <div className="relative">
-          <select
-            value={selectedIndustry}
-            onChange={(e) => setSelectedIndustry(e.target.value as IndustryKey)}
-            className="appearance-none bg-white border border-gray-200 text-slate-700 text-sm rounded-md focus:ring-shinhan-blue focus:border-shinhan-blue block pl-4 pr-10 py-2.5 outline-none shadow-sm cursor-pointer min-w-[200px]"
-          >
-            {Object.entries(INDUSTRY_NAMES).map(([key, info]) => (
-              <option key={key} value={key}>
-                {info.name}
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-            <ChevronDown size={16} />
+      {/* Header with Dropdown Selector */}
+      <div className="flex flex-col gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-slate-800">산업 분석</h1>
+        {/* Industry Dropdown Selector - 오른쪽 정렬 */}
+        <div className="flex justify-end">
+          <div className="relative inline-flex items-center">
+            <select
+              value={selectedIndustry}
+              onChange={(e) =>
+                setSelectedIndustry(e.target.value as IndustryKey)
+              }
+              className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 cursor-pointer hover:border-shinhan-blue focus:outline-none focus:ring-2 focus:ring-shinhan-blue/20 focus:border-shinhan-blue transition-all shadow-sm"
+            >
+              {Object.entries(INDUSTRY_NAMES).map(([key, info]) => (
+                <option key={key} value={key}>
+                  {info.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={16}
+              className="absolute right-3 text-gray-400 pointer-events-none"
+            />
           </div>
         </div>
       </div>
 
       {/* Sector Overview Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
         <div className="lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -784,7 +786,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           "
         >
           {/* Internal Light Layers */}
-          <div className="pointer-events-none absolute -top-[60px] -left-[60px] h-[250px] w-[250px] rounded-full bg-white/25 blur-[60px]" />
+          <div className="pointer-events-none absolute -top-[60px] -left-[60px] h-[250px] w-[250px] rounded-full" />
           <div className="pointer-events-none absolute -bottom-[80px] -right-[80px] h-[300px] w-[300px] rounded-full bg-blue-400/30 blur-[70px]" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-3xl" />
 
@@ -801,7 +803,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             ) : (
               <div className="space-y-3 flex-1">
                 {/* 분석 내용 - Liquid Glass */}
-                <div className="relative overflow-hidden rounded-2xl bg-white/10 border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
+                <div className="relative overflow-hidden rounded-2xl bg-white/5 border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
                   <div className="pointer-events-none absolute -top-4 -left-4 h-16 w-16 rounded-full bg-white/20 blur-xl" />
                   <p className="relative z-10 text-white font-medium text-[15px] leading-relaxed">
                     {analysisData?.scenarios?.neutral?.analysis ??
@@ -811,26 +813,26 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 {analysisData?.scenarios && (
                   <div className="space-y-2">
                     {/* 유망 - Liquid Glass */}
-                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                    <div className="relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
                       <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
                       <div className="relative z-10 flex gap-3">
                         <span className="inline-flex items-center justify-center h-[18px] px-2 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
                           유망
                         </span>
-                        <p className="text-xs text-white/90 leading-relaxed flex-1">
+                        <p className="text-xs text-white leading-relaxed flex-1">
                           {analysisData?.scenarios?.optimistic?.analysis ??
                             "정보 없음"}
                         </p>
                       </div>
                     </div>
                     {/* 우려 - Liquid Glass */}
-                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                    <div className="relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
                       <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
                       <div className="relative z-10 flex gap-3">
                         <span className="inline-flex items-center justify-center h-[18px] px-2 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
                           우려
                         </span>
-                        <p className="text-xs text-white/90 leading-relaxed flex-1">
+                        <p className="text-xs text-white leading-relaxed flex-1">
                           {analysisData?.scenarios?.pessimistic?.analysis ??
                             "정보 없음"}
                         </p>
@@ -844,8 +846,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
+      {/* Section Divider */}
+      <div className="border-t border-gray-200 my-8" />
+
       {/* --- All Companies Ranking Table --- */}
-      <div className="mb-10">
+      <div className="mb-8">
         <div className="bg-white rounded-xl overflow-hidden">
           {/* 클릭 가능한 아코디언 헤더 */}
           <button
@@ -968,8 +973,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
+      {/* Section Divider */}
+      <div className="border-t border-gray-200 my-8" />
+
       {/* --- Chart Tabs Section --- */}
-      <div className="mb-10">
+      <div className="mb-8">
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 border-b border-slate-200">
           <button
@@ -1049,7 +1057,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 {/* Company Logo */}
-                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <div className="w-10 h-10 rounded-md bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
                                   {stock.logo ? (
                                     <img
                                       src={stock.logo}
@@ -1059,13 +1067,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                                         (
                                           e.target as HTMLImageElement
                                         ).style.display = "none";
+                                        (
+                                          e.target as HTMLImageElement
+                                        ).nextElementSibling?.classList.remove(
+                                          "hidden",
+                                        );
                                       }}
                                     />
-                                  ) : (
-                                    <span className="text-xs font-bold text-slate-400">
-                                      {stock.name.slice(0, 2)}
-                                    </span>
-                                  )}
+                                  ) : null}
+                                  <span
+                                    className={`text-sm font-bold text-slate-600 ${stock.logo ? "hidden" : ""}`}
+                                  >
+                                    {stock.name.charAt(0)}
+                                  </span>
                                 </div>
                                 <div>
                                   <div className="font-bold text-slate-800 text-sm">
@@ -1474,6 +1488,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           </div>
         )}
       </div>
+
+      {/* Section Divider */}
+      <div className="border-t border-gray-200 my-8" />
 
       {/* --- News Section --- */}
       <div className="mb-8">
