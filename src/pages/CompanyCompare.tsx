@@ -7,11 +7,11 @@ import {
   TrendingUp,
   BarChart3,
   HelpCircle,
-  ChevronDown,
   Check,
   Edit2,
   CheckCircle2,
   Radar,
+  Crosshair,
 } from "lucide-react";
 import { PageView } from "../types";
 import type { Comparison, CompareCompany, TimeRange } from "../types";
@@ -59,7 +59,6 @@ type DetailMetricKey =
   | "operatingMargin"
   | "roe"
   | "yoy"
-  | "qoq"
   | "pbr"
   | "per";
 
@@ -111,11 +110,6 @@ const detailedMetricsInfo: Record<
     desc: "전년 대비 성장률(Year on Year)로, 계절적 요인을 배제하고 작년 같은 기간과 비교했을 때 기업이 얼마나 성장했는지 보여줍니다.",
     formula: "(당분기 매출 / 전년 동기 매출 - 1) × 100 (%)",
   },
-  qoq: {
-    title: "QoQ",
-    desc: "전분기 대비 증감률(Quarter on Quarter)로, 직전 분기와 비교하여 기업의 실적이 최근에 개선되고 있는지 보여줍니다.",
-    formula: "(당분기 매출 / 전 분기 매출 - 1) × 100 (%)",
-  },
   pbr: {
     title: "PBR",
     desc: "주가 순자산 비율(Price Book-value Ratio)로, 기업이 보유한 전체 재산(청산 가치)에 비해 주가가 어떤 수준인지 보여줍니다.",
@@ -141,7 +135,6 @@ const CompanyCompare: React.FC<CompareProps> = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("revenue");
-  const [isMetricDropdownOpen, setIsMetricDropdownOpen] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
   const [activeMetrics, setActiveMetrics] = useState<DetailMetricKey[]>([
     "roe",
@@ -356,7 +349,6 @@ const CompanyCompare: React.FC<CompareProps> = () => {
         pbr: "pbr",
         eps: "eps",
         yoy: "yoy",
-        qoq: "qoq",
         operatingMargin: "operatingMargin",
       };
       const apiKey = metricKeyMap[key];
@@ -679,46 +671,20 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                   {currentMetricOption.unit})
                 </h3>
 
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setIsMetricDropdownOpen(!isMetricDropdownOpen)
-                    }
-                    className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-700 transition-colors shadow-sm"
-                  >
-                    {currentMetricOption.label}{" "}
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform ${isMetricDropdownOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
-
-                  {isMetricDropdownOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setIsMetricDropdownOpen(false)}
-                      ></div>
-                      <div className="absolute right-0 top-full mt-2 w-40 bg-white/90 backdrop-blur-md border border-white/50 rounded-xl shadow-xl z-20 py-1 animate-fade-in-up">
-                        {metricOptions.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => {
-                              setSelectedMetric(option.id);
-                              setIsMetricDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                              selectedMetric === option.id
-                                ? "bg-blue-50 text-shinhan-blue font-bold"
-                                : "text-gray-600 hover:bg-gray-50"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                  {metricOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setSelectedMetric(option.id)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        selectedMetric === option.id
+                          ? "bg-white text-shinhan-blue shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="h-72">
@@ -726,6 +692,7 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                   <BarChart
                     data={financialChartData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    barGap={20}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -767,6 +734,9 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                 </ResponsiveContainer>
               </div>
             </GlassCard>
+
+            {/* 구분선 */}
+            <div className="border-t border-gray-200 my-2" />
 
             {/* Row 2: Stock Price Trend (Line Chart) */}
             <GlassCard className="p-6">
@@ -862,10 +832,13 @@ const CompanyCompare: React.FC<CompareProps> = () => {
               </div>
             </GlassCard>
 
+            {/* 구분선 */}
+            <div className="border-t border-gray-200 my-2" />
+
             {/* Row 3: PER-YoY Matrix (Quadrant Style) */}
             <GlassCard className="p-6">
               <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                <BarChart3 size={18} className="text-shinhan-blue" />
+                <Crosshair size={18} className="text-shinhan-blue" />
                 이익 성장성 대비 저평가 분석
               </h3>
               <p className="text-sm text-slate-500 mb-4">
@@ -1008,24 +981,31 @@ const CompanyCompare: React.FC<CompareProps> = () => {
             </GlassCard>
           </div>
 
+          {/* 구분선 */}
+          <div className="border-t border-gray-200 my-6" />
+
           {/* 2.5 Industry Deviation Radar */}
-          <GlassCard className="p-6 mt-6">
+          <GlassCard className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <Radar size={18} className="text-shinhan-blue" />
                 산업 평균 이탈 탐지
               </h3>
-              <select
-                className="text-xs font-bold border border-gray-300 rounded-md p-1.5 text-slate-700 bg-white"
-                value={selectedRadarCompany}
-                onChange={(e) => setSelectedRadarCompany(e.target.value)}
-              >
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                 {activeComparison?.companies?.map((c) => (
-                  <option key={c.stock_code} value={c.companyName}>
+                  <button
+                    key={c.stock_code}
+                    onClick={() => setSelectedRadarCompany(c.companyName)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      effectiveRadarCompany === c.companyName
+                        ? "bg-white text-shinhan-blue shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
                     {c.companyName}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
             <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2">
               <ResponsiveContainer width="100%" height="100%">
@@ -1071,10 +1051,14 @@ const CompanyCompare: React.FC<CompareProps> = () => {
             </div>
           </GlassCard>
 
+          {/* 구분선 */}
+          <div className="border-t border-gray-200 my-6" />
+
           {/* 3. Detailed Financial Ratios (Redesigned Grid + Toggle Layout) */}
-          <div className="mt-8">
+          <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-bold text-slate-700">
+              <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                <BarChart3 size={18} className="text-shinhan-blue" />
                 투자 지표 비교
               </h2>
             </div>
@@ -1207,7 +1191,7 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                   )}
                 </GlassCard>
                 <p className="text-xs text-gray-400 text-center mt-3 px-2">
-                  지표를 클릭하여 차트를 추가 또는 제거할 수 있습니다.
+                  지표를 클릭하여 차트를 편집할 수 있습니다.
                 </p>
               </div>
             </div>
