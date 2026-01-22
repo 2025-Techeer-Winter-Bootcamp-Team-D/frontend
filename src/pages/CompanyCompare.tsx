@@ -540,7 +540,7 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                     key={item.id}
                     onClick={() => setActiveSetId(item.id)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                      activeSetId === item.id
+                      effectiveSetId === item.id
                         ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
                         : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
                     }`}
@@ -552,7 +552,7 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                       onClick={(e) => handleDeleteSet(e, item.id)}
                       disabled={deleteSetMutation.isPending}
                       className={`p-1 rounded-full transition-colors flex-shrink-0 ${
-                        activeSetId === item.id
+                        effectiveSetId === item.id
                           ? "hover:bg-white/20 text-white"
                           : "hover:bg-gray-200 text-gray-400 hover:text-red-500"
                       } disabled:opacity-50`}
