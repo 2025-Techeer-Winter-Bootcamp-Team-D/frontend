@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import {
-  ArrowLeft,
   Plus,
   X,
   Search,
@@ -131,7 +130,7 @@ const detailedMetricsInfo: Record<
 
 // -- Main Page Component --
 
-const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
+const CompanyCompare: React.FC<CompareProps> = () => {
   // -----------------------------
   // Local UI State
   // -----------------------------
@@ -164,31 +163,28 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   );
 
   // 비교 세트 목록이 로드되면 첫 번째 세트를 기본 선택
-  useEffect(() => {
-    if (!activeSetId && comparisonList.length > 0) {
-      setActiveSetId(comparisonList[0].id);
-    }
-  }, [activeSetId, comparisonList]);
+  const effectiveSetId =
+    activeSetId ?? (comparisonList.length > 0 ? comparisonList[0].id : null);
 
   // 비교 세트 상세 조회
-  const comparisonDetailQuery = useComparisonDetail(activeSetId);
+  const comparisonDetailQuery = useComparisonDetail(effectiveSetId);
   const comparisonDetail = comparisonDetailQuery.data as Comparison | null;
 
   // 목록에서 이름을 가져와서 상세 데이터와 합침
   const activeComparison = useMemo(() => {
-    if (!comparisonDetail || !activeSetId) return null;
-    const listItem = comparisonList.find((c) => c.id === activeSetId);
+    if (!comparisonDetail || !effectiveSetId) return null;
+    const listItem = comparisonList.find((c) => c.id === effectiveSetId);
     return {
       ...comparisonDetail,
       name: listItem?.name ?? comparisonDetail.name ?? "",
     };
-  }, [comparisonDetail, activeSetId, comparisonList]);
+  }, [comparisonDetail, effectiveSetId, comparisonList]);
 
-  // 이름 편집용 임시 값 동기화
-  useEffect(() => {
-    if (activeComparison?.name) setTempSetName(activeComparison.name);
-    setIsEditingName(false);
-  }, [activeComparison?.name]);
+  // 이름 편집 시작 핸들러
+  const handleStartEditName = () => {
+    setTempSetName(activeComparison?.name ?? "");
+    setIsEditingName(true);
+  };
 
   // 검색 디바운스
   useEffect(() => {
@@ -335,7 +331,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       });
       return dataPoint;
     });
-  }, [activeComparison?.companies, selectedMetric]);
+  }, [activeComparison, selectedMetric]);
 
   // 투자지표 차트 데이터
   const dynamicDetails = useMemo(() => {
@@ -372,7 +368,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       result[key] = { ...info, data: chartData };
     });
     return result;
-  }, [activeComparison?.companies, activeMetrics]);
+  }, [activeComparison, activeMetrics]);
 
   // PER-YoY Matrix 차트 데이터
   const perYoyChartData = useMemo(() => {
@@ -383,7 +379,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       yoy: company.yoy ?? 0,
       fill: CHART_COLORS[index % CHART_COLORS.length],
     }));
-  }, [activeComparison?.companies]);
+  }, [activeComparison]);
 
   const avgPer = useMemo(() => {
     if (!perYoyChartData.length) return 15;
@@ -404,19 +400,17 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     };
   }, [perYoyChartData, avgPer]);
 
-  // Radar Chart: 선택된 기업 초기화
-  useEffect(() => {
-    if (activeComparison?.companies?.length && !selectedRadarCompany) {
-      setSelectedRadarCompany(activeComparison.companies[0].companyName);
-    }
-  }, [activeComparison?.companies, selectedRadarCompany]);
+  // Radar Chart: 선택된 기업 - 기본값 계산
+  const effectiveRadarCompany =
+    selectedRadarCompany ||
+    (activeComparison?.companies?.[0]?.companyName ?? "");
 
   // Radar Chart 데이터 (산업 평균 대비)
   const radarData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
 
     const selectedCompany = activeComparison.companies.find(
-      (c) => c.companyName === selectedRadarCompany,
+      (c) => c.companyName === effectiveRadarCompany,
     );
     if (!selectedCompany) return [];
 
@@ -451,7 +445,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
         fullMark: 25,
       },
     ];
-  }, [activeComparison?.companies, selectedRadarCompany]);
+  }, [activeComparison, effectiveRadarCompany]);
   //radarData 도메인 계산 (음수 값 포함)
   const { radarMin, radarMax } = useMemo(() => {
     if (!radarData.length) return { radarMin: 0, radarMax: 25 };
@@ -521,23 +515,15 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
     // OHLCV 데이터가 없으면 빈 배열 반환 (로딩 중이거나 에러)
     return [];
-  }, [activeComparison?.companies, timeRange, ohlcvData]);
+  }, [activeComparison, timeRange, ohlcvData]);
 
   return (
     <div className="animate-fade-in pb-12 relative">
-      {/* Top Navigation */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setPage(PageView.DASHBOARD)}
-          className="flex items-center text-slate-500 hover:text-shinhan-blue transition-colors"
-        >
-          <ArrowLeft size={16} className="mr-1" />
-          대시보드
-        </button>
-        <h1 className="text-xl font-bold text-slate-800 hidden md:block">
-          기업 비교 분석
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          기업 비교
         </h1>
-        <div className="w-20"></div> {/* Spacer */}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -618,7 +604,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     {activeComparison?.name ?? "비교 세트 선택"}
                   </h2>
                   <button
-                    onClick={() => setIsEditingName(true)}
+                    onClick={handleStartEditName}
                     className="p-1.5 text-gray-400 hover:text-[#0046FF] hover:bg-blue-50 rounded-lg transition-colors"
                     title="이름 변경"
                   >
