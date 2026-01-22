@@ -547,11 +547,16 @@ export interface FinancialStatement {
   total_assets: number;
   total_liabilities: number;
   total_equity: number;
-  roe: string;
-  debt_ratio: string;
-  per: string;
-  pbr: string;
-  dividend_yield: string;
+  roe: number | null;
+  debt_ratio: number | null;
+  per: number | null;
+  pbr: number | null;
+  dividend_yield: number | null;
+  eps: number | null;
+  operating_profit_margin: number | null;
+  yoy_revenue: number | null;
+  yoy_operating_profit: number | null;
+  yoy_net_income: number | null;
   metrics_calculated_at: string;
 }
 

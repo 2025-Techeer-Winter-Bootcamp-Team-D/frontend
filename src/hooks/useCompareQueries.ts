@@ -23,7 +23,11 @@ import {
   updateComparisonName,
   deleteComparison,
 } from "../api/comparison";
-import { searchCompanies, getStockOhlcv } from "../api/company";
+import {
+  searchCompanies,
+  getStockOhlcv,
+  getCompanyFinancials,
+} from "../api/company";
 import type {
   ComparisonListItem,
   Comparison,
@@ -72,13 +76,82 @@ export function useComparisons() {
 
 /**
  * 비교 세트 상세 조회 훅
+ * - 기업 목록 조회 후 각 기업의 재무 데이터도 함께 가져옴
  */
 export function useComparisonDetail(activeSetId: number | null) {
   return useQuery({
     queryKey: compareQueryKeys.comparison(activeSetId),
     queryFn: async () => {
       const res = await getComparison(activeSetId as number);
-      return (res.data ?? res) as Comparison;
+      // API 응답 구조: { status, message, data: { companyCount, companies } }
+      const apiData = res.data ?? res;
+      const basicCompanies = apiData.companies ?? [];
+
+      // 각 기업의 재무 데이터를 병렬로 가져옴
+      const companiesWithFinancials = await Promise.all(
+        basicCompanies.map(
+          async (company: { stock_code: string; companyName: string }) => {
+            try {
+              const financialRes = await getCompanyFinancials(
+                company.stock_code,
+              );
+              const financialData = financialRes.data?.data;
+              const latestStatement = financialData?.financial_statements?.[0];
+
+              return {
+                stock_code: company.stock_code,
+                companyName: company.companyName,
+                revenue: latestStatement?.revenue
+                  ? Math.round(latestStatement.revenue / 100000000)
+                  : 0, // 억원
+                operatingProfit: latestStatement?.operating_profit
+                  ? Math.round(latestStatement.operating_profit / 100000000)
+                  : 0,
+                netIncome: latestStatement?.net_income
+                  ? Math.round(latestStatement.net_income / 100000000)
+                  : 0,
+                marketCap: financialData?.market_amount
+                  ? Math.round(financialData.market_amount / 1000000000000)
+                  : 0, // 조원
+                roe: latestStatement?.roe ?? 0,
+                per: latestStatement?.per ?? 0,
+                pbr: latestStatement?.pbr ?? 0,
+                eps: latestStatement?.eps ?? 0,
+                yoy: latestStatement?.yoy_revenue ?? 0,
+                qoq: 0,
+                operatingMargin: latestStatement?.operating_profit_margin ?? 0,
+              };
+            } catch (error) {
+              console.warn(
+                `재무 데이터 조회 실패: ${company.stock_code}`,
+                error,
+              );
+              return {
+                stock_code: company.stock_code,
+                companyName: company.companyName,
+                revenue: 0,
+                operatingProfit: 0,
+                netIncome: 0,
+                marketCap: 0,
+                roe: 0,
+                per: 0,
+                pbr: 0,
+                eps: 0,
+                yoy: 0,
+                qoq: 0,
+                operatingMargin: 0,
+              };
+            }
+          },
+        ),
+      );
+
+      return {
+        id: activeSetId,
+        name: "", // 이름은 목록 API에서 가져옴
+        companies: companiesWithFinancials,
+        createdAt: "",
+      } as Comparison;
     },
     enabled: !!activeSetId,
     staleTime: CACHE_TIME.COMPARISON_DETAIL,
@@ -205,23 +278,30 @@ export function useCreateComparison() {
 
 /**
  * 기업 추가 mutation
+ * - setId를 mutation 호출 시점에 받아서 사용 (클로저 문제 방지)
  */
-export function useAddCompany(activeSetId: number | null) {
+export function useAddCompany() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (stockCode: string) => {
-      if (!activeSetId) throw new Error("activeSetId가 없습니다.");
-      await addCompany(activeSetId, { company: stockCode });
+    mutationFn: async ({
+      setId,
+      stockCode,
+    }: {
+      setId: number;
+      stockCode: string;
+    }) => {
+      await addCompany(setId, { company: stockCode });
+      return setId;
     },
-    onSuccess: () => {
+    onSuccess: (setId) => {
       // 해당 비교 세트 상세만 갱신
       queryClient.invalidateQueries({
-        queryKey: compareQueryKeys.comparison(activeSetId),
+        queryKey: compareQueryKeys.comparison(setId),
       });
       // OHLCV 데이터도 갱신 (새 기업 추가됨)
       queryClient.invalidateQueries({
-        queryKey: [...compareQueryKeys.all, "ohlcv", activeSetId],
+        queryKey: [...compareQueryKeys.all, "ohlcv", setId],
         exact: false,
       });
     },
@@ -230,23 +310,30 @@ export function useAddCompany(activeSetId: number | null) {
 
 /**
  * 기업 제거 mutation
+ * - setId를 mutation 호출 시점에 받아서 사용 (클로저 문제 방지)
  */
-export function useRemoveCompany(activeSetId: number | null) {
+export function useRemoveCompany() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (stockCode: string) => {
-      if (!activeSetId) throw new Error("activeSetId가 없습니다.");
-      await removeCompany(activeSetId, stockCode);
+    mutationFn: async ({
+      setId,
+      stockCode,
+    }: {
+      setId: number;
+      stockCode: string;
+    }) => {
+      await removeCompany(setId, stockCode);
+      return setId;
     },
-    onSuccess: () => {
+    onSuccess: (setId) => {
       // 해당 비교 세트 상세만 갱신
       queryClient.invalidateQueries({
-        queryKey: compareQueryKeys.comparison(activeSetId),
+        queryKey: compareQueryKeys.comparison(setId),
       });
       // OHLCV 데이터도 갱신
       queryClient.invalidateQueries({
-        queryKey: [...compareQueryKeys.all, "ohlcv", activeSetId],
+        queryKey: [...compareQueryKeys.all, "ohlcv", setId],
         exact: false,
       });
     },
@@ -255,22 +342,23 @@ export function useRemoveCompany(activeSetId: number | null) {
 
 /**
  * 비교 세트 이름 변경 mutation
+ * - setId를 mutation 호출 시점에 받아서 사용 (클로저 문제 방지)
  */
-export function useUpdateComparisonName(activeSetId: number | null) {
+export function useUpdateComparisonName() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (name: string) => {
-      if (!activeSetId) throw new Error("activeSetId가 없습니다.");
-      await updateComparisonName(activeSetId, name);
+    mutationFn: async ({ setId, name }: { setId: number; name: string }) => {
+      await updateComparisonName(setId, name);
+      return setId;
     },
-    onSuccess: () => {
+    onSuccess: (setId) => {
       // 목록과 상세 모두 갱신
       queryClient.invalidateQueries({
         queryKey: compareQueryKeys.comparisons(),
       });
       queryClient.invalidateQueries({
-        queryKey: compareQueryKeys.comparison(activeSetId),
+        queryKey: compareQueryKeys.comparison(setId),
       });
     },
   });

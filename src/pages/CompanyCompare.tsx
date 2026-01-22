@@ -172,8 +172,17 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
   // 비교 세트 상세 조회
   const comparisonDetailQuery = useComparisonDetail(activeSetId);
-  const activeComparison = (comparisonDetailQuery.data ??
-    null) as Comparison | null;
+  const comparisonDetail = comparisonDetailQuery.data as Comparison | null;
+
+  // 목록에서 이름을 가져와서 상세 데이터와 합침
+  const activeComparison = useMemo(() => {
+    if (!comparisonDetail || !activeSetId) return null;
+    const listItem = comparisonList.find((c) => c.id === activeSetId);
+    return {
+      ...comparisonDetail,
+      name: listItem?.name ?? comparisonDetail.name ?? "",
+    };
+  }, [comparisonDetail, activeSetId, comparisonList]);
 
   // 이름 편집용 임시 값 동기화
   useEffect(() => {
@@ -208,9 +217,9 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   // - invalidateQueries로 필요한 범위만 갱신
   // -----------------------------
   const createSetMutation = useCreateComparison();
-  const addCompanyMutation = useAddCompany(activeSetId);
-  const removeCompanyMutation = useRemoveCompany(activeSetId);
-  const updateNameMutation = useUpdateComparisonName(activeSetId);
+  const addCompanyMutation = useAddCompany();
+  const removeCompanyMutation = useRemoveCompany();
+  const updateNameMutation = useUpdateComparisonName();
   const deleteSetMutation = useDeleteComparison();
 
   // -----------------------------
@@ -233,16 +242,27 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   };
 
   const handleRemoveCompany = async (stock_code: string) => {
+    if (!activeSetId) {
+      console.error("activeSetId가 없습니다.");
+      return;
+    }
     try {
-      await removeCompanyMutation.mutateAsync(stock_code);
+      await removeCompanyMutation.mutateAsync({
+        setId: activeSetId,
+        stockCode: stock_code,
+      });
     } catch (e) {
       console.error("기업 제거 실패:", e);
     }
   };
 
   const handleAddCompany = async (stockCode: string) => {
+    if (!activeSetId) {
+      console.error("activeSetId가 없습니다.");
+      return;
+    }
     try {
-      await addCompanyMutation.mutateAsync(stockCode);
+      await addCompanyMutation.mutateAsync({ setId: activeSetId, stockCode });
       // 성공 시 모달 닫기
       setIsSearchOpen(false);
       setSearchQuery("");
@@ -258,7 +278,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     }
 
     try {
-      await updateNameMutation.mutateAsync(tempSetName.trim());
+      await updateNameMutation.mutateAsync({
+        setId: activeSetId,
+        name: tempSetName.trim(),
+      });
       setIsEditingName(false);
     } catch (e) {
       console.error("이름 변경 실패:", e);
@@ -623,8 +646,27 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               ))}
               {(activeComparison?.companies?.length ?? 0) < 5 ? (
                 <button
-                  onClick={() => setIsSearchOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group"
+                  onClick={async () => {
+                    // 비교 세트가 없으면 자동으로 생성
+                    if (!activeSetId && comparisonList.length === 0) {
+                      try {
+                        const res =
+                          await createSetMutation.mutateAsync("비교 세트 1");
+                        const newId =
+                          (res as { comparisonId?: number; id?: number })
+                            .comparisonId ?? (res as { id?: number }).id;
+                        if (newId != null) {
+                          setActiveSetId(newId);
+                        }
+                      } catch (e) {
+                        console.error("비교 세트 생성 실패:", e);
+                        return;
+                      }
+                    }
+                    setIsSearchOpen(true);
+                  }}
+                  disabled={createSetMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group disabled:opacity-50"
                 >
                   <Plus
                     size={16}
