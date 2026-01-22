@@ -11,6 +11,7 @@ import {
   Route,
   useNavigate,
   useParams,
+  useLocation,
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
 import Dashboard from "./pages/Dashboard";
@@ -35,14 +36,14 @@ function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem("isLoggedIn") === "true";
+  });
 
   // 네비게이션 처리 함수
   const handlePageChange = (page: PageView) => {
-    if (page === PageView.DASHBOARD) {
-      navigate("/");
-    } else if (page === PageView.COMPANY_SEARCH) {
-      navigate("/search");
-    }
+    // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
+    navigate("/", { state: { targetPage: page } });
   };
 
   return (
@@ -51,6 +52,11 @@ function CompanyDetailPage() {
         <Navbar
           currentPage={PageView.COMPANY_DETAIL}
           setPage={handlePageChange}
+          isLoggedIn={isLoggedIn}
+          onLogout={() => {
+            setIsLoggedIn(false);
+            localStorage.removeItem("isLoggedIn");
+          }}
         />
       </div>
       <main className="container mx-auto px-4 pt-6 max-w-7xl">
@@ -93,12 +99,25 @@ function App() {
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const location = useLocation();
+
+  // CompanyDetailPage에서 전달된 targetPage state 처리
+  React.useEffect(() => {
+    const state = location.state as { targetPage?: PageView } | null;
+    if (state?.targetPage) {
+      setPage(state.targetPage);
+      // state 초기화 (뒤로 가기 시 중복 처리 방지)
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   // UI 상태 관리
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem("isLoggedIn") === "true";
+  });
   const [showSearch, setShowSearch] = useState(false);
 
   const isDashboard = page === PageView.DASHBOARD;
@@ -233,7 +252,10 @@ function App() {
         <Login
           setPage={handlePageChange}
           onClose={() => setShowLogin(false)}
-          onLogin={() => setIsLoggedIn(true)}
+          onLogin={() => {
+            setIsLoggedIn(true);
+            localStorage.setItem("isLoggedIn", "true");
+          }}
         />
       )}
       {showSignUp && (

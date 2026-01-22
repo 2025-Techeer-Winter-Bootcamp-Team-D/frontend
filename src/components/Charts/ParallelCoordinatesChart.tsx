@@ -25,6 +25,12 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const activeFilters = useRef<Partial<Record<AxisKey, BrushRange>>>({});
+  const filteredIdsRef = useRef<Set<string>>(filteredIds);
+
+  // filteredIds가 변경될 때 ref 업데이트
+  useEffect(() => {
+    filteredIdsRef.current = filteredIds;
+  }, [filteredIds]);
 
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
@@ -190,7 +196,8 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
       })
       .on("click", function (event, d) {
         event.stopPropagation();
-        if (filteredIds.has(d.id)) {
+        // ref를 사용하여 최신 filteredIds 값 참조
+        if (filteredIdsRef.current.has(d.id)) {
           onStockSelect(d);
         }
       });
@@ -259,8 +266,11 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
     const svg = d3.select(svgRef.current);
     const lines = svg.selectAll<SVGPathElement, Stock>(".stock-line");
 
+    lines.style("pointer-events", (d) =>
+      filteredIds.has(d.id) ? "auto" : "none",
+    );
+
     lines
-      .style("pointer-events", (d) => (filteredIds.has(d.id) ? "auto" : "none"))
       .transition()
       .duration(300)
       .style("stroke", (d) => {

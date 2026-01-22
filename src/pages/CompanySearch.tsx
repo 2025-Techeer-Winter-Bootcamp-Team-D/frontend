@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import { Search, Star, TrendingUp, ChevronRight, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +16,9 @@ const fetchPriceAndChange = async (
   try {
     // 1m interval로 실시간 분봉 데이터 조회 (가장 빠름)
     const response = await getStockOhlcv(stockCode, "1m");
-    const priceData = response?.data?.data?.data ?? [];
+    const priceData = (response?.data?.data?.data ?? []) as unknown as Array<{
+      close: number;
+    }>;
 
     if (priceData.length > 0) {
       const latest = priceData[0]?.close ?? 0;
@@ -97,9 +100,11 @@ interface CompanySearchProps {
 }
 
 const CompanySearch: React.FC<CompanySearchProps> = ({
-  setPage,
+  setPage: _setPage,
   setCompanyCode,
 }) => {
+  void _setPage; // props 유지용
+  const navigate = useNavigate();
   // [수정: 25번 라인] Context에서 필요한 모든 상태 가져오기
   const {
     starred,
@@ -176,7 +181,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   const handleCompanyClick = (code: string) => {
     setCompanyCode(code);
-    setPage(PageView.COMPANY_DETAIL);
+    navigate(`/company/${code}`);
   };
 
   const displayList = useMemo(() => {
@@ -329,16 +334,16 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
+            <div className="flex-1 overflow-y-auto max-h-[600px] custom-scrollbar p-3">
               {starredList.length > 0 ? (
-                <div className="divide-y divide-gray-50">
+                <div className="grid grid-cols-2 gap-2">
                   {starredList.map((item) => (
                     <div
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className="p-4 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-between"
+                      className="p-3 bg-gray-50 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 mb-1">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -346,26 +351,24 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           }}
                           className="text-yellow-400"
                         >
-                          <Star size={18} fill="currentColor" />
+                          <Star size={14} fill="currentColor" />
                         </button>
-                        <div>
-                          <div className="font-bold text-slate-800 text-sm">
-                            {item.name}
-                          </div>
-                          <div className="text-xs text-gray-400 font-mono">
-                            {item.code}
-                          </div>
+                        <div className="font-bold text-slate-800 text-xs truncate">
+                          {item.name}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-slate-700 text-sm">
+                      <div className="text-xs text-gray-400 font-mono mb-1">
+                        {item.code}
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700">
                           {item.price}
-                        </div>
-                        <div
-                          className={`text-xs font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
+                        </span>
+                        <span
+                          className={`font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
                         >
                           {item.change}
-                        </div>
+                        </span>
                       </div>
                     </div>
                   ))}
