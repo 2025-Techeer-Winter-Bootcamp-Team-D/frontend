@@ -1,19 +1,20 @@
 import React, { useState, useMemo, useEffect } from "react";
 import GlassCard from "../components/Layout/GlassCard";
 import {
-  ArrowLeft,
   Plus,
   X,
   Search,
   TrendingUp,
   BarChart3,
   HelpCircle,
-  ChevronDown,
   Check,
   Edit2,
   CheckCircle2,
   Radar,
+  Crosshair,
+  Lock,
 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 import { PageView } from "../types";
 import type { Comparison, CompareCompany, TimeRange } from "../types";
 import {
@@ -52,6 +53,7 @@ import {
 
 interface CompareProps {
   setPage: (page: PageView) => void;
+  onShowLogin?: () => void;
 }
 
 type MetricType = "revenue" | "operating" | "net" | "marketCap";
@@ -60,7 +62,6 @@ type DetailMetricKey =
   | "operatingMargin"
   | "roe"
   | "yoy"
-  | "qoq"
   | "pbr"
   | "per";
 
@@ -88,6 +89,142 @@ const CHART_COLORS = [
   "#6366F1",
 ];
 
+/**
+ * 숫자를 한국식 단위(억, 조)로 포맷팅
+ * @param value - 억원 단위의 숫자 (revenue, operatingProfit, netIncome은 억원, marketCap은 조원)
+ * @param isMarketCap - 시가총액인 경우 true (이미 조원 단위)
+ */
+const formatKoreanNumber = (value: number, isMarketCap = false): string => {
+  if (value === 0) return "0";
+
+  // marketCap은 이미 조원 단위로 들어옴
+  if (isMarketCap) {
+    if (value >= 1) {
+      const jo = Math.floor(value);
+      const eok = Math.round((value - jo) * 10000);
+      if (eok > 0) {
+        return `${jo.toLocaleString()}조 ${eok.toLocaleString()}억`;
+      }
+      return `${jo.toLocaleString()}조`;
+    }
+    // 1조 미만
+    const eok = Math.round(value * 10000);
+    return `${eok.toLocaleString()}억`;
+  }
+
+  // revenue, operating, net은 억원 단위
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+
+  if (absValue >= 10000) {
+    // 1조 이상
+    const jo = Math.floor(absValue / 10000);
+    const eok = Math.round(absValue % 10000);
+    if (eok > 0) {
+      return `${sign}${jo.toLocaleString()}조 ${eok.toLocaleString()}억`;
+    }
+    return `${sign}${jo.toLocaleString()}조`;
+  }
+  // 1조 미만
+  return `${sign}${Math.round(absValue).toLocaleString()}억`;
+};
+
+/**
+ * 재무 데이터용 커스텀 툴팁 컴포넌트
+ */
+interface CustomFinancialTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  label?: string;
+  isMarketCap?: boolean;
+}
+
+const CustomFinancialTooltip: React.FC<CustomFinancialTooltipProps> = ({
+  active,
+  payload,
+  isMarketCap = false,
+}) => {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div
+      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
+      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+    >
+      <div className="space-y-2">
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-sm text-gray-600">{entry.name}</span>
+            </div>
+            <span className="text-sm font-bold text-slate-800 text-right">
+              {formatKoreanNumber(entry.value, isMarketCap)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * 주가 추이용 커스텀 툴팁 컴포넌트
+ */
+interface CustomStockTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  label?: string;
+}
+
+const CustomStockTooltip: React.FC<CustomStockTooltipProps> = ({
+  active,
+  payload,
+  label,
+}) => {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div
+      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
+      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+    >
+      {label && (
+        <div className="text-xs text-gray-500 mb-2 pb-2 border-b border-gray-100">
+          {label}
+        </div>
+      )}
+      <div className="space-y-2">
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-sm text-gray-600">{entry.name}</span>
+            </div>
+            <span className="text-sm font-bold text-slate-800 text-right">
+              {entry.value.toLocaleString()}원
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const detailedMetricsInfo: Record<
   DetailMetricKey,
   { title: string; desc: string; formula: string }
@@ -112,11 +249,6 @@ const detailedMetricsInfo: Record<
     desc: "전년 대비 성장률(Year on Year)로, 계절적 요인을 배제하고 작년 같은 기간과 비교했을 때 기업이 얼마나 성장했는지 보여줍니다.",
     formula: "(당분기 매출 / 전년 동기 매출 - 1) × 100 (%)",
   },
-  qoq: {
-    title: "QoQ",
-    desc: "전분기 대비 증감률(Quarter on Quarter)로, 직전 분기와 비교하여 기업의 실적이 최근에 개선되고 있는지 보여줍니다.",
-    formula: "(당분기 매출 / 전 분기 매출 - 1) × 100 (%)",
-  },
   pbr: {
     title: "PBR",
     desc: "주가 순자산 비율(Price Book-value Ratio)로, 기업이 보유한 전체 재산(청산 가치)에 비해 주가가 어떤 수준인지 보여줍니다.",
@@ -131,7 +263,9 @@ const detailedMetricsInfo: Record<
 
 // -- Main Page Component --
 
-const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
+const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
+  const { isAuthenticated } = useAuth();
+
   // -----------------------------
   // Local UI State
   // -----------------------------
@@ -142,12 +276,12 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("revenue");
-  const [isMetricDropdownOpen, setIsMetricDropdownOpen] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("6M");
   const [activeMetrics, setActiveMetrics] = useState<DetailMetricKey[]>([
     "roe",
   ]);
   const [selectedRadarCompany, setSelectedRadarCompany] = useState<string>("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // -----------------------------
   // Server state (커스텀 훅 사용)
@@ -164,22 +298,28 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   );
 
   // 비교 세트 목록이 로드되면 첫 번째 세트를 기본 선택
-  useEffect(() => {
-    if (!activeSetId && comparisonList.length > 0) {
-      setActiveSetId(comparisonList[0].id);
-    }
-  }, [activeSetId, comparisonList]);
+  const effectiveSetId =
+    activeSetId ?? (comparisonList.length > 0 ? comparisonList[0].id : null);
 
   // 비교 세트 상세 조회
-  const comparisonDetailQuery = useComparisonDetail(activeSetId);
-  const activeComparison = (comparisonDetailQuery.data ??
-    null) as Comparison | null;
+  const comparisonDetailQuery = useComparisonDetail(effectiveSetId);
+  const comparisonDetail = comparisonDetailQuery.data as Comparison | null;
 
-  // 이름 편집용 임시 값 동기화
-  useEffect(() => {
-    if (activeComparison?.name) setTempSetName(activeComparison.name);
-    setIsEditingName(false);
-  }, [activeComparison?.name]);
+  // 목록에서 이름을 가져와서 상세 데이터와 합침
+  const activeComparison = useMemo(() => {
+    if (!comparisonDetail || !effectiveSetId) return null;
+    const listItem = comparisonList.find((c) => c.id === effectiveSetId);
+    return {
+      ...comparisonDetail,
+      name: listItem?.name ?? comparisonDetail.name ?? "",
+    };
+  }, [comparisonDetail, effectiveSetId, comparisonList]);
+
+  // 이름 편집 시작 핸들러
+  const handleStartEditName = () => {
+    setTempSetName(activeComparison?.name ?? "");
+    setIsEditingName(true);
+  };
 
   // 검색 디바운스
   useEffect(() => {
@@ -194,7 +334,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
   // OHLCV (주가 추이) - 기업 코드 배열이 바뀌면 queryKey가 바뀜
   const ohlcvQuery = useCompareOhlcv(
-    activeSetId,
+    effectiveSetId,
     timeRange,
     activeComparison?.companies,
   );
@@ -208,15 +348,19 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   // - invalidateQueries로 필요한 범위만 갱신
   // -----------------------------
   const createSetMutation = useCreateComparison();
-  const addCompanyMutation = useAddCompany(activeSetId);
-  const removeCompanyMutation = useRemoveCompany(activeSetId);
-  const updateNameMutation = useUpdateComparisonName(activeSetId);
+  const addCompanyMutation = useAddCompany();
+  const removeCompanyMutation = useRemoveCompany();
+  const updateNameMutation = useUpdateComparisonName();
   const deleteSetMutation = useDeleteComparison();
 
   // -----------------------------
   // Handlers
   // -----------------------------
   const handleAddSet = async () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     const newSetName = `비교 세트 ${comparisonList.length + 1}`;
     try {
       const res = await createSetMutation.mutateAsync(newSetName);
@@ -233,16 +377,30 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   };
 
   const handleRemoveCompany = async (stock_code: string) => {
+    if (!effectiveSetId) {
+      console.error("effectiveSetId가 없습니다.");
+      return;
+    }
     try {
-      await removeCompanyMutation.mutateAsync(stock_code);
+      await removeCompanyMutation.mutateAsync({
+        setId: effectiveSetId,
+        stockCode: stock_code,
+      });
     } catch (e) {
       console.error("기업 제거 실패:", e);
     }
   };
 
   const handleAddCompany = async (stockCode: string) => {
+    if (!effectiveSetId) {
+      console.error("effectiveSetId가 없습니다.");
+      return;
+    }
     try {
-      await addCompanyMutation.mutateAsync(stockCode);
+      await addCompanyMutation.mutateAsync({
+        setId: effectiveSetId,
+        stockCode,
+      });
       // 성공 시 모달 닫기
       setIsSearchOpen(false);
       setSearchQuery("");
@@ -252,13 +410,16 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   };
 
   const handleSaveName = async () => {
-    if (!activeSetId || !tempSetName.trim()) {
+    if (!effectiveSetId || !tempSetName.trim()) {
       setIsEditingName(false);
       return;
     }
 
     try {
-      await updateNameMutation.mutateAsync(tempSetName.trim());
+      await updateNameMutation.mutateAsync({
+        setId: effectiveSetId,
+        name: tempSetName.trim(),
+      });
       setIsEditingName(false);
     } catch (e) {
       console.error("이름 변경 실패:", e);
@@ -312,7 +473,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       });
       return dataPoint;
     });
-  }, [activeComparison?.companies, selectedMetric]);
+  }, [activeComparison, selectedMetric]);
 
   // 투자지표 차트 데이터
   const dynamicDetails = useMemo(() => {
@@ -337,7 +498,6 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
         pbr: "pbr",
         eps: "eps",
         yoy: "yoy",
-        qoq: "qoq",
         operatingMargin: "operatingMargin",
       };
       const apiKey = metricKeyMap[key];
@@ -349,7 +509,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       result[key] = { ...info, data: chartData };
     });
     return result;
-  }, [activeComparison?.companies, activeMetrics]);
+  }, [activeComparison, activeMetrics]);
 
   // PER-YoY Matrix 차트 데이터
   const perYoyChartData = useMemo(() => {
@@ -360,7 +520,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
       yoy: company.yoy ?? 0,
       fill: CHART_COLORS[index % CHART_COLORS.length],
     }));
-  }, [activeComparison?.companies]);
+  }, [activeComparison]);
 
   const avgPer = useMemo(() => {
     if (!perYoyChartData.length) return 15;
@@ -381,19 +541,17 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
     };
   }, [perYoyChartData, avgPer]);
 
-  // Radar Chart: 선택된 기업 초기화
-  useEffect(() => {
-    if (activeComparison?.companies?.length && !selectedRadarCompany) {
-      setSelectedRadarCompany(activeComparison.companies[0].companyName);
-    }
-  }, [activeComparison?.companies, selectedRadarCompany]);
+  // Radar Chart: 선택된 기업 - 기본값 계산
+  const effectiveRadarCompany =
+    selectedRadarCompany ||
+    (activeComparison?.companies?.[0]?.companyName ?? "");
 
   // Radar Chart 데이터 (산업 평균 대비)
   const radarData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
 
     const selectedCompany = activeComparison.companies.find(
-      (c) => c.companyName === selectedRadarCompany,
+      (c) => c.companyName === effectiveRadarCompany,
     );
     if (!selectedCompany) return [];
 
@@ -428,7 +586,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
         fullMark: 25,
       },
     ];
-  }, [activeComparison?.companies, selectedRadarCompany]);
+  }, [activeComparison, effectiveRadarCompany]);
   //radarData 도메인 계산 (음수 값 포함)
   const { radarMin, radarMax } = useMemo(() => {
     if (!radarData.length) return { radarMin: 0, radarMax: 25 };
@@ -450,14 +608,14 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const trendChartData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
 
-    // 데이터 포인트 수 결정
-    const dataPointsMap: Record<TimeRange, number> = {
-      "1M": 22, // 약 1개월 영업일
-      "3M": 65, // 약 3개월 영업일
-      "6M": 130, // 약 6개월 영업일
-      "1Y": 250, // 약 1년 영업일
+    // 차트에 표시할 최대 포인트 수 (부드러운 곡선을 위해 제한)
+    const displayPointsMap: Record<TimeRange, number> = {
+      "1M": 22, // 약 1개월 - 매일 표시
+      "3M": 30, // 약 3개월 - 샘플링
+      "6M": 30, // 약 6개월 - 샘플링
+      "1Y": 50, // 약 1년 - 샘플링
     };
-    const maxPoints = dataPointsMap[timeRange];
+    const displayPoints = displayPointsMap[timeRange];
 
     // OHLCV 데이터가 있으면 실제 데이터 사용
     const hasOhlcvData = Object.keys(ohlcvData).length > 0;
@@ -469,12 +627,14 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
           (c) => ohlcvData[c.stock_code]?.length ?? 0,
         ),
       );
-      const actualPoints = Math.min(minLength, maxPoints);
 
-      if (actualPoints === 0) return [];
+      if (minLength === 0) return [];
+
+      // 샘플링 간격 계산
+      const step = Math.max(1, Math.floor(minLength / displayPoints));
 
       const data: Record<string, string | number>[] = [];
-      for (let i = 0; i < actualPoints; i++) {
+      for (let i = 0; i < minLength; i += step) {
         const point: Record<string, string | number> = {};
         activeComparison.companies.forEach((company) => {
           // stock_code로 OHLCV 데이터 조회, 차트에는 companyName으로 표시
@@ -496,23 +656,15 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
 
     // OHLCV 데이터가 없으면 빈 배열 반환 (로딩 중이거나 에러)
     return [];
-  }, [activeComparison?.companies, timeRange, ohlcvData]);
+  }, [activeComparison, timeRange, ohlcvData]);
 
   return (
     <div className="animate-fade-in pb-12 relative">
-      {/* Top Navigation */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setPage(PageView.DASHBOARD)}
-          className="flex items-center text-slate-500 hover:text-shinhan-blue transition-colors"
-        >
-          <ArrowLeft size={16} className="mr-1" />
-          대시보드
-        </button>
-        <h1 className="text-xl font-bold text-slate-800 hidden md:block">
-          기업 비교 분석
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          기업 비교
         </h1>
-        <div className="w-20"></div> {/* Spacer */}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -529,7 +681,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     key={item.id}
                     onClick={() => setActiveSetId(item.id)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                      activeSetId === item.id
+                      effectiveSetId === item.id
                         ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
                         : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
                     }`}
@@ -541,7 +693,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                       onClick={(e) => handleDeleteSet(e, item.id)}
                       disabled={deleteSetMutation.isPending}
                       className={`p-1 rounded-full transition-colors flex-shrink-0 ${
-                        activeSetId === item.id
+                        effectiveSetId === item.id
                           ? "hover:bg-white/20 text-white"
                           : "hover:bg-gray-200 text-gray-400 hover:text-red-500"
                       } disabled:opacity-50`}
@@ -593,7 +745,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                     {activeComparison?.name ?? "비교 세트 선택"}
                   </h2>
                   <button
-                    onClick={() => setIsEditingName(true)}
+                    onClick={handleStartEditName}
                     className="p-1.5 text-gray-400 hover:text-[#0046FF] hover:bg-blue-50 rounded-lg transition-colors"
                     title="이름 변경"
                   >
@@ -623,8 +775,32 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               ))}
               {(activeComparison?.companies?.length ?? 0) < 5 ? (
                 <button
-                  onClick={() => setIsSearchOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group"
+                  onClick={async () => {
+                    // 로그인 체크
+                    if (!isAuthenticated) {
+                      setShowLoginModal(true);
+                      return;
+                    }
+                    // 비교 세트가 없으면 자동으로 생성
+                    if (!effectiveSetId && comparisonList.length === 0) {
+                      try {
+                        const res =
+                          await createSetMutation.mutateAsync("비교 세트 1");
+                        const newId =
+                          (res as { comparisonId?: number; id?: number })
+                            .comparisonId ?? (res as { id?: number }).id;
+                        if (newId != null) {
+                          setActiveSetId(newId);
+                        }
+                      } catch (e) {
+                        console.error("비교 세트 생성 실패:", e);
+                        return;
+                      }
+                    }
+                    setIsSearchOpen(true);
+                  }}
+                  disabled={createSetMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group disabled:opacity-50"
                 >
                   <Plus
                     size={16}
@@ -649,46 +825,20 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   {currentMetricOption.unit})
                 </h3>
 
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setIsMetricDropdownOpen(!isMetricDropdownOpen)
-                    }
-                    className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-700 transition-colors shadow-sm"
-                  >
-                    {currentMetricOption.label}{" "}
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform ${isMetricDropdownOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
-
-                  {isMetricDropdownOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setIsMetricDropdownOpen(false)}
-                      ></div>
-                      <div className="absolute right-0 top-full mt-2 w-40 bg-white/90 backdrop-blur-md border border-white/50 rounded-xl shadow-xl z-20 py-1 animate-fade-in-up">
-                        {metricOptions.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => {
-                              setSelectedMetric(option.id);
-                              setIsMetricDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                              selectedMetric === option.id
-                                ? "bg-blue-50 text-shinhan-blue font-bold"
-                                : "text-gray-600 hover:bg-gray-50"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                  {metricOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setSelectedMetric(option.id)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        selectedMetric === option.id
+                          ? "bg-white text-shinhan-blue shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="h-72">
@@ -696,6 +846,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   <BarChart
                     data={financialChartData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    barGap={20}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -712,14 +863,20 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                       tick={{ fontSize: 12, fill: "#64748b" }}
                       axisLine={false}
                       tickLine={false}
+                      tickFormatter={(value) =>
+                        formatKoreanNumber(
+                          value,
+                          selectedMetric === "marketCap",
+                        )
+                      }
                     />
                     <Tooltip
                       cursor={{ fill: "transparent" }}
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
+                      content={
+                        <CustomFinancialTooltip
+                          isMarketCap={selectedMetric === "marketCap"}
+                        />
+                      }
                     />
                     <Legend wrapperStyle={{ paddingTop: "20px" }} />
                     {/* Dynamically render bars for each company in the set */}
@@ -737,6 +894,9 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                 </ResponsiveContainer>
               </div>
             </GlassCard>
+
+            {/* 구분선 */}
+            <div className="border-t border-gray-200 my-2" />
 
             {/* Row 2: Stock Price Trend (Line Chart) */}
             <GlassCard className="p-6">
@@ -762,58 +922,77 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                 </div>
               </div>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={trendChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#f0f0f0"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={["auto", "auto"]}
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                    {/* Dynamically render lines for each company */}
-                    {activeComparison?.companies?.map((company, index) => (
-                      <Line
-                        key={company.stock_code}
-                        type="monotone"
-                        dataKey={company.companyName}
-                        name={company.companyName}
-                        stroke={CHART_COLORS[index % CHART_COLORS.length]}
-                        strokeWidth={3}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
+                {ohlcvQuery.isLoading ? (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-shinhan-blue mx-auto mb-2"></div>
+                      <p className="text-sm">주가 데이터를 불러오는 중...</p>
+                    </div>
+                  </div>
+                ) : trendChartData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    <div className="text-center">
+                      <TrendingUp
+                        size={32}
+                        className="mx-auto mb-2 opacity-50"
                       />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
+                      <p className="text-sm">주가 데이터가 없습니다.</p>
+                      <p className="text-xs mt-1">
+                        기업을 추가하거나 데이터가 동기화되면 표시됩니다.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={trendChartData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f0f0f0"
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        domain={["auto", "auto"]}
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip content={<CustomStockTooltip />} />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      {/* Dynamically render lines for each company */}
+                      {activeComparison?.companies?.map((company, index) => (
+                        <Line
+                          key={company.stock_code}
+                          type="monotone"
+                          dataKey={company.companyName}
+                          name={company.companyName}
+                          stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4 }}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </GlassCard>
+
+            {/* 구분선 */}
+            <div className="border-t border-gray-200 my-2" />
 
             {/* Row 3: PER-YoY Matrix (Quadrant Style) */}
             <GlassCard className="p-6">
               <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                <BarChart3 size={18} className="text-shinhan-blue" />
+                <Crosshair size={18} className="text-shinhan-blue" />
                 이익 성장성 대비 저평가 분석
               </h3>
               <p className="text-sm text-slate-500 mb-4">
@@ -956,24 +1135,31 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
             </GlassCard>
           </div>
 
+          {/* 구분선 */}
+          <div className="border-t border-gray-200 my-6" />
+
           {/* 2.5 Industry Deviation Radar */}
-          <GlassCard className="p-6 mt-6">
+          <GlassCard className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <Radar size={18} className="text-shinhan-blue" />
                 산업 평균 이탈 탐지
               </h3>
-              <select
-                className="text-xs font-bold border border-gray-300 rounded-md p-1.5 text-slate-700 bg-white"
-                value={selectedRadarCompany}
-                onChange={(e) => setSelectedRadarCompany(e.target.value)}
-              >
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                 {activeComparison?.companies?.map((c) => (
-                  <option key={c.stock_code} value={c.companyName}>
+                  <button
+                    key={c.stock_code}
+                    onClick={() => setSelectedRadarCompany(c.companyName)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      effectiveRadarCompany === c.companyName
+                        ? "bg-white text-shinhan-blue shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
                     {c.companyName}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
             <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2">
               <ResponsiveContainer width="100%" height="100%">
@@ -1019,18 +1205,22 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
             </div>
           </GlassCard>
 
+          {/* 구분선 */}
+          <div className="border-t border-gray-200 my-6" />
+
           {/* 3. Detailed Financial Ratios (Redesigned Grid + Toggle Layout) */}
-          <div className="mt-8">
+          <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-bold text-slate-700">
+              <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                <BarChart3 size={18} className="text-shinhan-blue" />
                 투자 지표 비교
               </h2>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="flex flex-col lg:flex-row gap-2 items-start">
               {/* Left: Dynamic Grid Area */}
               <div
-                className={`flex-1 w-full grid gap-6 auto-rows-min ${activeMetrics.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
+                className={`flex-1 w-full grid gap-2 auto-rows-min ${activeMetrics.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
               >
                 {activeMetrics.map((key) => {
                   const info = dynamicDetails[key];
@@ -1038,9 +1228,9 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   return (
                     <GlassCard
                       key={key}
-                      className="p-6 relative flex flex-col animate-fade-in-up"
+                      className="p-4 relative flex flex-col animate-fade-in-up"
                     >
-                      <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-slate-800">
                           {info.title}
                         </h3>
@@ -1155,7 +1345,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   )}
                 </GlassCard>
                 <p className="text-xs text-gray-400 text-center mt-3 px-2">
-                  지표를 클릭하여 차트를 추가 또는 제거할 수 있습니다.
+                  지표를 클릭하여 차트를 편집할 수 있습니다.
                 </p>
               </div>
             </div>
@@ -1244,6 +1434,48 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   검색 결과가 없습니다.
                 </div>
               )}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* 로그인 필요 모달 */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowLoginModal(false)}
+          ></div>
+          <GlassCard className="relative z-10 p-8 text-center max-w-sm animate-fade-in">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Lock size={32} className="text-shinhan-blue" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">
+              로그인이 필요한 서비스입니다
+            </h2>
+            <p className="text-slate-500 text-sm mb-6">
+              기업 비교 기능을 이용하시려면 로그인해주세요.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-slate-600 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                닫기
+              </button>
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  if (onShowLogin) {
+                    onShowLogin();
+                  } else {
+                    setPage(PageView.LOGIN);
+                  }
+                }}
+                className="flex-1 py-2.5 bg-shinhan-blue text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                로그인
+              </button>
             </div>
           </GlassCard>
         </div>
