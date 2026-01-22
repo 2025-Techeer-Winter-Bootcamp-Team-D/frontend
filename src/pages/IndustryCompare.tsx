@@ -9,7 +9,6 @@ import {
   ChevronDown,
   X,
   ChevronRight,
-  Trophy,
   RotateCcw,
   Filter,
 } from "lucide-react";
@@ -240,6 +239,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
+  const [showAllCompanies, setShowAllCompanies] = useState(false);
 
   // -----------------------------
   // TanStack Query - 커스텀 훅 사용
@@ -446,11 +446,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               response?.data?.data?.financial_statements;
             if (financialStatements && financialStatements.length > 0) {
               const latest = financialStatements[0];
-              roe = Number(latest.roe) || 0;
-              pbr = Number(latest.pbr) || 0;
-              per = Number(latest.per) || 0;
-              debtRatio = Number(latest.debt_ratio) || 0;
-              divYield = Number(latest.dividend_yield) || 0;
+              roe = latest.roe ?? 0;
+              pbr = latest.pbr ?? 0;
+              per = latest.per ?? 0;
+              debtRatio = latest.debt_ratio ?? 0;
+              divYield = latest.dividend_yield ?? 0;
             }
           } catch (error) {
             if ((error as Error).name === "CanceledError") return;
@@ -654,18 +654,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
   return (
     <div className="animate-fade-in pb-12 relative">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          산업 분석
-          <span className="text-gray-300">|</span>
-          <span className="text-shinhan-blue">{currentIndustryInfo.name}</span>
-        </h1>
-        <div className="relative">
+      {/* Header with Dropdown Selector */}
+      <div className="flex items-start justify-between mb-7">
+        <h1 className="text-2xl font-bold text-slate-800">산업 분석</h1>
+        {/* Industry Dropdown Selector */}
+        <div className="relative inline-flex items-center h-9">
           <select
             value={selectedIndustry}
             onChange={(e) => setSelectedIndustry(e.target.value as IndustryKey)}
-            className="appearance-none bg-white border border-gray-200 text-slate-700 text-sm rounded-md focus:ring-shinhan-blue focus:border-shinhan-blue block pl-4 pr-10 py-2.5 outline-none shadow-sm cursor-pointer min-w-[200px]"
+            className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-sm font-medium text-slate-700 cursor-pointer hover:border-shinhan-blue focus:outline-none focus:ring-2 focus:ring-shinhan-blue/20 focus:border-shinhan-blue transition-all shadow-sm h-full"
           >
             {Object.entries(INDUSTRY_NAMES).map(([key, info]) => (
               <option key={key} value={key}>
@@ -673,14 +670,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               </option>
             ))}
           </select>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-            <ChevronDown size={16} />
-          </div>
+          <ChevronDown
+            size={16}
+            className="absolute right-3 text-gray-400 pointer-events-none"
+          />
         </div>
       </div>
 
       {/* Sector Overview Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
         <div className="lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -787,14 +785,14 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         <div
           className="
             relative overflow-hidden rounded-3xl h-full
-            bg-[#0046FF]/80
+            bg-[#0046FF]
             backdrop-blur-3xl backdrop-saturate-200
             border border-white/30
             shadow-[inset_0_1px_0_0_rgba(255,255,255,0.7),inset_1px_0_0_0_rgba(255,255,255,0.5),inset_0_-1px_0_0_rgba(255,255,255,0.1)]
           "
         >
           {/* Internal Light Layers */}
-          <div className="pointer-events-none absolute -top-[60px] -left-[60px] h-[250px] w-[250px] rounded-full bg-white/25 blur-[60px]" />
+          <div className="pointer-events-none absolute -top-[60px] -left-[60px] h-[250px] w-[250px] rounded-full" />
           <div className="pointer-events-none absolute -bottom-[80px] -right-[80px] h-[300px] w-[300px] rounded-full bg-blue-400/30 blur-[70px]" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-3xl" />
 
@@ -811,36 +809,36 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             ) : (
               <div className="space-y-3 flex-1">
                 {/* 분석 내용 - Liquid Glass */}
-                <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
+                <div className="relative overflow-hidden rounded-2xl bg-white/5 border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
                   <div className="pointer-events-none absolute -top-4 -left-4 h-16 w-16 rounded-full bg-white/20 blur-xl" />
-                  <p className="relative z-10 text-white text-sm leading-relaxed">
+                  <p className="relative z-10 text-white font-medium text-[15px] leading-relaxed">
                     {analysisData?.scenarios?.neutral?.analysis ??
                       "전망 정보가 없습니다."}
                   </p>
                 </div>
                 {analysisData?.scenarios && (
                   <div className="space-y-2">
-                    {/* 긍정 - Liquid Glass */}
-                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                    {/* 유망 - Liquid Glass */}
+                    <div className="relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
                       <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
-                      <div className="relative z-10 flex items-start gap-2">
-                        <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                          긍정
+                      <div className="relative z-10 flex gap-3">
+                        <span className="inline-flex items-center justify-center h-[18px] px-2 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          유망
                         </span>
-                        <p className="text-xs text-white/90 leading-relaxed">
+                        <p className="text-xs text-white leading-relaxed flex-1">
                           {analysisData?.scenarios?.optimistic?.analysis ??
                             "정보 없음"}
                         </p>
                       </div>
                     </div>
-                    {/* 리스크 - Liquid Glass */}
-                    <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
+                    {/* 우려 - Liquid Glass */}
+                    <div className="relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
                       <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
-                      <div className="relative z-10 flex items-start gap-2">
-                        <span className="px-2 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                          리스크
+                      <div className="relative z-10 flex gap-3">
+                        <span className="inline-flex items-center justify-center h-[18px] px-2 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          우려
                         </span>
-                        <p className="text-xs text-white/90 leading-relaxed">
+                        <p className="text-xs text-white leading-relaxed flex-1">
                           {analysisData?.scenarios?.pessimistic?.analysis ??
                             "정보 없음"}
                         </p>
@@ -854,133 +852,36 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
-      {/* --- Top 3 Companies (Rankings) --- */}
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-[#0046FF]">
-          {currentIndustryInfo.name} 산업 내 기업 순위
-        </h2>
-        <p className="text-sm text-slate-500">
-          시가총액 기준 상위 3개 기업입니다.
-        </p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
-        {companiesData.slice(0, 3).map((company, index) => {
-          const isFirst = index === 0;
-          const isSecond = index === 1;
-
-          let containerClasses =
-            "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
-          let badgeClasses = "";
-          let label = "";
-
-          if (isFirst) {
-            containerClasses +=
-              " border-yellow-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-yellow-100 text-yellow-600";
-            label = "1st Place";
-          } else if (isSecond) {
-            containerClasses +=
-              " border-slate-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-slate-100 text-slate-500";
-            label = "2nd Place";
-          } else {
-            containerClasses +=
-              " border-orange-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-orange-100 text-orange-600";
-            label = "3rd Place";
-          }
-
-          return (
-            <GlassCard
-              key={company.code}
-              className={containerClasses}
-              onClick={() => handleCompanyClick(company.code)}
-            >
-              {/* Header */}
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center ${badgeClasses}`}
-                  >
-                    <Trophy size={20} />
-                  </div>
-                  <div>
-                    <div
-                      className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isFirst ? "text-yellow-600" : isSecond ? "text-slate-500" : "text-orange-500"}`}
-                    >
-                      {label}
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {company.code}
-                    </div>
-                    <button
-                      onClick={(e) => handleToggleStar(e, company.code)}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <StarIcon
-                        isActive={starred?.has(company.code) ?? false}
-                      />
-                    </button>
-                  </div>
-                </div>
-                <button
-                  onClick={(e) => handleToggleStar(e, company.code)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <StarIcon isActive={starred?.has(company.code) ?? false} />
-                </button>
-              </div>
-
-              {/* Center Content */}
-              <div className="text-center mb-6">
-                <h3
-                  className={`font-bold text-slate-800 mb-2 ${isFirst ? "text-2xl" : "text-xl"}`}
-                >
-                  {company.name}
-                </h3>
-                <div className="flex items-center justify-center gap-2">
-                  <span
-                    className={`text-lg font-bold ${isFirst ? "text-slate-900" : "text-slate-700"}`}
-                  >
-                    {company.price}
-                  </span>
-                  <span
-                    className={`text-sm font-bold px-2 py-0.5 rounded ${company.change.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
-                  >
-                    {company.change}
-                  </span>
-                </div>
-              </div>
-
-              {/* Footer Metrics */}
-              <div
-                className={`mt-auto pt-4 border-t ${isFirst ? "border-yellow-100" : "border-gray-50"}`}
-              >
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">
-                      시가총액
-                    </div>
-                    <div className="text-sm font-bold text-slate-600">
-                      {company.marketCap}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">ROE</div>
-                    <div className="text-sm font-bold text-shinhan-blue">
-                      {company.roe}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          );
-        })}
-      </div>
+      {/* Section Divider */}
+      <div className="border-t border-gray-200 my-8" />
 
       {/* --- All Companies Ranking Table --- */}
-      <div className="mb-10">
+      <div className="mb-8">
         <div className="bg-white rounded-xl overflow-hidden">
+          {/* 클릭 가능한 아코디언 헤더 */}
+          <button
+            onClick={() => setShowAllCompanies(!showAllCompanies)}
+            className="w-full flex items-center justify-between px-6 py-4 bg-white hover:bg-gray-50 transition-colors border-b border-gray-100"
+          >
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold text-slate-800">
+                {currentIndustryInfo.name} 산업 순위
+              </h2>
+              <span className="text-sm text-gray-500">
+                ({companiesData.length}개 기업)
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-shinhan-blue">
+              <span className="text-sm font-medium">
+                {showAllCompanies ? "접기" : "전체보기"}
+              </span>
+              <ChevronDown
+                size={20}
+                className={`transition-transform duration-200 ${showAllCompanies ? "rotate-180" : ""}`}
+              />
+            </div>
+          </button>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left table-fixed">
               <colgroup>
@@ -994,7 +895,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 <col />
                 <col className="w-32" />
               </colgroup>
-              <thead className="text-xs text-gray-400 border-b border-gray-100">
+              <thead className="text-xs text-gray-400 border-b border-gray-100 sticky top-0 bg-white z-10">
                 <tr>
                   <th className="pl-3 pr-1 py-3 font-normal"></th>
                   <th className="px-1 py-3 font-normal text-center">순위</th>
@@ -1012,7 +913,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {companiesData.map((company, index) => (
+                {(showAllCompanies
+                  ? companiesData
+                  : companiesData.slice(0, 5)
+                ).map((company, index) => (
                   <tr
                     key={company.code}
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
@@ -1075,8 +979,11 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
+      {/* Section Divider */}
+      <div className="border-t border-gray-200 my-8" />
+
       {/* --- Chart Tabs Section --- */}
-      <div className="mb-10">
+      <div className="mb-8">
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 border-b border-slate-200">
           <button
@@ -1150,17 +1057,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         .map((stock) => (
                           <div
                             key={stock.id}
-                            onClick={() => setSelectedStock(stock)}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                              selectedStock?.id === stock.id
-                                ? "border-shinhan-blue bg-blue-50"
-                                : "border-slate-100 bg-slate-50 hover:border-slate-200"
-                            }`}
+                            onClick={() => handleCompanyClick(stock.id)}
+                            className="p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-blue-50"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 {/* Company Logo */}
-                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <div className="w-10 h-10 rounded-md bg-white border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
                                   {stock.logo ? (
                                     <img
                                       src={stock.logo}
@@ -1170,13 +1073,19 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                                         (
                                           e.target as HTMLImageElement
                                         ).style.display = "none";
+                                        (
+                                          e.target as HTMLImageElement
+                                        ).nextElementSibling?.classList.remove(
+                                          "hidden",
+                                        );
                                       }}
                                     />
-                                  ) : (
-                                    <span className="text-xs font-bold text-slate-400">
-                                      {stock.name.slice(0, 2)}
-                                    </span>
-                                  )}
+                                  ) : null}
+                                  <span
+                                    className={`text-sm font-bold text-slate-600 ${stock.logo ? "hidden" : ""}`}
+                                  >
+                                    {stock.name.charAt(0)}
+                                  </span>
                                 </div>
                                 <div>
                                   <div className="font-bold text-slate-800 text-sm">
@@ -1220,11 +1129,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                                     {stock.divYield.toFixed(1)}%
                                   </div>
                                 </div>
-                                {selectedStock?.id === stock.id && (
-                                  <span className="px-2 py-0.5 bg-shinhan-blue text-white text-[10px] rounded-full font-bold">
-                                    선택됨
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1374,6 +1278,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     {/* Highlight the 'Target' Quadrant (High ROE, Low PBR) */}
                     <ReferenceArea
                       x1={10}
+                      x2={100}
+                      y1={0}
                       y2={1}
                       fill="#0046FF"
                       fillOpacity={0.08}
@@ -1517,6 +1423,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       x1={0}
                       x2={150}
                       y1={10}
+                      y2={100}
                       fill="#10B981"
                       fillOpacity={0.08}
                     />
@@ -1590,6 +1497,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           </div>
         )}
       </div>
+
+      {/* Section Divider */}
+      <div className="border-t border-gray-200 my-8" />
 
       {/* --- News Section --- */}
       <div className="mb-8">
