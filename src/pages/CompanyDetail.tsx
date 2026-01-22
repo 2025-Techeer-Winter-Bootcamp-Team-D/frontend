@@ -414,6 +414,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
       }
     };
 
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
