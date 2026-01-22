@@ -99,7 +99,7 @@ const StockChart: React.FC<StockChartProps> = ({
           axisLine={false}
           tickLine={false}
           tick={showAxes ? { fontSize: 11, fill: "#94A3B8" } : false}
-          tickFormatter={(val) => val.toLocaleString()} // 가격 그대로 표시하거나 필요시 k단위 변환
+          tickFormatter={(val) => val.toLocaleString() ?? ""} // 가격 그대로 표시하거나 필요시 k단위 변환
           hide={!showAxes}
         />
         <XAxis
