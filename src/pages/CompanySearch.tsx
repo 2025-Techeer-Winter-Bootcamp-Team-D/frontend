@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import { Search, Star, TrendingUp, ChevronRight, Loader2 } from "lucide-react";
@@ -114,6 +114,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   } = useStarred();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -121,6 +123,20 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // 외부 클릭시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const { data: rankingData = [], isLoading: isRankingLoading } = useQuery({
     queryKey: ["companyRankingsWithPrices"],
@@ -165,11 +181,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     enabled: !!debouncedQuery.trim(),
     select: (response: any) => {
       const responseData = response.data;
-      if (!responseData?.data) return [] as RankingItem[];
-      return responseData.data.map((item: any, index: number) => ({
+      if (!responseData?.data?.results) return [] as RankingItem[];
+      return responseData.data.results.map((item: any, index: number) => ({
         rank: index + 1,
-        name: item.name,
-        code: item.companyId,
+        name: item.company_name,
+        code: item.stock_code,
         sector: "-",
         price: "-",
         change: "-",
@@ -181,6 +197,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   const handleCompanyClick = (code: string) => {
     setCompanyCode(code);
+    setIsDropdownOpen(false);
+    setSearchQuery("");
     navigate(`/company/${code}`);
   };
 
@@ -225,8 +243,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
       {/* 검색창 섹션 */}
       <div className="flex flex-col items-center justify-center mb-10 pt-4">
         <h1 className="text-3xl font-bold text-slate-800 mb-6">기업 검색</h1>
-        <div className="w-full max-w-2xl relative">
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+        <div className="w-full max-w-2xl relative" ref={searchContainerRef}>
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
             <Search className="text-gray-400" size={24} />
           </div>
           <input
@@ -234,8 +252,52 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             placeholder="기업명 또는 종목코드를 입력하세요..."
             className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setIsDropdownOpen(true);
+            }}
+            onFocus={() => setIsDropdownOpen(true)}
           />
+          {/* 검색 결과 드롭다운 */}
+          {isDropdownOpen && searchQuery.trim() && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto z-50">
+              {isSearching ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2
+                    className="animate-spin text-shinhan-blue"
+                    size={24}
+                  />
+                  <span className="ml-2 text-gray-500">검색 중...</span>
+                </div>
+              ) : searchResults.length > 0 ? (
+                <ul>
+                  {searchResults.map((item: RankingItem) => (
+                    <li
+                      key={item.code}
+                      onClick={() => handleCompanyClick(item.code)}
+                      className="px-5 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-slate-800">
+                            {item.name}
+                          </div>
+                          <div className="text-sm text-gray-400 font-mono">
+                            {item.code}
+                          </div>
+                        </div>
+                        <ChevronRight size={18} className="text-gray-300" />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : debouncedQuery.trim() ? (
+                <div className="py-6 text-center text-gray-500">
+                  검색 결과가 없습니다
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
 
