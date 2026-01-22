@@ -473,14 +473,14 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
   const trendChartData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
 
-    // 데이터 포인트 수 결정
-    const dataPointsMap: Record<TimeRange, number> = {
-      "1M": 22, // 약 1개월 영업일
-      "3M": 65, // 약 3개월 영업일
-      "6M": 130, // 약 6개월 영업일
-      "1Y": 250, // 약 1년 영업일
+    // 차트에 표시할 최대 포인트 수 (부드러운 곡선을 위해 제한)
+    const displayPointsMap: Record<TimeRange, number> = {
+      "1M": 22, // 약 1개월 - 매일 표시
+      "3M": 30, // 약 3개월 - 샘플링
+      "6M": 30, // 약 6개월 - 샘플링
+      "1Y": 50, // 약 1년 - 샘플링
     };
-    const maxPoints = dataPointsMap[timeRange];
+    const displayPoints = displayPointsMap[timeRange];
 
     // OHLCV 데이터가 있으면 실제 데이터 사용
     const hasOhlcvData = Object.keys(ohlcvData).length > 0;
@@ -492,12 +492,14 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
           (c) => ohlcvData[c.stock_code]?.length ?? 0,
         ),
       );
-      const actualPoints = Math.min(minLength, maxPoints);
 
-      if (actualPoints === 0) return [];
+      if (minLength === 0) return [];
+
+      // 샘플링 간격 계산
+      const step = Math.max(1, Math.floor(minLength / displayPoints));
 
       const data: Record<string, string | number>[] = [];
-      for (let i = 0; i < actualPoints; i++) {
+      for (let i = 0; i < minLength; i += step) {
         const point: Record<string, string | number> = {};
         activeComparison.companies.forEach((company) => {
           // stock_code로 OHLCV 데이터 조회, 차트에는 companyName으로 표시
@@ -804,51 +806,73 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                 </div>
               </div>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={trendChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#f0f0f0"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={["auto", "auto"]}
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                    {/* Dynamically render lines for each company */}
-                    {activeComparison?.companies?.map((company, index) => (
-                      <Line
-                        key={company.stock_code}
-                        type="monotone"
-                        dataKey={company.companyName}
-                        name={company.companyName}
-                        stroke={CHART_COLORS[index % CHART_COLORS.length]}
-                        strokeWidth={3}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
+                {ohlcvQuery.isLoading ? (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-shinhan-blue mx-auto mb-2"></div>
+                      <p className="text-sm">주가 데이터를 불러오는 중...</p>
+                    </div>
+                  </div>
+                ) : trendChartData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    <div className="text-center">
+                      <TrendingUp
+                        size={32}
+                        className="mx-auto mb-2 opacity-50"
                       />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
+                      <p className="text-sm">주가 데이터가 없습니다.</p>
+                      <p className="text-xs mt-1">
+                        기업을 추가하거나 데이터가 동기화되면 표시됩니다.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={trendChartData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f0f0f0"
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        domain={["auto", "auto"]}
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "none",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      {/* Dynamically render lines for each company */}
+                      {activeComparison?.companies?.map((company, index) => (
+                        <Line
+                          key={company.stock_code}
+                          type="monotone"
+                          dataKey={company.companyName}
+                          name={company.companyName}
+                          stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4 }}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </GlassCard>
 
@@ -1069,10 +1093,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
               </h2>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="flex flex-col lg:flex-row gap-2 items-start">
               {/* Left: Dynamic Grid Area */}
               <div
-                className={`flex-1 w-full grid gap-6 auto-rows-min ${activeMetrics.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
+                className={`flex-1 w-full grid gap-2 auto-rows-min ${activeMetrics.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}
               >
                 {activeMetrics.map((key) => {
                   const info = dynamicDetails[key];
@@ -1080,9 +1104,9 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage }) => {
                   return (
                     <GlassCard
                       key={key}
-                      className="p-6 relative flex flex-col animate-fade-in-up"
+                      className="p-4 relative flex flex-col animate-fade-in-up"
                     >
-                      <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-slate-800">
                           {info.title}
                         </h3>

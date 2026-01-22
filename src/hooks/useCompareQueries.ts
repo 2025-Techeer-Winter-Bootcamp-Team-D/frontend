@@ -33,7 +33,6 @@ import type {
   Comparison,
   CompanySearchItem,
   TimeRange,
-  OhlcvData,
   OhlcvItem,
 } from "../types";
 
@@ -67,7 +66,10 @@ export function useComparisons() {
     queryKey: compareQueryKeys.comparisons(),
     queryFn: async () => {
       const res = await getComparisons();
-      return (res.data?.comparisons ?? []) as ComparisonListItem[];
+      // API 응답 구조: { status, message, data: { count, comparisons } }
+      // getComparisons는 이미 res.data를 반환함
+      const apiData = res?.data ?? res;
+      return (apiData?.comparisons ?? []) as ComparisonListItem[];
     },
     staleTime: CACHE_TIME.COMPARISONS,
     gcTime: GC_TIME,
@@ -81,11 +83,12 @@ export function useComparisons() {
 export function useComparisonDetail(activeSetId: number | null) {
   return useQuery({
     queryKey: compareQueryKeys.comparison(activeSetId),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await getComparison(activeSetId as number);
       // API 응답 구조: { status, message, data: { companyCount, companies } }
-      const apiData = res.data ?? res;
-      const basicCompanies = apiData.companies ?? [];
+      // getComparison은 이미 res.data를 반환함
+      const apiData = res?.data ?? res;
+      const basicCompanies = apiData?.companies ?? [];
 
       // 각 기업의 재무 데이터를 병렬로 가져옴
       const companiesWithFinancials = await Promise.all(
@@ -94,6 +97,7 @@ export function useComparisonDetail(activeSetId: number | null) {
             try {
               const financialRes = await getCompanyFinancials(
                 company.stock_code,
+                signal,
               );
               const financialData = financialRes.data?.data;
               const latestStatement = financialData?.financial_statements?.[0];
@@ -122,6 +126,10 @@ export function useComparisonDetail(activeSetId: number | null) {
                 operatingMargin: latestStatement?.operating_profit_margin ?? 0,
               };
             } catch (error) {
+              // AbortError는 무시 (정상적인 취소)
+              if ((error as Error).name === "AbortError") {
+                throw error;
+              }
               console.warn(
                 `재무 데이터 조회 실패: ${company.stock_code}`,
                 error,
@@ -167,9 +175,12 @@ export function useCompanySearch(debouncedSearch: string) {
     queryKey: compareQueryKeys.search(debouncedSearch),
     queryFn: async () => {
       const res = await searchCompanies(debouncedSearch);
-      const data = res.data;
-      // API 응답 구조에 따라 results 추출 (SearchModal과 동일한 방식)
-      const results = data?.data?.results ?? data?.results ?? [];
+      // API 응답 구조에 따라 results 추출
+      const apiData = res.data as unknown as {
+        data?: { results?: CompanySearchItem[] };
+        results?: CompanySearchItem[];
+      };
+      const results = apiData?.data?.results ?? apiData?.results ?? [];
       return results as CompanySearchItem[];
     },
     enabled: !!debouncedSearch.trim(),
@@ -212,31 +223,58 @@ export function useCompareOhlcv(
       await Promise.all(
         companyList.map(async (company) => {
           try {
-            const response = await getStockOhlcv(
-              company.stock_code,
-              intervalMap[timeRange],
-            );
+            const interval = intervalMap[timeRange];
+            const response = await getStockOhlcv(company.stock_code, interval);
 
-            const rawData = response.data?.data ?? [];
+            // API 응답 구조 (단일 interval): { status, message, data: { stock_code, interval, total_count, data: [...] } }
+            // response.data는 axios가 파싱한 응답 body
+            const apiResponse = response.data as unknown as {
+              status: number;
+              message: string;
+              data: {
+                stock_code: string;
+                interval: string;
+                total_count: number;
+                data: Array<{
+                  bucket: string;
+                  open: number;
+                  high: number;
+                  low: number;
+                  close: number;
+                  volume: number;
+                }>;
+              };
+            };
+            const rawData = apiResponse?.data?.data ?? [];
 
-            results[company.stock_code] = (rawData as unknown as OhlcvData[])
-              .map((item) => {
-                const dateObj = new Date(item.date);
-                const timeStamp = isNaN(dateObj.getTime())
-                  ? 0
-                  : Math.floor(dateObj.getTime() / 1000);
+            results[company.stock_code] = rawData
+              .map(
+                (item: {
+                  bucket: string;
+                  open: number;
+                  high: number;
+                  low: number;
+                  close: number;
+                  volume: number;
+                }) => {
+                  const dateObj = new Date(item.bucket);
+                  const timeStamp = isNaN(dateObj.getTime())
+                    ? 0
+                    : Math.floor(dateObj.getTime() / 1000);
 
-                return {
-                  time: timeStamp,
-                  open: Number(item.open),
-                  high: Number(item.high),
-                  low: Number(item.low),
-                  close: Number(item.close),
-                  volume: Number(item.volume),
-                  amount: 0,
-                };
-              })
-              .filter((item) => item.time !== 0);
+                  return {
+                    time: timeStamp,
+                    open: Number(item.open),
+                    high: Number(item.high),
+                    low: Number(item.low),
+                    close: Number(item.close),
+                    volume: Number(item.volume),
+                    amount: 0,
+                  };
+                },
+              )
+              .filter((item: OhlcvItem) => item.time !== 0)
+              .reverse(); // 최신순 -> 오래된순으로 정렬
           } catch (innerError) {
             console.warn(`${company.stock_code} OHLCV 변환 실패`, innerError);
             results[company.stock_code] = [];
