@@ -1171,13 +1171,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
             )}
           </GlassCard>
         </div>
-
+        {/* 기업 전망 분석 */}
         <div ref={outlookRef} className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
               <Target size={24} className="text-blue-600" />
               기업 전망 분석
             </h3>
+
             {isOutlookLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="animate-spin text-blue-600" />
@@ -1186,11 +1187,19 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <div className="space-y-6">
                 {/* 전망 요약 */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                  <h4 className="text-lg font-bold text-slate-800 mb-3">
-                    전망 요약
-                  </h4>
-                  <p className="text-slate-700 leading-relaxed">
-                    {outlookData.outlook_summary}
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-lg font-bold text-slate-800">
+                      전망 요약
+                    </h4>
+                    <span className="text-xs text-gray-400">
+                      분석일시:{" "}
+                      {new Date(outlookData.analyzed_at).toLocaleString(
+                        "ko-KR",
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                    {outlookData.analysis}
                   </p>
                 </div>
 
@@ -1201,17 +1210,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       <TrendingUp size={20} className="text-green-600" />
                       <h4 className="font-bold text-green-800">긍정적 요인</h4>
                     </div>
-                    <ul className="space-y-2">
-                      {outlookData.positive_factors?.map((factor, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2 text-sm text-green-700"
-                        >
-                          <span className="text-green-500 mt-1">•</span>
-                          <span>{factor}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="flex items-start gap-2 text-sm text-green-700">
+                      <span className="text-green-500 mt-0.5">•</span>
+                      <p>{outlookData.positive_factor}</p>
+                    </div>
                   </div>
 
                   {/* 리스크 요인 */}
@@ -1220,26 +1222,30 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       <TrendingDown size={20} className="text-red-600" />
                       <h4 className="font-bold text-red-800">리스크 요인</h4>
                     </div>
-                    <ul className="space-y-2">
-                      {outlookData.risk_factors?.map((factor, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2 text-sm text-red-700"
-                        >
-                          <span className="text-red-500 mt-1">•</span>
-                          <span>{factor}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="flex items-start gap-2 text-sm text-red-700">
+                      <span className="text-red-500 mt-0.5">•</span>
+                      <p>{outlookData.risk_factor}</p>
+                    </div>
                   </div>
                 </div>
 
                 {/* 투자 의견 */}
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                  <h4 className="font-bold text-slate-800 mb-3">투자 의견</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-slate-800">투자 의견</h4>
+                    <div className="flex gap-4">
+                      <span className="text-xs text-gray-500">
+                        뉴스 출처: {outlookData.data_sources.news_count}건
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        리포트 출처: {outlookData.data_sources.report_count}건
+                      </span>
+                    </div>
+                  </div>
                   <p className="text-slate-700 leading-relaxed">
-                    {outlookData.investment_opinion}
+                    {outlookData.opinion}
                   </p>
+
                   {outlookData.target_price && (
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <span className="text-sm text-gray-500">목표 주가: </span>
