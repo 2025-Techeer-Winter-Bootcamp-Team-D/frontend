@@ -30,7 +30,9 @@ const StockChart: React.FC<StockChartProps> = ({
     const min = Math.min(...prices);
     const max = Math.max(...prices);
 
-    if (min === max) return [min * 0.9, max * 1.1]; // 값이 모두 같을 때 대비
+    if (min === max) {
+      return min === 0 ? [-1, 1] : [min * 0.9, max * 1.1];
+    } // 값이 모두 같을 때 대비
 
     const range = max - min;
     const padding = range * 0.05;
