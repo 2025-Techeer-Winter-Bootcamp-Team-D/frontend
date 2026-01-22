@@ -577,12 +577,16 @@ export interface CompanyFinancialsData {
 export interface CompanyOutlookData {
   stock_code: string;
   company_name: string;
-  outlook_summary: string;
-  positive_factors: string[];
-  risk_factors: string[];
-  investment_opinion: string;
-  target_price?: number;
-  created_at: string;
+  analyzed_at: string;
+  analysis: string; // 기존 outlook_summary 대신 사용
+  positive_factor: string; // 기존 positive_factors 대신 사용
+  risk_factor: string; // 기존 risk_factors 대신 사용
+  opinion: string; // 기존 investment_opinion 대신 사용
+  target_price?: number; // 값이 있을 수도 없을 수도 있으므로 유지
+  data_sources: {
+    news_count: number;
+    report_count: number;
+  };
 }
 
 // ============================================

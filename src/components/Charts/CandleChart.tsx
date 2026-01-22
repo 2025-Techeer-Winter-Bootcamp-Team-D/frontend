@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -10,41 +10,42 @@ import {
   Cell,
 } from "recharts";
 
-// 1. 데이터 샘플 (필요에 따라 외부에서 props로 전달 가능)
-const data = [
-  { time: "09:00", open: 77000, high: 77500, low: 76800, close: 77200 },
-  { time: "09:30", open: 77200, high: 77800, low: 77100, close: 77500 },
-  { time: "10:00", open: 77500, high: 77600, low: 77000, close: 77100 },
-  { time: "10:30", open: 77100, high: 77400, low: 77000, close: 77300 },
-  { time: "11:00", open: 77300, high: 77500, low: 77200, close: 77400 },
-  { time: "11:30", open: 77400, high: 77600, low: 77300, close: 77500 },
-  { time: "12:00", open: 77500, high: 78000, low: 77400, close: 77900 },
-  { time: "12:30", open: 77900, high: 78200, low: 77800, close: 78100 },
-  { time: "13:00", open: 78100, high: 78300, low: 78000, close: 78000 },
-  { time: "13:30", open: 78000, high: 78200, low: 77800, close: 77900 },
-  { time: "14:00", open: 77900, high: 78400, low: 77900, close: 78300 },
-  { time: "14:30", open: 78300, high: 78600, low: 78200, close: 78500 },
-  { time: "15:00", open: 78500, high: 78800, low: 78400, close: 78600 },
-  { time: "15:30", open: 78600, high: 78900, low: 78500, close: 78200 },
-];
+// API 응답 데이터 타입 (StockPriceItem 또는 OhlcvItem 호환)
+interface CandleDataItem {
+  bucket?: string; // API에서 오는 시간 (StockPriceItem)
+  time?: number | string; // OhlcvItem 또는 레거시 형식
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
 
-// 2. 데이터 전처리 (고가-저가 범위를 배열로 전달)
-const processedData = data.map((item) => ({
-  ...item,
-  range: [item.low, item.high],
-}));
+interface CandleChartProps {
+  data?: CandleDataItem[];
+}
 
-// 3. Y축 범위를 데이터에 최적화하는 함수
-const getYDomain = () => {
-  const lows = data.map((d) => d.low);
-  const highs = data.map((d) => d.high);
-  const min = Math.min(...lows);
-  const max = Math.max(...highs);
-  const padding = (max - min) * 0.15; // 상하 15% 여유 공간
-  return [min - padding, max + padding];
+// 시간 포맷팅 함수
+const formatTime = (item: CandleDataItem): string => {
+  // bucket이 있으면 사용 (StockPriceItem)
+  if (item.bucket) {
+    const date = new Date(item.bucket);
+    return date.toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  // time이 숫자면 타임스탬프로 처리
+  if (typeof item.time === "number") {
+    const date = new Date(item.time);
+    return date.toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  // time이 문자열이면 그대로 반환
+  return item.time || "";
 };
-
-const yDomain = getYDomain();
 
 // 4. 캔들스틱 모양 정의 컴포넌트
 interface CandleStickShapeProps {
@@ -88,7 +89,40 @@ const CandleStickShape = (props: CandleStickShapeProps) => {
 };
 
 // 5. 메인 차트 컴포넌트
-const CandleChart: React.FC = () => {
+const CandleChart: React.FC<CandleChartProps> = ({ data = [] }) => {
+  // 데이터 전처리: API 데이터를 차트 형식으로 변환
+  const processedData = useMemo(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) return [];
+    return data.map((item) => ({
+      ...item,
+      time: formatTime(item),
+      range: [item.low, item.high],
+    }));
+  }, [data]);
+
+  // Y축 범위 계산
+  const yDomain = useMemo(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) return [0, 100];
+    const lows = data.map((d) => d.low);
+    const highs = data.map((d) => d.high);
+    const min = Math.min(...lows);
+    const max = Math.max(...highs);
+    const padding = (max - min) * 0.15 || 1;
+    return [min - padding, max + padding];
+  }, [data]);
+
+  // 데이터가 없으면 빈 상태 표시
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div
+        style={{ width: "100%", height: "400px", padding: "20px" }}
+        className="flex items-center justify-center text-slate-400"
+      >
+        데이터가 없습니다
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: "100%", height: "400px", padding: "20px" }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -153,11 +187,7 @@ const CandleChart: React.FC = () => {
               return null;
             }}
           />
-          <Bar
-            dataKey="range"
-            shape={<CandleStickShape />}
-            barSize={14} // 캔들 두께 조절
-          >
+          <Bar dataKey="range" shape={<CandleStickShape />} barSize={14}>
             {processedData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}

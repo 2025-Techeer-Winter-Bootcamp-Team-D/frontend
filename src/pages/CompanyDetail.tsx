@@ -25,7 +25,7 @@ import type {
   FinancialMetric,
   CompanyApiData,
   PageView,
-  OhlcvItem,
+  StockPriceItem,
   CompanyReportItem,
   CompanyFinancialsData,
   CompanyOutlookData,
@@ -54,6 +54,7 @@ import {
   TrendingUp,
   TrendingDown,
   Target,
+  Trophy,
 } from "lucide-react";
 
 interface DetailProps {
@@ -262,9 +263,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   const getBackendInterval = (range: string): string => {
     const mapping: Record<string, string> = {
-      "1D": "1d",
-      "1W": "1d",
-      "3M": "1d",
+      "1D": "1m",
+      "1W": "15m",
+      "1M": "1h",
       "1Y": "1d",
     };
     return mapping[range] || "1d";
@@ -290,7 +291,17 @@ const CompanyDetail: React.FC<DetailProps> = ({
         companyCode,
         getBackendInterval(chartRange),
       );
-      return response.data.data as unknown as OhlcvItem[];
+      const interval = getBackendInterval(chartRange);
+      const pricesData = response.data.data;
+      // API 응답 구조: { [interval]: { data: StockPriceItem[] } }
+      if (
+        pricesData &&
+        pricesData[interval] &&
+        Array.isArray(pricesData[interval].data)
+      ) {
+        return pricesData[interval].data as StockPriceItem[];
+      }
+      return [];
     },
   });
 
@@ -1025,7 +1036,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-slate-800">주가 분석</h3>
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                  {["1D", "1W", "3M", "1Y"].map((p) => (
+                  {["1D", "1W", "1M", "1Y"].map((p) => (
                     <button
                       key={p}
                       onClick={() => setChartRange(p)}
@@ -1042,7 +1053,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     <Loader2 className="animate-spin text-blue-400" />
                   </div>
                 ) : chartRange === "1D" ? (
-                  <CandleChart {...({ data: stockData } as any)} />
+                  <CandleChart data={stockData} />
                 ) : (
                   <StockChart
                     {...({ data: stockData, period: chartRange } as any)}
@@ -1061,33 +1072,48 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1">
-                  {peerCompanies.map((item) => (
-                    <div
-                      key={item.code}
-                      onClick={() => handleCompanyClick(item.code)}
-                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs font-bold w-5 ${item.rank <= 3 ? "text-base" : "text-gray-400"}`}
-                        >
-                          {item.rank === 1
-                            ? "🥇"
-                            : item.rank === 2
-                              ? "🥈"
-                              : item.rank === 3
-                                ? "🥉"
-                                : item.rank}
-                        </span>
-                        <span className="text-sm font-bold text-slate-700">
-                          {item.name}
+                  {peerCompanies.map((item) => {
+                    const isFirst = item.rank === 1;
+                    const isSecond = item.rank === 2;
+                    const isThird = item.rank === 3;
+                    const isTop3 = item.rank <= 3;
+
+                    const badgeClasses = isFirst
+                      ? "bg-yellow-100 text-yellow-600"
+                      : isSecond
+                        ? "bg-slate-100 text-slate-500"
+                        : isThird
+                          ? "bg-orange-100 text-orange-600"
+                          : "bg-gray-100 text-gray-400";
+
+                    return (
+                      <div
+                        key={item.code}
+                        onClick={() => handleCompanyClick(item.code)}
+                        className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {isTop3 ? (
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${badgeClasses}`}
+                            >
+                              <Trophy size={16} />
+                            </div>
+                          ) : (
+                            <span className="w-8 h-8 flex items-center justify-center text-sm font-bold text-gray-400">
+                              {item.rank}
+                            </span>
+                          )}
+                          <span className="text-sm font-bold text-slate-700">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          {item.marketCap}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-600">
-                        {item.marketCap}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </GlassCard>
