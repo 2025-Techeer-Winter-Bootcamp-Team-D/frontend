@@ -655,29 +655,25 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   return (
     <div className="animate-fade-in pb-12 relative">
       {/* Header with Dropdown Selector */}
-      <div className="flex flex-col gap-4 mb-6">
+      <div className="flex items-start justify-between mb-7">
         <h1 className="text-2xl font-bold text-slate-800">산업 분석</h1>
-        {/* Industry Dropdown Selector - 오른쪽 정렬 */}
-        <div className="flex justify-end">
-          <div className="relative inline-flex items-center">
-            <select
-              value={selectedIndustry}
-              onChange={(e) =>
-                setSelectedIndustry(e.target.value as IndustryKey)
-              }
-              className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 cursor-pointer hover:border-shinhan-blue focus:outline-none focus:ring-2 focus:ring-shinhan-blue/20 focus:border-shinhan-blue transition-all shadow-sm"
-            >
-              {Object.entries(INDUSTRY_NAMES).map(([key, info]) => (
-                <option key={key} value={key}>
-                  {info.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="absolute right-3 text-gray-400 pointer-events-none"
-            />
-          </div>
+        {/* Industry Dropdown Selector */}
+        <div className="relative inline-flex items-center h-9">
+          <select
+            value={selectedIndustry}
+            onChange={(e) => setSelectedIndustry(e.target.value as IndustryKey)}
+            className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-sm font-medium text-slate-700 cursor-pointer hover:border-shinhan-blue focus:outline-none focus:ring-2 focus:ring-shinhan-blue/20 focus:border-shinhan-blue transition-all shadow-sm h-full"
+          >
+            {Object.entries(INDUSTRY_NAMES).map(([key, info]) => (
+              <option key={key} value={key}>
+                {info.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={16}
+            className="absolute right-3 text-gray-400 pointer-events-none"
+          />
         </div>
       </div>
 
