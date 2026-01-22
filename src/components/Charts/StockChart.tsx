@@ -8,20 +8,24 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import type { OhlcvItem } from "@/types";
 
 interface StockChartProps {
+  data?: OhlcvItem[];
   color?: string;
   showAxes?: boolean;
   period?: string;
 }
 
 const StockChart: React.FC<StockChartProps> = ({
+  data: rawData,
   color = "#0046FF",
   showAxes = true,
   period = "1D",
 }) => {
   // Y축 domain을 데이터에 밀착시키기 위한 함수
   const getYDomain = (data: { price: number }[]): [number, number] => {
+    if (data.length === 0) return [0, 100];
     const prices = data.map((d) => d.price);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
@@ -31,52 +35,67 @@ const StockChart: React.FC<StockChartProps> = ({
     return [min - padding, max + padding];
   };
 
+  // API 데이터를 차트 형식으로 변환
   const data = useMemo(() => {
-    switch (period) {
-      case "1W":
-        return [
-          { time: "Mon", price: 76000 },
-          { time: "Tue", price: 75500 },
-          { time: "Wed", price: 76200 },
-          { time: "Thu", price: 77100 },
-          { time: "Fri", price: 78200 },
-        ];
-      case "3M":
-        return [
-          { time: "Oct", price: 72000 },
-          { time: "Nov", price: 74500 },
-          { time: "Dec", price: 73000 },
-          { time: "Jan", price: 76500 },
-          { time: "Feb", price: 78200 },
-        ];
-      case "6M":
-      case "1Y":
-      case "All":
-        return [
-          { time: "23.08", price: 68000 },
-          { time: "23.09", price: 69500 },
-          { time: "23.10", price: 67000 },
-          { time: "23.11", price: 71000 },
-          { time: "23.12", price: 74000 },
-          { time: "24.01", price: 73500 },
-          { time: "24.02", price: 78200 },
-        ];
-      default: // Fallback or 1D (if used elsewhere)
-        return [
-          { time: "09:00", price: 76000 },
-          { time: "10:00", price: 76500 },
-          { time: "11:00", price: 76200 },
-          { time: "12:00", price: 77100 },
-          { time: "13:00", price: 78000 },
-          { time: "14:00", price: 77800 },
-          { time: "15:00", price: 78200 },
-          { time: "15:30", price: 78500 },
-        ];
+    if (!rawData || rawData.length === 0) {
+      // 데이터가 없을 때 기본값 반환
+      return [];
     }
-  }, [period]);
+
+    return rawData.map((item) => {
+      // bucket 값이 있으면 그대로 사용, 없으면 period에 따라 포맷팅
+      let timeLabel: string;
+
+      if (item.bucket) {
+        // bucket 값을 그대로 사용
+        timeLabel = item.bucket;
+      } else {
+        // bucket이 없으면 타임스탬프에서 변환
+        const date = new Date(item.time * 1000);
+        switch (period) {
+          case "1W":
+            // 요일 표시
+            timeLabel = date.toLocaleDateString("ko-KR", { weekday: "short" });
+            break;
+          case "1M":
+          case "3M":
+            // 월 표시
+            timeLabel = date.toLocaleDateString("ko-KR", { month: "short" });
+            break;
+          case "1Y": {
+            // 년.월 표시
+            const year = date.getFullYear().toString().slice(-2);
+            const month = (date.getMonth() + 1).toString().padStart(2, "0");
+            timeLabel = `${year}.${month}`;
+            break;
+          }
+          default:
+            // 시간 표시 (1D)
+            timeLabel = date.toLocaleTimeString("ko-KR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+        }
+      }
+
+      return {
+        time: timeLabel,
+        price: item.close,
+      };
+    });
+  }, [rawData, period]);
 
   // Y축 domain 계산
   const yDomain = useMemo(() => getYDomain(data), [data]);
+
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-400">
+        데이터가 없습니다.
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -126,10 +145,25 @@ const StockChart: React.FC<StockChartProps> = ({
             border: "none",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
-          formatter={(value: number | undefined) => [
-            value ? `${value.toLocaleString()}원` : "0원",
-            "주가",
-          ]}
+          content={({ active, payload, label }) => {
+            if (active && payload && payload.length) {
+              const dataPoint = payload[0].payload;
+              return (
+                <div className="bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-slate-100 text-[11px]">
+                  <div className="font-bold mb-2 text-slate-800 border-b pb-1">
+                    {label || dataPoint.time}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">주가</span>
+                    <span className="font-mono font-medium text-slate-800">
+                      {dataPoint.price?.toLocaleString() || "0"}원
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          }}
         />
         <Area
           type="monotone"

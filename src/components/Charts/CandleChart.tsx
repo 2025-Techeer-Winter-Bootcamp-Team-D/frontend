@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -9,33 +9,15 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import type { OhlcvItem } from "@/types";
 
-// 1. 데이터 샘플 (필요에 따라 외부에서 props로 전달 가능)
-const data = [
-  { time: "09:00", open: 77000, high: 77500, low: 76800, close: 77200 },
-  { time: "09:30", open: 77200, high: 77800, low: 77100, close: 77500 },
-  { time: "10:00", open: 77500, high: 77600, low: 77000, close: 77100 },
-  { time: "10:30", open: 77100, high: 77400, low: 77000, close: 77300 },
-  { time: "11:00", open: 77300, high: 77500, low: 77200, close: 77400 },
-  { time: "11:30", open: 77400, high: 77600, low: 77300, close: 77500 },
-  { time: "12:00", open: 77500, high: 78000, low: 77400, close: 77900 },
-  { time: "12:30", open: 77900, high: 78200, low: 77800, close: 78100 },
-  { time: "13:00", open: 78100, high: 78300, low: 78000, close: 78000 },
-  { time: "13:30", open: 78000, high: 78200, low: 77800, close: 77900 },
-  { time: "14:00", open: 77900, high: 78400, low: 77900, close: 78300 },
-  { time: "14:30", open: 78300, high: 78600, low: 78200, close: 78500 },
-  { time: "15:00", open: 78500, high: 78800, low: 78400, close: 78600 },
-  { time: "15:30", open: 78600, high: 78900, low: 78500, close: 78200 },
-];
+interface CandleChartProps {
+  data?: OhlcvItem[];
+}
 
-// 2. 데이터 전처리 (고가-저가 범위를 배열로 전달)
-const processedData = data.map((item) => ({
-  ...item,
-  range: [item.low, item.high],
-}));
-
-// 3. Y축 범위를 데이터에 최적화하는 함수
-const getYDomain = () => {
+// Y축 범위를 데이터에 최적화하는 함수
+const getYDomain = (data: Array<{ low: number; high: number }>) => {
+  if (data.length === 0) return [0, 100];
   const lows = data.map((d) => d.low);
   const highs = data.map((d) => d.high);
   const min = Math.min(...lows);
@@ -43,8 +25,6 @@ const getYDomain = () => {
   const padding = (max - min) * 0.15; // 상하 15% 여유 공간
   return [min - padding, max + padding];
 };
-
-const yDomain = getYDomain();
 
 // 4. 캔들스틱 모양 정의 컴포넌트
 interface CandleStickShapeProps {
@@ -88,9 +68,49 @@ const CandleStickShape = (props: CandleStickShapeProps) => {
 };
 
 // 5. 메인 차트 컴포넌트
-const CandleChart: React.FC = () => {
+const CandleChart: React.FC<CandleChartProps> = ({ data: rawData }) => {
+  // API 데이터를 차트 형식으로 변환
+  const processedData = useMemo(() => {
+    if (!rawData || rawData.length === 0) {
+      return [];
+    }
+
+    return rawData.map((item) => {
+      // bucket 값이 있으면 그대로 사용, 없으면 타임스탬프에서 변환
+      const timeLabel =
+        item.bucket ||
+        (() => {
+          const date = new Date(item.time * 1000);
+          return date.toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        })();
+
+      return {
+        time: timeLabel,
+        open: item.open,
+        high: item.high,
+        low: item.low,
+        close: item.close,
+        range: [item.low, item.high],
+      };
+    });
+  }, [rawData]);
+
+  const yDomain = useMemo(() => getYDomain(processedData), [processedData]);
+
+  if (processedData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-400">
+        데이터가 없습니다.
+      </div>
+    );
+  }
+
   return (
-    <div style={{ width: "100%", height: "400px", padding: "20px" }}>
+    <div style={{ width: "100%", height: "100%", padding: "20px" }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={processedData}
@@ -118,33 +138,36 @@ const CandleChart: React.FC = () => {
           />
           <Tooltip
             cursor={{ fill: "rgba(0,0,0,0.04)" }}
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const d = payload[0].payload;
-                const isUp = d.close >= d.open;
+            content={({ active, payload, label }) => {
+              if (active && payload && payload.length > 0) {
+                // Recharts BarChart에서 payload[0].payload가 원본 데이터를 포함
+                const dataPoint = payload[0]?.payload;
+                if (!dataPoint) return null;
+
+                const isUp = dataPoint.close >= dataPoint.open;
                 return (
                   <div className="bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-slate-100 text-[11px]">
                     <div className="font-bold mb-2 text-slate-800 border-b pb-1">
-                      {d.time}
+                      {label || dataPoint.time}
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                       <span className="text-slate-400">시가</span>
                       <span className="text-right font-mono font-medium">
-                        {d.open.toLocaleString()}
+                        {Number(dataPoint.open).toLocaleString()}
                       </span>
                       <span className="text-slate-400">종가</span>
                       <span
                         className={`text-right font-mono font-medium ${isUp ? "text-red-500" : "text-blue-500"}`}
                       >
-                        {d.close.toLocaleString()}
+                        {Number(dataPoint.close).toLocaleString()}
                       </span>
                       <span className="text-slate-400">고가</span>
                       <span className="text-right font-mono text-red-500">
-                        {d.high.toLocaleString()}
+                        {Number(dataPoint.high).toLocaleString()}
                       </span>
                       <span className="text-slate-400">저가</span>
                       <span className="text-right font-mono text-blue-500">
-                        {d.low.toLocaleString()}
+                        {Number(dataPoint.low).toLocaleString()}
                       </span>
                     </div>
                   </div>
