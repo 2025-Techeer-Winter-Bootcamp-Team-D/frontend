@@ -369,11 +369,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 response?.data?.data?.financial_statements;
               if (financialStatements && financialStatements.length > 0) {
                 const latest = financialStatements[0];
-                roe = parseFloat(latest.roe) || 0;
-                pbr = parseFloat(latest.pbr) || 0;
-                per = parseFloat(latest.per) || 0;
-                debtRatio = parseFloat(latest.debt_ratio) || 0;
-                divYield = parseFloat(latest.dividend_yield) || 0;
+                roe = latest.roe ?? 0;
+                pbr = latest.pbr ?? 0;
+                per = latest.per ?? 0;
+                debtRatio = latest.debt_ratio ?? 0;
+                divYield = latest.dividend_yield ?? 0;
               }
             } catch (error) {
               // AbortError/CanceledError는 무시 (정상적인 취소)

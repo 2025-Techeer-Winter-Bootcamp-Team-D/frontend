@@ -1,4 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import React, { useState } from "react";
 import {
@@ -19,6 +23,8 @@ import Login from "./pages/Login";
 import SearchModal from "./components/Layout/SearchModal";
 import { PageView } from "./types";
 import { StarredProvider, useStarred } from "./context/StarredContext";
+import { logout } from "./api/users";
+import { notifyAuthChange } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +92,7 @@ function App() {
 
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   // UI 상태 관리
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
@@ -95,6 +102,28 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
 
   const isDashboard = page === PageView.DASHBOARD;
+
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (refreshToken) {
+        await logout(refreshToken);
+      }
+    } catch (error) {
+      console.error("로그아웃 API 실패:", error);
+    } finally {
+      // 토큰 제거
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      // React Query 캐시 초기화
+      qc.clear();
+      // 인증 상태 변경 알림
+      notifyAuthChange();
+      // 로그인 상태 업데이트
+      setIsLoggedIn(false);
+    }
+  };
 
   const handlePageChange = (newPage: PageView) => {
     if (newPage === PageView.LOGIN) {
@@ -149,7 +178,12 @@ function App() {
           />
         );
       case PageView.COMPANY_COMPARE:
-        return <CompanyCompare setPage={handlePageChange} />;
+        return (
+          <CompanyCompare
+            setPage={handlePageChange}
+            onShowLogin={() => setShowLogin(true)}
+          />
+        );
       default:
         return (
           <Dashboard
@@ -172,7 +206,7 @@ function App() {
           currentPage={page}
           setPage={handlePageChange}
           isLoggedIn={isLoggedIn}
-          onLogout={() => setIsLoggedIn(false)}
+          onLogout={handleLogout}
           onSearchOpen={() => setShowSearch(true)}
         />
       </div>

@@ -39,8 +39,8 @@ export const login = (data: LoginRequest) => {
 /**
  * 로그아웃
  */
-export const logout = () => {
-  return api.post<LogoutResponse>("/users/logout/");
+export const logout = (refresh: string) => {
+  return api.post<LogoutResponse>("/users/logout/", { refresh });
 };
 
 /**

@@ -28,6 +28,7 @@ import {
   getStockOhlcv,
   getCompanyFinancials,
 } from "../api/company";
+import { useAuth } from "./useAuth";
 import type {
   ComparisonListItem,
   Comparison,
@@ -60,8 +61,11 @@ export const compareQueryKeys = {
 
 /**
  * 비교 세트 목록 조회 훅
+ * - 로그인된 사용자만 조회 가능
  */
 export function useComparisons() {
+  const { isAuthenticated } = useAuth();
+
   return useQuery({
     queryKey: compareQueryKeys.comparisons(),
     queryFn: async () => {
@@ -71,6 +75,7 @@ export function useComparisons() {
       const apiData = res?.data ?? res;
       return (apiData?.comparisons ?? []) as ComparisonListItem[];
     },
+    enabled: isAuthenticated,
     staleTime: CACHE_TIME.COMPARISONS,
     gcTime: GC_TIME,
   });
@@ -79,8 +84,11 @@ export function useComparisons() {
 /**
  * 비교 세트 상세 조회 훅
  * - 기업 목록 조회 후 각 기업의 재무 데이터도 함께 가져옴
+ * - 로그인된 사용자만 조회 가능
  */
 export function useComparisonDetail(activeSetId: number | null) {
+  const { isAuthenticated } = useAuth();
+
   return useQuery({
     queryKey: compareQueryKeys.comparison(activeSetId),
     queryFn: async ({ signal }) => {
@@ -127,7 +135,8 @@ export function useComparisonDetail(activeSetId: number | null) {
               };
             } catch (error) {
               // AbortError는 무시 (정상적인 취소)
-              if ((error as Error).name === "AbortError") {
+              const errName = (error as Error).name;
+              if (errName === "AbortError" || errName === "CanceledError") {
                 throw error;
               }
               console.warn(
@@ -161,7 +170,7 @@ export function useComparisonDetail(activeSetId: number | null) {
         createdAt: "",
       } as Comparison;
     },
-    enabled: !!activeSetId,
+    enabled: isAuthenticated && !!activeSetId,
     staleTime: CACHE_TIME.COMPARISON_DETAIL,
     gcTime: GC_TIME,
   });
@@ -193,12 +202,15 @@ export function useCompanySearch(debouncedSearch: string) {
  * OHLCV (주가 추이) 조회 훅
  * - 기업 코드 배열을 정렬하여 queryKey 생성 (동일 조합 캐시 재사용)
  * - keepPreviousData로 기간 변경 시 깜빡임 방지
+ * - 로그인된 사용자만 조회 가능
  */
 export function useCompareOhlcv(
   activeSetId: number | null,
   timeRange: TimeRange,
   companies: Array<{ stock_code: string; companyName: string }> | undefined,
 ) {
+  const { isAuthenticated } = useAuth();
+
   // 기업 코드를 정렬하여 동일 조합이면 같은 queryKey가 되도록 함
   const sortedCodes = [...(companies ?? [])]
     .map((c) => c.stock_code)
@@ -284,7 +296,7 @@ export function useCompareOhlcv(
 
       return results;
     },
-    enabled: !!companies?.length,
+    enabled: isAuthenticated && !!companies?.length,
     staleTime: CACHE_TIME.OHLCV,
     gcTime: GC_TIME,
     placeholderData: keepPreviousData, // 기간 변경 시 이전 데이터 유지

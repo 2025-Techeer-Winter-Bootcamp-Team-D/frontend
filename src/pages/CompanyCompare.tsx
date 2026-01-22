@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   Radar,
   Crosshair,
+  Lock,
 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 import { PageView } from "../types";
 import type { Comparison, CompareCompany, TimeRange } from "../types";
 import {
@@ -51,6 +53,7 @@ import {
 
 interface CompareProps {
   setPage: (page: PageView) => void;
+  onShowLogin?: () => void;
 }
 
 type MetricType = "revenue" | "operating" | "net" | "marketCap";
@@ -85,6 +88,142 @@ const CHART_COLORS = [
   "#F59E0B",
   "#6366F1",
 ];
+
+/**
+ * 숫자를 한국식 단위(억, 조)로 포맷팅
+ * @param value - 억원 단위의 숫자 (revenue, operatingProfit, netIncome은 억원, marketCap은 조원)
+ * @param isMarketCap - 시가총액인 경우 true (이미 조원 단위)
+ */
+const formatKoreanNumber = (value: number, isMarketCap = false): string => {
+  if (value === 0) return "0";
+
+  // marketCap은 이미 조원 단위로 들어옴
+  if (isMarketCap) {
+    if (value >= 1) {
+      const jo = Math.floor(value);
+      const eok = Math.round((value - jo) * 10000);
+      if (eok > 0) {
+        return `${jo.toLocaleString()}조 ${eok.toLocaleString()}억`;
+      }
+      return `${jo.toLocaleString()}조`;
+    }
+    // 1조 미만
+    const eok = Math.round(value * 10000);
+    return `${eok.toLocaleString()}억`;
+  }
+
+  // revenue, operating, net은 억원 단위
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+
+  if (absValue >= 10000) {
+    // 1조 이상
+    const jo = Math.floor(absValue / 10000);
+    const eok = Math.round(absValue % 10000);
+    if (eok > 0) {
+      return `${sign}${jo.toLocaleString()}조 ${eok.toLocaleString()}억`;
+    }
+    return `${sign}${jo.toLocaleString()}조`;
+  }
+  // 1조 미만
+  return `${sign}${Math.round(absValue).toLocaleString()}억`;
+};
+
+/**
+ * 재무 데이터용 커스텀 툴팁 컴포넌트
+ */
+interface CustomFinancialTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  label?: string;
+  isMarketCap?: boolean;
+}
+
+const CustomFinancialTooltip: React.FC<CustomFinancialTooltipProps> = ({
+  active,
+  payload,
+  isMarketCap = false,
+}) => {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div
+      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
+      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+    >
+      <div className="space-y-2">
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-sm text-gray-600">{entry.name}</span>
+            </div>
+            <span className="text-sm font-bold text-slate-800 text-right">
+              {formatKoreanNumber(entry.value, isMarketCap)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * 주가 추이용 커스텀 툴팁 컴포넌트
+ */
+interface CustomStockTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  label?: string;
+}
+
+const CustomStockTooltip: React.FC<CustomStockTooltipProps> = ({
+  active,
+  payload,
+  label,
+}) => {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div
+      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
+      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+    >
+      {label && (
+        <div className="text-xs text-gray-500 mb-2 pb-2 border-b border-gray-100">
+          {label}
+        </div>
+      )}
+      <div className="space-y-2">
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-sm text-gray-600">{entry.name}</span>
+            </div>
+            <span className="text-sm font-bold text-slate-800 text-right">
+              {entry.value.toLocaleString()}원
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const detailedMetricsInfo: Record<
   DetailMetricKey,
@@ -124,7 +263,9 @@ const detailedMetricsInfo: Record<
 
 // -- Main Page Component --
 
-const CompanyCompare: React.FC<CompareProps> = () => {
+const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
+  const { isAuthenticated } = useAuth();
+
   // -----------------------------
   // Local UI State
   // -----------------------------
@@ -140,6 +281,7 @@ const CompanyCompare: React.FC<CompareProps> = () => {
     "roe",
   ]);
   const [selectedRadarCompany, setSelectedRadarCompany] = useState<string>("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // -----------------------------
   // Server state (커스텀 훅 사용)
@@ -192,7 +334,7 @@ const CompanyCompare: React.FC<CompareProps> = () => {
 
   // OHLCV (주가 추이) - 기업 코드 배열이 바뀌면 queryKey가 바뀜
   const ohlcvQuery = useCompareOhlcv(
-    activeSetId,
+    effectiveSetId,
     timeRange,
     activeComparison?.companies,
   );
@@ -215,6 +357,10 @@ const CompanyCompare: React.FC<CompareProps> = () => {
   // Handlers
   // -----------------------------
   const handleAddSet = async () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     const newSetName = `비교 세트 ${comparisonList.length + 1}`;
     try {
       const res = await createSetMutation.mutateAsync(newSetName);
@@ -231,13 +377,13 @@ const CompanyCompare: React.FC<CompareProps> = () => {
   };
 
   const handleRemoveCompany = async (stock_code: string) => {
-    if (!activeSetId) {
-      console.error("activeSetId가 없습니다.");
+    if (!effectiveSetId) {
+      console.error("effectiveSetId가 없습니다.");
       return;
     }
     try {
       await removeCompanyMutation.mutateAsync({
-        setId: activeSetId,
+        setId: effectiveSetId,
         stockCode: stock_code,
       });
     } catch (e) {
@@ -246,12 +392,15 @@ const CompanyCompare: React.FC<CompareProps> = () => {
   };
 
   const handleAddCompany = async (stockCode: string) => {
-    if (!activeSetId) {
-      console.error("activeSetId가 없습니다.");
+    if (!effectiveSetId) {
+      console.error("effectiveSetId가 없습니다.");
       return;
     }
     try {
-      await addCompanyMutation.mutateAsync({ setId: activeSetId, stockCode });
+      await addCompanyMutation.mutateAsync({
+        setId: effectiveSetId,
+        stockCode,
+      });
       // 성공 시 모달 닫기
       setIsSearchOpen(false);
       setSearchQuery("");
@@ -261,14 +410,14 @@ const CompanyCompare: React.FC<CompareProps> = () => {
   };
 
   const handleSaveName = async () => {
-    if (!activeSetId || !tempSetName.trim()) {
+    if (!effectiveSetId || !tempSetName.trim()) {
       setIsEditingName(false);
       return;
     }
 
     try {
       await updateNameMutation.mutateAsync({
-        setId: activeSetId,
+        setId: effectiveSetId,
         name: tempSetName.trim(),
       });
       setIsEditingName(false);
@@ -627,8 +776,13 @@ const CompanyCompare: React.FC<CompareProps> = () => {
               {(activeComparison?.companies?.length ?? 0) < 5 ? (
                 <button
                   onClick={async () => {
+                    // 로그인 체크
+                    if (!isAuthenticated) {
+                      setShowLoginModal(true);
+                      return;
+                    }
                     // 비교 세트가 없으면 자동으로 생성
-                    if (!activeSetId && comparisonList.length === 0) {
+                    if (!effectiveSetId && comparisonList.length === 0) {
                       try {
                         const res =
                           await createSetMutation.mutateAsync("비교 세트 1");
@@ -709,14 +863,20 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                       tick={{ fontSize: 12, fill: "#64748b" }}
                       axisLine={false}
                       tickLine={false}
+                      tickFormatter={(value) =>
+                        formatKoreanNumber(
+                          value,
+                          selectedMetric === "marketCap",
+                        )
+                      }
                     />
                     <Tooltip
                       cursor={{ fill: "transparent" }}
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
+                      content={
+                        <CustomFinancialTooltip
+                          isMarketCap={selectedMetric === "marketCap"}
+                        />
+                      }
                     />
                     <Legend wrapperStyle={{ paddingTop: "20px" }} />
                     {/* Dynamically render bars for each company in the set */}
@@ -805,13 +965,7 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: "12px",
-                          border: "none",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                        }}
-                      />
+                      <Tooltip content={<CustomStockTooltip />} />
                       <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       {/* Dynamically render lines for each company */}
                       {activeComparison?.companies?.map((company, index) => (
@@ -1280,6 +1434,48 @@ const CompanyCompare: React.FC<CompareProps> = () => {
                   검색 결과가 없습니다.
                 </div>
               )}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* 로그인 필요 모달 */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowLoginModal(false)}
+          ></div>
+          <GlassCard className="relative z-10 p-8 text-center max-w-sm animate-fade-in">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Lock size={32} className="text-shinhan-blue" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">
+              로그인이 필요한 서비스입니다
+            </h2>
+            <p className="text-slate-500 text-sm mb-6">
+              기업 비교 기능을 이용하시려면 로그인해주세요.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-slate-600 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                닫기
+              </button>
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  if (onShowLogin) {
+                    onShowLogin();
+                  } else {
+                    setPage(PageView.LOGIN);
+                  }
+                }}
+                className="flex-1 py-2.5 bg-shinhan-blue text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                로그인
+              </button>
             </div>
           </GlassCard>
         </div>
