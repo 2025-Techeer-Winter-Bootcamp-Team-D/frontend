@@ -1194,9 +1194,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     </h4>
                     <span className="text-xs text-gray-400">
                       분석일시:{" "}
-                      {new Date(outlookData.analyzed_at).toLocaleString(
-                        "ko-KR",
-                      )}
+                      {outlookData.analyzed_at
+                        ? new Date(outlookData.analyzed_at).toLocaleString(
+                            "ko-KR",
+                          )
+                        : "-"}
                     </span>
                   </div>
                   <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
@@ -1236,10 +1238,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     <h4 className="font-bold text-slate-800">투자 의견</h4>
                     <div className="flex gap-4">
                       <span className="text-xs text-gray-500">
-                        뉴스 출처: {outlookData.data_sources.news_count}건
+                        뉴스 출처: {outlookData.data_sources?.news_count ?? 0}건
                       </span>
                       <span className="text-xs text-gray-500">
-                        리포트 출처: {outlookData.data_sources.report_count}건
+                        리포트 출처:{" "}
+                        {outlookData.data_sources?.report_count ?? 0}건
                       </span>
                     </div>
                   </div>
