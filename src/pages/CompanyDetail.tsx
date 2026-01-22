@@ -74,6 +74,7 @@ const DEFAULT_COMPANY = {
   industry: "-",
   desc: "-",
   logo: "--",
+  logoUrl: null as string | null,
   market: "-",
   establishmentDate: "-",
   homepage: "",
@@ -386,7 +387,33 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const outlookRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+
+      // 각 섹션의 위치를 체크하여 현재 보이는 섹션에 따라 activeTab 업데이트
+      const sections = [
+        { id: "info", ref: infoRef },
+        { id: "price", ref: priceRef },
+        { id: "financial", ref: financialRef },
+        { id: "outlook", ref: outlookRef },
+        { id: "news", ref: newsRef },
+        { id: "disclosure", ref: disclosureRef },
+      ];
+
+      const headerOffset = 150; // 상단 헤더 높이 고려
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i];
+        if (section.ref.current) {
+          const rect = section.ref.current.getBoundingClientRect();
+          if (rect.top <= headerOffset) {
+            setActiveTab(section.id);
+            break;
+          }
+        }
+      }
+    };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -403,6 +430,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
       industry: apiCompanyData.industry?.name || "-",
       desc: apiCompanyData.description,
       logo: apiCompanyData.company_name.substring(0, 2),
+      logoUrl: apiCompanyData.logo_url || null,
       market: apiCompanyData.market || "-",
       establishmentDate: apiCompanyData.establishment_date || "-",
       homepage: apiCompanyData.homepage_url || "",
@@ -874,12 +902,20 @@ const CompanyDetail: React.FC<DetailProps> = ({
           className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
         >
           <div
-            className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center cursor-pointer"
+            className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center cursor-pointer overflow-hidden"
             onClick={() => setPage("DASHBOARD" as PageView)}
           >
-            <span className="font-bold text-blue-600 text-2xl">
-              {currentCompany.logo}
-            </span>
+            {currentCompany.logoUrl ? (
+              <img
+                src={currentCompany.logoUrl}
+                alt={`${currentCompany.name} 로고`}
+                className="w-full h-full object-contain p-1"
+              />
+            ) : (
+              <span className="font-bold text-blue-600 text-2xl">
+                {currentCompany.logo}
+              </span>
+            )}
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
@@ -957,14 +993,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-gray-500 text-xs min-w-[60px]">
-                  설립일
-                </span>
-                <span className="font-bold text-slate-800 text-sm">
-                  {currentCompany.establishmentDate}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-500 text-xs min-w-[60px]">
                   홈페이지
                 </span>
                 {currentCompany.homepage ? (
@@ -980,18 +1008,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   <span className="font-bold text-slate-800 text-sm">-</span>
                 )}
               </div>
-              <div className="flex items-center gap-3 col-span-2">
+              <div className="flex items-center gap-3 col-span-3">
                 <span className="text-gray-500 text-xs min-w-[60px]">주소</span>
                 <span className="font-bold text-slate-800 text-sm">
                   {currentCompany.address}
-                </span>
-              </div>
-              <div className="flex items-start gap-3 col-span-2">
-                <span className="text-gray-500 text-xs min-w-[60px] pt-0.5">
-                  주요사업
-                </span>
-                <span className="font-bold text-slate-800 text-sm leading-relaxed">
-                  {currentCompany.desc || "-"}
                 </span>
               </div>
             </div>
