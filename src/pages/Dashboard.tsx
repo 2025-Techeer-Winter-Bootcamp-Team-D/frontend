@@ -508,6 +508,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     return ids;
   }, [filters, stocks]);
 
+  // ParallelCoordinatesChart에서 기업 클릭 시 상세 페이지로 이동
+  const handleChartStockSelect = (stock: Stock | null) => {
+    setSelectedStock(stock);
+    if (stock) {
+      navigate(`/company/${stock.id}`);
+    }
+  };
+
   // 섹션 감지 및 스크롤 핸들러
   useEffect(() => {
     const sectionIds = [
@@ -603,7 +611,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onFilterChange={setFilters}
                 filters={filters}
                 filteredIds={filteredIds}
-                onStockSelect={setSelectedStock}
+                onStockSelect={handleChartStockSelect}
                 selectedStockId={selectedStock?.id ?? null}
               />
             )}

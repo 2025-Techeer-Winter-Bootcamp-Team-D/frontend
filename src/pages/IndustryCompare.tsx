@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import {
@@ -210,6 +211,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   onToggleStar,
   setCompanyCode,
 }) => {
+  const navigate = useNavigate();
   // 초기 산업 설정: initialIndutyCode가 유효하면 사용, 아니면 electronics
   const getInitialIndustry = (): IndustryKey => {
     if (!initialIndutyCode) return "electronics";
@@ -616,7 +618,15 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const handleCompanyClick = (code: string) => {
     if (setCompanyCode) {
       setCompanyCode(code);
-      setPage(PageView.COMPANY_DETAIL);
+    }
+    navigate(`/company/${code}`);
+  };
+
+  // ParallelCoordinatesChart에서 기업 클릭 시 상세 페이지로 이동
+  const handleChartStockSelect = (stock: Stock | null) => {
+    setSelectedStock(stock);
+    if (stock) {
+      handleCompanyClick(stock.id);
     }
   };
 
