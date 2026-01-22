@@ -33,6 +33,8 @@ import type {
   IndustryCompany,
   SankeyData,
   SankeysApiResponse,
+  StockPricesResponse,
+  StockPricesIntervalData,
 } from "../types";
 
 import {
@@ -284,24 +286,108 @@ const CompanyDetail: React.FC<DetailProps> = ({
     },
   });
 
-  const { data: stockData = [], isLoading: isStockLoading } = useQuery({
+  const {
+    data: stockData = [],
+    isLoading: isStockLoading,
+    isError: isStockError,
+    error: stockError,
+  } = useQuery({
     queryKey: ["company", "stock", companyCode, chartRange],
     queryFn: async () => {
-      const response = await getStockOhlcv(
-        companyCode,
-        getBackendInterval(chartRange),
-      );
-      const interval = getBackendInterval(chartRange);
-      const pricesData = response.data.data;
-      // API 응답 구조: { [interval]: { data: StockPriceItem[] } }
-      if (
-        pricesData &&
-        pricesData[interval] &&
-        Array.isArray(pricesData[interval].data)
-      ) {
-        return pricesData[interval].data as StockPriceItem[];
+      try {
+        const response = await getStockOhlcv(
+          companyCode,
+          getBackendInterval(chartRange),
+        );
+
+        // API 응답 구조 확인
+        // 경우 1: ApiResponse<StockPricesResponse> 형태 - { data: { [interval]: StockPricesIntervalData } }
+        // 경우 2: 직접 StockPricesIntervalData 형태 - { status, message, data: { ... } }
+
+        const interval = getBackendInterval(chartRange);
+        let intervalData: StockPricesIntervalData | null = null;
+
+        // ApiResponse<StockPricesResponse> 형태인 경우
+        if (response.data?.data && typeof response.data.data === "object") {
+          const stockPricesResponse = response.data.data as StockPricesResponse;
+          intervalData = stockPricesResponse[interval] || null;
+        }
+
+        // 직접 StockPricesIntervalData 형태인 경우
+        if (!intervalData && response.data?.data) {
+          const directData = response.data.data as unknown as {
+            stock_code?: string;
+            interval?: string;
+            total_count?: number;
+            data?: Array<{
+              bucket: string;
+              open: number;
+              high: number;
+              low: number;
+              close: number;
+              volume: number;
+            }>;
+          };
+
+          if (directData.data) {
+            intervalData = {
+              stock_code: directData.stock_code || companyCode,
+              interval: directData.interval || interval,
+              total_count: directData.total_count || 0,
+              data: directData.data.map((item) => ({
+                bucket: item.bucket,
+                stock_code: companyCode,
+                open: item.open,
+                high: item.high,
+                low: item.low,
+                close: item.close,
+                volume: item.volume,
+                amount: 0,
+                trade_count: 0,
+                source: "",
+              })),
+            };
+          }
+        }
+
+        if (
+          !intervalData ||
+          !intervalData.data ||
+          intervalData.data.length === 0
+        ) {
+          console.warn(
+            `주가 데이터가 없습니다: ${companyCode}, interval: ${interval}`,
+          );
+          return [];
+        }
+
+        const rawData = intervalData.data;
+
+        // StockPriceItem[]를 OhlcvItem[]로 변환
+        return rawData
+          .map((item) => {
+            const dateObj = new Date(item.bucket);
+            const timeStamp = isNaN(dateObj.getTime())
+              ? 0
+              : Math.floor(dateObj.getTime() / 1000);
+
+            return {
+              time: timeStamp,
+              bucket: item.bucket, // 원본 bucket 값 보존
+              open: Number(item.open),
+              high: Number(item.high),
+              low: Number(item.low),
+              close: Number(item.close),
+              volume: Number(item.volume),
+              amount: Number(item.amount) || 0,
+            };
+          })
+          .filter((item: OhlcvItem) => item.time !== 0)
+          .reverse(); // 최신순 -> 오래된순으로 정렬
+      } catch (error) {
+        console.error("주가 데이터 조회 실패:", error);
+        throw error;
       }
-      return [];
     },
   });
 
@@ -1052,12 +1138,23 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   <div className="flex h-full items-center justify-center">
                     <Loader2 className="animate-spin text-blue-400" />
                   </div>
+                ) : isStockError ? (
+                  <div className="flex h-full items-center justify-center text-red-500 text-sm">
+                    <div className="text-center">
+                      <p>주가 데이터를 불러오는데 실패했습니다.</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {(stockError as Error)?.message || "알 수 없는 오류"}
+                      </p>
+                    </div>
+                  </div>
+                ) : stockData.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-gray-400 text-sm">
+                    주가 데이터가 없습니다.
+                  </div>
                 ) : chartRange === "1D" ? (
                   <CandleChart data={stockData} />
                 ) : (
-                  <StockChart
-                    {...({ data: stockData, period: chartRange } as any)}
-                  />
+                  <StockChart data={stockData} period={chartRange} />
                 )}
               </div>
             </GlassCard>

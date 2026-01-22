@@ -103,7 +103,7 @@ export const getCompanyFinancials = (
   signal?: AbortSignal,
 ) => {
   return api.get<ApiResponse<CompanyFinancialsData>>(
-    `/companies/${stockCode}/financials/`,
+    `/companies/${stockCode}/financials/?years=5`,
     { signal },
   );
 };
