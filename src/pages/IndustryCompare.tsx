@@ -801,36 +801,36 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             ) : (
               <div className="space-y-3 flex-1">
                 {/* 분석 내용 - Liquid Glass */}
-                <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
+                <div className="relative overflow-hidden rounded-2xl bg-white/10 border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-4">
                   <div className="pointer-events-none absolute -top-4 -left-4 h-16 w-16 rounded-full bg-white/20 blur-xl" />
-                  <p className="relative z-10 text-white text-sm leading-relaxed">
+                  <p className="relative z-10 text-white font-medium text-[15px] leading-relaxed">
                     {analysisData?.scenarios?.neutral?.analysis ??
                       "전망 정보가 없습니다."}
                   </p>
                 </div>
                 {analysisData?.scenarios && (
                   <div className="space-y-2">
-                    {/* 긍정 - Liquid Glass */}
+                    {/* 유망 - Liquid Glass */}
                     <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
                       <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
-                      <div className="relative z-10 flex items-start gap-2">
-                        <span className="px-2 py-0.5 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                          긍정
+                      <div className="relative z-10 flex gap-3">
+                        <span className="inline-flex items-center justify-center h-[18px] px-2 bg-green-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          유망
                         </span>
-                        <p className="text-xs text-white/90 leading-relaxed">
+                        <p className="text-xs text-white/90 leading-relaxed flex-1">
                           {analysisData?.scenarios?.optimistic?.analysis ??
                             "정보 없음"}
                         </p>
                       </div>
                     </div>
-                    {/* 리스크 - Liquid Glass */}
+                    {/* 우려 - Liquid Glass */}
                     <div className="relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_1px_0_0_0_rgba(255,255,255,0.2)] p-3">
                       <div className="pointer-events-none absolute -top-4 -left-4 h-12 w-12 rounded-full bg-white/15 blur-lg" />
-                      <div className="relative z-10 flex items-start gap-2">
-                        <span className="px-2 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
-                          리스크
+                      <div className="relative z-10 flex gap-3">
+                        <span className="inline-flex items-center justify-center h-[18px] px-2 bg-red-500/80 text-white text-[10px] font-bold rounded-full shrink-0">
+                          우려
                         </span>
-                        <p className="text-xs text-white/90 leading-relaxed">
+                        <p className="text-xs text-white/90 leading-relaxed flex-1">
                           {analysisData?.scenarios?.pessimistic?.analysis ??
                             "정보 없음"}
                         </p>
