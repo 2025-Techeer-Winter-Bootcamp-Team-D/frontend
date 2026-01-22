@@ -74,6 +74,7 @@ const DEFAULT_COMPANY = {
   industry: "-",
   desc: "-",
   logo: "--",
+  logoUrl: null as string | null,
   market: "-",
   establishmentDate: "-",
   homepage: "",
@@ -386,7 +387,34 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const outlookRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+
+      // 각 섹션의 위치를 체크하여 현재 보이는 섹션에 따라 activeTab 업데이트
+      const sections = [
+        { id: "info", ref: infoRef },
+        { id: "price", ref: priceRef },
+        { id: "financial", ref: financialRef },
+        { id: "outlook", ref: outlookRef },
+        { id: "news", ref: newsRef },
+        { id: "disclosure", ref: disclosureRef },
+      ];
+
+      const headerOffset = 150; // 상단 헤더 높이 고려
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i];
+        if (section.ref.current) {
+          const rect = section.ref.current.getBoundingClientRect();
+          if (rect.top <= headerOffset) {
+            setActiveTab(section.id);
+            break;
+          }
+        }
+      }
+    };
+
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -403,6 +431,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
       industry: apiCompanyData.industry?.name || "-",
       desc: apiCompanyData.description,
       logo: apiCompanyData.company_name.substring(0, 2),
+      logoUrl: apiCompanyData.logo_url || null,
       market: apiCompanyData.market || "-",
       establishmentDate: apiCompanyData.establishment_date || "-",
       homepage: apiCompanyData.homepage_url || "",
@@ -874,12 +903,20 @@ const CompanyDetail: React.FC<DetailProps> = ({
           className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
         >
           <div
-            className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center cursor-pointer"
+            className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center cursor-pointer overflow-hidden"
             onClick={() => setPage("DASHBOARD" as PageView)}
           >
-            <span className="font-bold text-blue-600 text-2xl">
-              {currentCompany.logo}
-            </span>
+            {currentCompany.logoUrl ? (
+              <img
+                src={currentCompany.logoUrl}
+                alt={`${currentCompany.name} 로고`}
+                className="w-full h-full object-contain p-1"
+              />
+            ) : (
+              <span className="font-bold text-blue-600 text-2xl">
+                {currentCompany.logo}
+              </span>
+            )}
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
@@ -957,14 +994,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-gray-500 text-xs min-w-[60px]">
-                  설립일
-                </span>
-                <span className="font-bold text-slate-800 text-sm">
-                  {currentCompany.establishmentDate}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-500 text-xs min-w-[60px]">
                   홈페이지
                 </span>
                 {currentCompany.homepage ? (
@@ -980,18 +1009,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   <span className="font-bold text-slate-800 text-sm">-</span>
                 )}
               </div>
-              <div className="flex items-center gap-3 col-span-2">
+              <div className="flex items-center gap-3 col-span-full">
                 <span className="text-gray-500 text-xs min-w-[60px]">주소</span>
                 <span className="font-bold text-slate-800 text-sm">
                   {currentCompany.address}
-                </span>
-              </div>
-              <div className="flex items-start gap-3 col-span-2">
-                <span className="text-gray-500 text-xs min-w-[60px] pt-0.5">
-                  주요사업
-                </span>
-                <span className="font-bold text-slate-800 text-sm leading-relaxed">
-                  {currentCompany.desc || "-"}
                 </span>
               </div>
             </div>
@@ -1151,13 +1172,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
             )}
           </GlassCard>
         </div>
-
+        {/* 기업 전망 분석 */}
         <div ref={outlookRef} className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
               <Target size={24} className="text-blue-600" />
               기업 전망 분석
             </h3>
+
             {isOutlookLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="animate-spin text-blue-600" />
@@ -1166,11 +1188,21 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <div className="space-y-6">
                 {/* 전망 요약 */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                  <h4 className="text-lg font-bold text-slate-800 mb-3">
-                    전망 요약
-                  </h4>
-                  <p className="text-slate-700 leading-relaxed">
-                    {outlookData.outlook_summary}
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-lg font-bold text-slate-800">
+                      전망 요약
+                    </h4>
+                    <span className="text-xs text-gray-400">
+                      분석일시:{" "}
+                      {outlookData.analyzed_at
+                        ? new Date(outlookData.analyzed_at).toLocaleString(
+                            "ko-KR",
+                          )
+                        : "-"}
+                    </span>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                    {outlookData.analysis}
                   </p>
                 </div>
 
@@ -1181,17 +1213,10 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       <TrendingUp size={20} className="text-green-600" />
                       <h4 className="font-bold text-green-800">긍정적 요인</h4>
                     </div>
-                    <ul className="space-y-2">
-                      {outlookData.positive_factors?.map((factor, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2 text-sm text-green-700"
-                        >
-                          <span className="text-green-500 mt-1">•</span>
-                          <span>{factor}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="flex items-start gap-2 text-sm text-green-700">
+                      <span className="text-green-500 mt-0.5">•</span>
+                      <p>{outlookData.positive_factor}</p>
+                    </div>
                   </div>
 
                   {/* 리스크 요인 */}
@@ -1200,26 +1225,31 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       <TrendingDown size={20} className="text-red-600" />
                       <h4 className="font-bold text-red-800">리스크 요인</h4>
                     </div>
-                    <ul className="space-y-2">
-                      {outlookData.risk_factors?.map((factor, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2 text-sm text-red-700"
-                        >
-                          <span className="text-red-500 mt-1">•</span>
-                          <span>{factor}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="flex items-start gap-2 text-sm text-red-700">
+                      <span className="text-red-500 mt-0.5">•</span>
+                      <p>{outlookData.risk_factor}</p>
+                    </div>
                   </div>
                 </div>
 
                 {/* 투자 의견 */}
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                  <h4 className="font-bold text-slate-800 mb-3">투자 의견</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-slate-800">투자 의견</h4>
+                    <div className="flex gap-4">
+                      <span className="text-xs text-gray-500">
+                        뉴스 출처: {outlookData.data_sources?.news_count ?? 0}건
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        리포트 출처:{" "}
+                        {outlookData.data_sources?.report_count ?? 0}건
+                      </span>
+                    </div>
+                  </div>
                   <p className="text-slate-700 leading-relaxed">
-                    {outlookData.investment_opinion}
+                    {outlookData.opinion}
                   </p>
+
                   {outlookData.target_price && (
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <span className="text-sm text-gray-500">목표 주가: </span>
