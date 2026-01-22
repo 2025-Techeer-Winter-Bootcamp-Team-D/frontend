@@ -8,7 +8,6 @@ import {
   ChevronDown,
   X,
   ChevronRight,
-  Trophy,
   RotateCcw,
   Filter,
 } from "lucide-react";
@@ -238,6 +237,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
+  const [showAllCompanies, setShowAllCompanies] = useState(false);
 
   // -----------------------------
   // TanStack Query - 커스텀 훅 사용
@@ -844,133 +844,33 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
-      {/* --- Top 3 Companies (Rankings) --- */}
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-[#0046FF]">
-          {currentIndustryInfo.name} 산업 내 기업 순위
-        </h2>
-        <p className="text-sm text-slate-500">
-          시가총액 기준 상위 3개 기업입니다.
-        </p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
-        {companiesData.slice(0, 3).map((company, index) => {
-          const isFirst = index === 0;
-          const isSecond = index === 1;
-
-          let containerClasses =
-            "p-6 relative overflow-hidden group hover:-translate-y-1 transition-all flex flex-col";
-          let badgeClasses = "";
-          let label = "";
-
-          if (isFirst) {
-            containerClasses +=
-              " border-yellow-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-yellow-100 text-yellow-600";
-            label = "1st Place";
-          } else if (isSecond) {
-            containerClasses +=
-              " border-slate-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-slate-100 text-slate-500";
-            label = "2nd Place";
-          } else {
-            containerClasses +=
-              " border-orange-200 bg-white shadow-sm min-h-[260px] mt-2";
-            badgeClasses = "bg-orange-100 text-orange-600";
-            label = "3rd Place";
-          }
-
-          return (
-            <GlassCard
-              key={company.code}
-              className={containerClasses}
-              onClick={() => handleCompanyClick(company.code)}
-            >
-              {/* Header */}
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center ${badgeClasses}`}
-                  >
-                    <Trophy size={20} />
-                  </div>
-                  <div>
-                    <div
-                      className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isFirst ? "text-yellow-600" : isSecond ? "text-slate-500" : "text-orange-500"}`}
-                    >
-                      {label}
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {company.code}
-                    </div>
-                    <button
-                      onClick={(e) => handleToggleStar(e, company.code)}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <StarIcon
-                        isActive={starred?.has(company.code) ?? false}
-                      />
-                    </button>
-                  </div>
-                </div>
-                <button
-                  onClick={(e) => handleToggleStar(e, company.code)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <StarIcon isActive={starred?.has(company.code) ?? false} />
-                </button>
-              </div>
-
-              {/* Center Content */}
-              <div className="text-center mb-6">
-                <h3
-                  className={`font-bold text-slate-800 mb-2 ${isFirst ? "text-2xl" : "text-xl"}`}
-                >
-                  {company.name}
-                </h3>
-                <div className="flex items-center justify-center gap-2">
-                  <span
-                    className={`text-lg font-bold ${isFirst ? "text-slate-900" : "text-slate-700"}`}
-                  >
-                    {company.price}
-                  </span>
-                  <span
-                    className={`text-sm font-bold px-2 py-0.5 rounded ${company.change.startsWith("+") ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
-                  >
-                    {company.change}
-                  </span>
-                </div>
-              </div>
-
-              {/* Footer Metrics */}
-              <div
-                className={`mt-auto pt-4 border-t ${isFirst ? "border-yellow-100" : "border-gray-50"}`}
-              >
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">
-                      시가총액
-                    </div>
-                    <div className="text-sm font-bold text-slate-600">
-                      {company.marketCap}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">ROE</div>
-                    <div className="text-sm font-bold text-shinhan-blue">
-                      {company.roe}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          );
-        })}
-      </div>
-
       {/* --- All Companies Ranking Table --- */}
       <div className="mb-10">
         <div className="bg-white rounded-xl overflow-hidden">
+          {/* 클릭 가능한 아코디언 헤더 */}
+          <button
+            onClick={() => setShowAllCompanies(!showAllCompanies)}
+            className="w-full flex items-center justify-between px-6 py-4 bg-white hover:bg-gray-50 transition-colors border-b border-gray-100"
+          >
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold text-slate-800">
+                {currentIndustryInfo.name} 산업 순위
+              </h2>
+              <span className="text-sm text-gray-500">
+                ({companiesData.length}개 기업)
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-shinhan-blue">
+              <span className="text-sm font-medium">
+                {showAllCompanies ? "접기" : "전체보기"}
+              </span>
+              <ChevronDown
+                size={20}
+                className={`transition-transform duration-200 ${showAllCompanies ? "rotate-180" : ""}`}
+              />
+            </div>
+          </button>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left table-fixed">
               <colgroup>
@@ -984,7 +884,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 <col />
                 <col className="w-32" />
               </colgroup>
-              <thead className="text-xs text-gray-400 border-b border-gray-100">
+              <thead className="text-xs text-gray-400 border-b border-gray-100 sticky top-0 bg-white z-10">
                 <tr>
                   <th className="pl-3 pr-1 py-3 font-normal"></th>
                   <th className="px-1 py-3 font-normal text-center">순위</th>
@@ -1002,7 +902,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {companiesData.map((company, index) => (
+                {(showAllCompanies
+                  ? companiesData
+                  : companiesData.slice(0, 5)
+                ).map((company, index) => (
                   <tr
                     key={company.code}
                     className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
@@ -1140,12 +1043,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                         .map((stock) => (
                           <div
                             key={stock.id}
-                            onClick={() => setSelectedStock(stock)}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                              selectedStock?.id === stock.id
-                                ? "border-shinhan-blue bg-blue-50"
-                                : "border-slate-100 bg-slate-50 hover:border-slate-200"
-                            }`}
+                            onClick={() => handleCompanyClick(stock.id)}
+                            className="p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-blue-50"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
@@ -1210,11 +1109,6 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                                     {stock.divYield.toFixed(1)}%
                                   </div>
                                 </div>
-                                {selectedStock?.id === stock.id && (
-                                  <span className="px-2 py-0.5 bg-shinhan-blue text-white text-[10px] rounded-full font-bold">
-                                    선택됨
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </div>
