@@ -25,7 +25,7 @@ import type {
   FinancialMetric,
   CompanyApiData,
   PageView,
-  StockPriceItem,
+  OhlcvItem,
   CompanyReportItem,
   CompanyFinancialsData,
   CompanyOutlookData,
@@ -1152,7 +1152,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     주가 데이터가 없습니다.
                   </div>
                 ) : chartRange === "1D" ? (
-                  <CandleChart data={stockData} />
+                  <CandleChart data={stockData} period={chartRange} />
                 ) : (
                   <StockChart data={stockData} period={chartRange} />
                 )}

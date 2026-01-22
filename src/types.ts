@@ -325,7 +325,7 @@ export interface OhlcvData {
 // 주가 데이터
 export interface OhlcvItem {
   time: number;
-  bucket?: string; // 원본 bucket 값 (x축 표시용)
+  bucket?: string;
   open: number;
   high: number;
   low: number;

@@ -9,10 +9,11 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import type { OhlcvItem } from "@/types";
+import type { OhlcvItem } from "../../types";
 
 interface CandleChartProps {
   data?: OhlcvItem[];
+  period?: string;
 }
 
 // Y축 범위를 데이터에 최적화하는 함수
@@ -41,18 +42,18 @@ const CandleStickShape = (props: CandleStickShapeProps) => {
   const isUp = close >= open;
   const color = isUp ? "#EF4444" : "#3B82F6"; // 상승: 빨강, 하락: 파랑
 
+  const priceRange = high - low === 0 ? 1 : high - low;
   // 가격 1단위당 픽셀 높이 계산
-  const ratio = height / (high - low);
+  const ratio = height / priceRange;
 
   // 몸통의 실제 위치 계산 (Recharts y는 차트 상단 기준)
   const bodyUpper = Math.max(open, close);
   const bodyLower = Math.min(open, close);
   const bodyTop = y + (high - bodyUpper) * ratio;
-  const bodyHeight = Math.max(1, (bodyUpper - bodyLower) * ratio);
+  const bodyHeight = Math.max(2, (bodyUpper - bodyLower) * ratio);
 
   return (
     <g>
-      {/* 고가-저가 연결선 (꼬리) */}
       <line
         x1={x + width / 2}
         y1={y}
@@ -62,13 +63,49 @@ const CandleStickShape = (props: CandleStickShapeProps) => {
         strokeWidth={1}
       />
       {/* 시가-종가 사각형 (몸통) */}
-      <rect x={x} y={bodyTop} width={width} height={bodyHeight} fill={color} />
+      <rect
+        x={x + width * 0.2}
+        y={bodyTop}
+        width={width * 0.6}
+        height={bodyHeight}
+        fill={color}
+      />
     </g>
   );
 };
 
+// 기간에 따른 시간 포맷 함수
+const formatTimeLabel = (
+  bucket: string | undefined,
+  timestamp: number,
+  period: string,
+): string => {
+  const date = bucket ? new Date(bucket) : new Date(timestamp * 1000);
+
+  if (isNaN(date.getTime())) {
+    return bucket || "";
+  }
+
+  if (period === "1D") {
+    // 1D: 시간만 표시 (예: "14:30")
+    return date.toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } else {
+    // 1W, 1M, 1Y: 날짜만 표시 (예: "01/23")
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${month}/${day}`;
+  }
+};
+
 // 5. 메인 차트 컴포넌트
-const CandleChart: React.FC<CandleChartProps> = ({ data: rawData }) => {
+const CandleChart: React.FC<CandleChartProps> = ({
+  data: rawData,
+  period = "1D",
+}) => {
   // API 데이터를 차트 형식으로 변환
   const processedData = useMemo(() => {
     if (!rawData || rawData.length === 0) {
@@ -76,17 +113,7 @@ const CandleChart: React.FC<CandleChartProps> = ({ data: rawData }) => {
     }
 
     return rawData.map((item) => {
-      // bucket 값이 있으면 그대로 사용, 없으면 타임스탬프에서 변환
-      const timeLabel =
-        item.bucket ||
-        (() => {
-          const date = new Date(item.time * 1000);
-          return date.toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
-        })();
+      const timeLabel = formatTimeLabel(item.bucket, item.time, period);
 
       return {
         time: timeLabel,
@@ -97,7 +124,7 @@ const CandleChart: React.FC<CandleChartProps> = ({ data: rawData }) => {
         range: [item.low, item.high],
       };
     });
-  }, [rawData]);
+  }, [rawData, period]);
 
   const yDomain = useMemo(() => getYDomain(processedData), [processedData]);
 
