@@ -56,6 +56,7 @@ import {
   TrendingUp,
   TrendingDown,
   Target,
+  Trophy,
 } from "lucide-react";
 
 interface DetailProps {
@@ -1151,7 +1152,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     주가 데이터가 없습니다.
                   </div>
                 ) : chartRange === "1D" ? (
-                  <CandleChart data={stockData} />
+                  <CandleChart data={stockData} period={chartRange} />
                 ) : (
                   <StockChart data={stockData} period={chartRange} />
                 )}
@@ -1168,33 +1169,48 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1">
-                  {peerCompanies.map((item) => (
-                    <div
-                      key={item.code}
-                      onClick={() => handleCompanyClick(item.code)}
-                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs font-bold w-5 ${item.rank <= 3 ? "text-base" : "text-gray-400"}`}
-                        >
-                          {item.rank === 1
-                            ? "🥇"
-                            : item.rank === 2
-                              ? "🥈"
-                              : item.rank === 3
-                                ? "🥉"
-                                : item.rank}
-                        </span>
-                        <span className="text-sm font-bold text-slate-700">
-                          {item.name}
+                  {peerCompanies.map((item) => {
+                    const isFirst = item.rank === 1;
+                    const isSecond = item.rank === 2;
+                    const isThird = item.rank === 3;
+                    const isTop3 = item.rank <= 3;
+
+                    const badgeClasses = isFirst
+                      ? "bg-yellow-100 text-yellow-600"
+                      : isSecond
+                        ? "bg-slate-100 text-slate-500"
+                        : isThird
+                          ? "bg-orange-100 text-orange-600"
+                          : "bg-gray-100 text-gray-400";
+
+                    return (
+                      <div
+                        key={item.code}
+                        onClick={() => handleCompanyClick(item.code)}
+                        className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {isTop3 ? (
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${badgeClasses}`}
+                            >
+                              <Trophy size={16} />
+                            </div>
+                          ) : (
+                            <span className="w-8 h-8 flex items-center justify-center text-sm font-bold text-gray-400">
+                              {item.rank}
+                            </span>
+                          )}
+                          <span className="text-sm font-bold text-slate-700">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          {item.marketCap}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-600">
-                        {item.marketCap}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </GlassCard>

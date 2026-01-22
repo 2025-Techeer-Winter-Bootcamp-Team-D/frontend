@@ -456,7 +456,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     );
   }, [companyRankingsData, financialsMap]);
 
-  const isStocksLoading = isRankingsLoading;
+  const isStocksLoading =
+    isRankingsLoading ||
+    (companyRankingsData.length > 0 && Object.keys(financialsMap).length === 0);
 
   // 3. 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
   const { data: keywordsData } = useQuery({
