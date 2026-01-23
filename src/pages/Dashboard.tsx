@@ -21,7 +21,7 @@ import type {
 import { SAMPLE_STOCKS } from "../constants";
 
 // API & 타입
-import { getKospi, getKosdaq } from "../api/indices";
+import { getKospi, getKosdaq, saveInitialIndices } from "../api/indices";
 import type { MarketIndexData } from "../api/indices";
 import { getNewsKeywords, getNewsList, getNewsDetail } from "../api/news";
 import type { NewsDetailItem } from "../api/news";
@@ -279,6 +279,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     setSearchQuery("");
     navigate(`/company/${stockCode}`);
   };
+
+  // 0. 시장지수 1년치 데이터 초기화 (앱 시작 시 한 번만 실행)
+  useQuery({
+    queryKey: ["initialIndices"],
+    queryFn: saveInitialIndices,
+    staleTime: Infinity, // 한 번 실행 후 다시 실행하지 않음
+    retry: 1,
+  });
 
   // 1. 시장 지수 데이터 (수정된 타입 적용)
   const {
