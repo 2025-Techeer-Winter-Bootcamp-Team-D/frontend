@@ -550,9 +550,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
   // revenue_composition을 차트 데이터로 변환하는 함수
   const convertRevenueComposition = (composition: RevenueComposition[]) => {
     if (!composition || composition.length === 0) {
-      return [{ name: "데이터 없음", value: 100, color: "#94A3B8" }];
+      return null; // 빈 데이터면 null 반환하여 mock 데이터 사용하도록
     }
-    return composition
+    const filtered = composition
       .filter((item) => item && item.segment && item.ratio > 0)
       .map((item, index) => ({
         name: item.segment || "기타",
@@ -562,6 +562,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
             : parseFloat(item.ratio) || 0,
         color: BUSINESS_COLORS[index % BUSINESS_COLORS.length],
       }));
+    // 필터링 후 결과가 없으면 null 반환
+    return filtered.length > 0 ? filtered : null;
   };
 
   // --- 재무 데이터 가공 로직 (수정됨) ---
@@ -618,14 +620,15 @@ const CompanyDetail: React.FC<DetailProps> = ({
     };
 
     // API에서 가져온 revenue_composition 사용, 없으면 기본 mock 데이터
-    const businessData = financialsData.revenue_composition
+    const convertedData = financialsData.revenue_composition
       ? convertRevenueComposition(financialsData.revenue_composition)
-      : [
-          { name: "주력사업", value: 45, color: "#3B82F6" },
-          { name: "신규사업", value: 25, color: "#10B981" },
-          { name: "해외사업", value: 20, color: "#F59E0B" },
-          { name: "기타", value: 10, color: "#94A3B8" },
-        ];
+      : null;
+    const businessData = convertedData || [
+      { name: "주력사업", value: 45, color: "#3B82F6" },
+      { name: "신규사업", value: 25, color: "#10B981" },
+      { name: "해외사업", value: 20, color: "#F59E0B" },
+      { name: "기타", value: 10, color: "#94A3B8" },
+    ];
 
     return {
       business: businessData,
@@ -1162,55 +1165,176 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
           <div className="lg:col-span-4">
             <GlassCard className="p-6 h-full flex flex-col">
-              <h3 className="font-bold text-slate-800 mb-4">동종업계 순위</h3>
+              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Trophy size={20} className="text-yellow-500" />
+                동종업계 순위
+              </h3>
               {isPeerLoading ? (
                 <div className="flex justify-center items-center flex-1">
                   <Loader2 className="animate-spin text-blue-400" />
                 </div>
               ) : (
-                <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1">
-                  {peerCompanies.map((item) => {
-                    const isFirst = item.rank === 1;
-                    const isSecond = item.rank === 2;
-                    const isThird = item.rank === 3;
-                    const isTop3 = item.rank <= 3;
-
-                    const badgeClasses = isFirst
-                      ? "bg-yellow-100 text-yellow-600"
-                      : isSecond
-                        ? "bg-slate-100 text-slate-500"
-                        : isThird
-                          ? "bg-orange-100 text-orange-600"
-                          : "bg-gray-100 text-gray-400";
-
-                    return (
-                      <div
-                        key={item.code}
-                        onClick={() => handleCompanyClick(item.code)}
-                        className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          {isTop3 ? (
+                <div className="flex flex-col">
+                  {/* TOP 3 Podium */}
+                  {peerCompanies.length >= 3 && (
+                    <div className="flex items-end justify-center gap-2 mb-4 px-2 pt-2">
+                      {/* 2nd Place - Left (Silver) */}
+                      {(() => {
+                        const item = peerCompanies.find((p) => p.rank === 2);
+                        if (!item) return null;
+                        return (
+                          <div
+                            key={item.code}
+                            onClick={() => handleCompanyClick(item.code)}
+                            className="flex-1 max-w-[55px] cursor-pointer transition-all group flex flex-col items-center"
+                          >
+                            {/* Medal Circle - Silver */}
                             <div
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${badgeClasses}`}
+                              className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-white/40 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-gray-300/60"
+                              style={{
+                                background:
+                                  "linear-gradient(145deg, #FAFAFA 0%, #E8E8E8 30%, #D0D0D0 70%, #DCDCDC 100%)",
+                              }}
                             >
-                              <Trophy size={16} />
+                              <span className="text-sm font-black text-white drop-shadow-md">
+                                2
+                              </span>
                             </div>
-                          ) : (
+                            {/* Podium Bar - Light Gray */}
+                            <div
+                              className={`w-full h-12 rounded-t-md flex items-center justify-center px-1 transition-all ${
+                                currentCompany.name === item.name
+                                  ? "ring-2 ring-blue-400"
+                                  : "group-hover:brightness-105"
+                              }`}
+                              style={{
+                                background:
+                                  "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
+                              }}
+                            >
+                              <span className="text-[10px] font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
+                                {item.name}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* 1st Place - Center (Gold, Tallest) */}
+                      {(() => {
+                        const item = peerCompanies.find((p) => p.rank === 1);
+                        if (!item) return null;
+                        return (
+                          <div
+                            key={item.code}
+                            onClick={() => handleCompanyClick(item.code)}
+                            className="flex-1 max-w-[60px] cursor-pointer transition-all group flex flex-col items-center"
+                          >
+                            {/* Medal Circle - Gold */}
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-yellow-200/50 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-yellow-300/70"
+                              style={{
+                                background:
+                                  "linear-gradient(145deg, #FFF2B3 0%, #FFE680 30%, #F0D060 70%, #E0C050 100%)",
+                              }}
+                            >
+                              <span className="text-base font-black text-white drop-shadow-md">
+                                1
+                              </span>
+                            </div>
+                            {/* Podium Bar (Tallest) - Light Gray */}
+                            <div
+                              className={`w-full h-16 rounded-t-md flex items-center justify-center px-1 transition-all ${
+                                currentCompany.name === item.name
+                                  ? "ring-2 ring-blue-400"
+                                  : "group-hover:brightness-105"
+                              }`}
+                              style={{
+                                background:
+                                  "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
+                              }}
+                            >
+                              <span className="text-xs font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
+                                {item.name}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* 3rd Place - Right (Bronze) */}
+                      {(() => {
+                        const item = peerCompanies.find((p) => p.rank === 3);
+                        if (!item) return null;
+                        return (
+                          <div
+                            key={item.code}
+                            onClick={() => handleCompanyClick(item.code)}
+                            className="flex-1 max-w-[55px] cursor-pointer transition-all group flex flex-col items-center"
+                          >
+                            {/* Medal Circle - Bronze */}
+                            <div
+                              className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-orange-200/40 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-orange-300/60"
+                              style={{
+                                background:
+                                  "linear-gradient(145deg, #F0C89A 0%, #E0A870 30%, #D09060 70%, #C08050 100%)",
+                              }}
+                            >
+                              <span className="text-xs font-black text-white drop-shadow-md">
+                                3
+                              </span>
+                            </div>
+                            {/* Podium Bar (Shortest) - Light Gray */}
+                            <div
+                              className={`w-full h-9 rounded-t-md flex items-center justify-center px-1 transition-all ${
+                                currentCompany.name === item.name
+                                  ? "ring-2 ring-blue-400"
+                                  : "group-hover:brightness-105"
+                              }`}
+                              style={{
+                                background:
+                                  "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
+                              }}
+                            >
+                              <span className="text-[10px] font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
+                                {item.name}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Podium Base Line */}
+                  {peerCompanies.length >= 3 && (
+                    <div className="h-px bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full mx-4 mb-4" />
+                  )}
+
+                  {/* Rest of the rankings (4th and below) */}
+                  <div className="space-y-2 overflow-y-auto max-h-[180px] pr-1">
+                    {peerCompanies
+                      .filter((item) => item.rank > 3)
+                      .map((item) => (
+                        <div
+                          key={item.code}
+                          onClick={() => handleCompanyClick(item.code)}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
+                        >
+                          <div className="flex items-center gap-3">
                             <span className="w-8 h-8 flex items-center justify-center text-sm font-bold text-gray-400">
                               {item.rank}
                             </span>
-                          )}
-                          <span className="text-sm font-bold text-slate-700">
-                            {item.name}
+                            <span className="text-sm font-bold text-slate-700">
+                              {item.name}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-600">
+                            {item.marketCap}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-600">
-                          {item.marketCap}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      ))}
+                  </div>
                 </div>
               )}
             </GlassCard>

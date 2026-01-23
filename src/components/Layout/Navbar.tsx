@@ -130,12 +130,7 @@ const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-2 cursor-pointer"
               onClick={handleLogoClick}
             >
-              <div className="flex items-center justify-center text-[#0046ff] font-black text-xl italic">
-                S
-              </div>
-              <span className="text-lg font-bold text-[#0046ff] tracking-tight">
-                QUASA{" "}
-              </span>
+              <img src="/logo.png" alt="Shinhan Insight" className="h-8" />
             </div>
 
             {/* Navigation Links */}

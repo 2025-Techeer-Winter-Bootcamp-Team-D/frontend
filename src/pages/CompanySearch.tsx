@@ -302,7 +302,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         {/* 메인 리스트 */}
         <div className="lg:col-span-3">
           <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <TrendingUp size={20} className="text-[#0046ff]" />
                 {isLoading
@@ -395,39 +395,43 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
             <div className="flex-1 overflow-y-auto max-h-[600px] custom-scrollbar p-3">
               {starredList.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-2">
                   {starredList.map((item) => (
                     <div
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className="p-3 bg-gray-50 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                      className="p-3 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer"
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleStar(item.code);
-                          }}
-                          className="text-yellow-400"
-                        >
-                          <Star size={14} fill="currentColor" />
-                        </button>
-                        <div className="font-bold text-slate-800 text-xs truncate">
-                          {item.name}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleStar(item.code);
+                            }}
+                            className="text-yellow-400 shrink-0"
+                          >
+                            <Star size={16} fill="currentColor" />
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-slate-800 text-sm truncate">
+                              {item.name}
+                            </div>
+                            <div className="text-xs text-gray-400 font-mono">
+                              {item.code}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-xs text-gray-400 font-mono mb-1">
-                        {item.code}
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-700">
-                          {item.price}
-                        </span>
-                        <span
-                          className={`font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
-                        >
-                          {item.change}
-                        </span>
+                        <div className="text-right shrink-0 ml-2">
+                          <div className="font-bold text-slate-700 text-sm">
+                            {item.price}
+                          </div>
+                          <div
+                            className={`text-xs font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
+                          >
+                            {item.change}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
