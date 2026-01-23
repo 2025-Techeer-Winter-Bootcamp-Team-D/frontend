@@ -60,17 +60,3 @@ export const getMarketIndex = async (
 
 export const getKospi = () => getMarketIndex("kospi");
 export const getKosdaq = () => getMarketIndex("kosdaq");
-
-// 시장지수 1년치 데이터 저장 API
-interface InitialIndicesResponse {
-  status: number;
-  message: string;
-  data?: unknown;
-}
-
-export const saveInitialIndices = async (): Promise<InitialIndicesResponse> => {
-  const res = await api.post<InitialIndicesResponse>(
-    "/indices/admin/initial-indices",
-  );
-  return res.data;
-};
