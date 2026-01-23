@@ -130,12 +130,7 @@ const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-2 cursor-pointer"
               onClick={handleLogoClick}
             >
-              <div className="flex items-center justify-center text-shinhan-blue font-black text-xl italic">
-                S
-              </div>
-              <span className="text-lg font-bold text-slate-800 tracking-tight">
-                Shinhan <span className="text-shinhan-blue">Insight</span>
-              </span>
+              <img src="/logo.png" alt="Shinhan Insight" className="h-8" />
             </div>
 
             {/* Navigation Links */}
