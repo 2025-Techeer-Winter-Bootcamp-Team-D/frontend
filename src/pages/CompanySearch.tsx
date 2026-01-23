@@ -250,7 +250,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           <input
             type="text"
             placeholder="기업명 또는 종목코드를 입력하세요..."
-            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
+            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -263,10 +263,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto z-50">
               {isSearching ? (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2
-                    className="animate-spin text-shinhan-blue"
-                    size={24}
-                  />
+                  <Loader2 className="animate-spin text-[#0046ff]" size={24} />
                   <span className="ml-2 text-gray-500">검색 중...</span>
                 </div>
               ) : searchResults.length > 0 ? (
@@ -307,7 +304,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-shinhan-blue" />
+                <TrendingUp size={20} className="text-[#0046ff]" />
                 {isLoading
                   ? "로딩 중..."
                   : debouncedQuery
@@ -373,7 +370,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                         <td className="px-6 py-4 text-right">
                           <ChevronRight
                             size={18}
-                            className="text-gray-300 group-hover:text-shinhan-blue"
+                            className="text-gray-300 group-hover:text-[#0046ff]"
                           />
                         </td>
                       </tr>
@@ -387,7 +384,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         {/* [수정] 우측 사이드바: 나의 관심 기업 */}
         <div className="lg:col-span-1">
           <GlassCard className="p-0 overflow-hidden flex flex-col h-full bg-white border-2 border-shinhan-light/50">
-            <div className="p-5 border-b border-gray-100 bg-shinhan-blue text-white">
+            <div className="p-5 border-b border-gray-100 bg-[#0046ff] text-white">
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <Star size={20} className="fill-white" /> 나의 관심 기업
               </h2>
