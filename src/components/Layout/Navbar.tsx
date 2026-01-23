@@ -130,11 +130,11 @@ const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-2 cursor-pointer"
               onClick={handleLogoClick}
             >
-              <div className="flex items-center justify-center text-shinhan-blue font-black text-xl italic">
+              <div className="flex items-center justify-center text-[#0046ff] font-black text-xl italic">
                 S
               </div>
-              <span className="text-lg font-bold text-slate-800 tracking-tight">
-                Shinhan <span className="text-shinhan-blue">Insight</span>
+              <span className="text-lg font-bold text-[#0046ff] tracking-tight">
+                QUASA{" "}
               </span>
             </div>
 
@@ -144,7 +144,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setPage(PageView.COMPANY_SEARCH)}
                 className={`text-sm transition-colors ${
                   currentPage === PageView.COMPANY_SEARCH
-                    ? "text-shinhan-blue font-bold"
+                    ? "text-[#0046ff] font-bold"
                     : "text-gray-500 hover:text-slate-800 font-medium"
                 }`}
               >
@@ -154,7 +154,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setPage(PageView.COMPANY_DETAIL)}
                 className={`text-sm transition-colors ${
                   currentPage === PageView.COMPANY_DETAIL
-                    ? "text-shinhan-blue font-bold"
+                    ? "text-[#0046ff] font-bold"
                     : "text-gray-500 hover:text-slate-800 font-medium"
                 }`}
               >
@@ -164,7 +164,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setPage(PageView.COMPANY_COMPARE)}
                 className={`text-sm transition-colors ${
                   currentPage === PageView.COMPANY_COMPARE
-                    ? "text-shinhan-blue font-bold"
+                    ? "text-[#0046ff] font-bold"
                     : "text-gray-500 hover:text-slate-800 font-medium"
                 }`}
               >
@@ -174,7 +174,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setPage(PageView.INDUSTRY_ANALYSIS)}
                 className={`text-sm transition-colors ${
                   currentPage === PageView.INDUSTRY_ANALYSIS
-                    ? "text-shinhan-blue font-bold"
+                    ? "text-[#0046ff] font-bold"
                     : "text-gray-500 hover:text-slate-800 font-medium"
                 }`}
               >
@@ -224,7 +224,7 @@ const Navbar: React.FC<NavbarProps> = ({
                         <button
                           onClick={handleMarkAllRead}
                           disabled={unreadCount === 0}
-                          className={`text-xs font-medium flex items-center gap-1 transition-colors ${unreadCount > 0 ? "text-gray-500 hover:text-shinhan-blue" : "text-gray-300 cursor-not-allowed"}`}
+                          className={`text-xs font-medium flex items-center gap-1 transition-colors ${unreadCount > 0 ? "text-gray-500 hover:text-[#0046ff]" : "text-gray-300 cursor-not-allowed"}`}
                         >
                           <Check size={12} /> 모두 읽음
                         </button>
@@ -252,7 +252,7 @@ const Navbar: React.FC<NavbarProps> = ({
                             className={`p-4 border-b border-gray-50 hover:bg-blue-50/50 transition-colors cursor-pointer flex gap-3 group relative ${!note.read ? "bg-blue-50/30" : ""}`}
                           >
                             {!note.read && (
-                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-shinhan-blue"></div>
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#0046ff]"></div>
                             )}
                             <div
                               className={`mt-1 w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getNotiColor(note.type)}`}
@@ -297,7 +297,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={onLogout}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
               >
-                <div className="w-6 h-6 bg-shinhan-blue rounded-full flex items-center justify-center">
+                <div className="w-6 h-6 bg-[#0046ff] rounded-full flex items-center justify-center">
                   <User size={14} className="text-white" />
                 </div>
                 <span className="text-sm font-medium hidden lg:block text-slate-700">
