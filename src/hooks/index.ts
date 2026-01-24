@@ -28,3 +28,7 @@ export {
   useDeleteComparison,
   compareQueryKeys,
 } from "./useCompareQueries";
+
+// 실시간 주가 WebSocket
+export { useStockWebSocket } from "./useStockWebSocket";
+export type { StockPrice } from "./useStockWebSocket";

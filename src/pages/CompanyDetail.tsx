@@ -13,6 +13,7 @@ import {
   getCompanySankeys,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
+import { useStockWebSocket } from "../hooks";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
@@ -189,6 +190,29 @@ const CompanyDetail: React.FC<DetailProps> = ({
 }) => {
   const { id } = useParams<{ id: string }>();
   const companyCode = id ? id : propCompanyCode;
+
+  // 실시간 주가 WebSocket 연결
+  const {
+    isConnected: wsConnected,
+    prices: wsPrices,
+    subscribe: wsSubscribe,
+    unsubscribe: wsUnsubscribe,
+  } = useStockWebSocket();
+
+  // 실시간 주가 데이터
+  const realtimePrice = wsPrices.get(companyCode);
+
+  // 종목 구독 관리
+  useEffect(() => {
+    if (wsConnected && companyCode) {
+      wsSubscribe([companyCode]);
+    }
+    return () => {
+      if (companyCode) {
+        wsUnsubscribe([companyCode]);
+      }
+    };
+  }, [wsConnected, companyCode, wsSubscribe, wsUnsubscribe]);
 
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
@@ -1122,8 +1146,21 @@ const CompanyDetail: React.FC<DetailProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8" ref={priceRef}>
             <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-800">주가 분석</h3>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-slate-800">
+                    주가 분석
+                  </h3>
+                  {/* 실시간 연결 상태 */}
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`w-2 h-2 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-gray-300"}`}
+                    />
+                    <span className="text-xs text-gray-400">
+                      {wsConnected ? "실시간" : "연결 끊김"}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                   {["1D", "1W", "1M", "1Y"].map((p) => (
                     <button
@@ -1136,6 +1173,27 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* 실시간 주가 정보 */}
+              {realtimePrice && (
+                <div className="flex items-baseline gap-4 mb-4 pb-4 border-b border-gray-100">
+                  <span className="text-3xl font-bold text-slate-800">
+                    {realtimePrice.price.toLocaleString()}
+                    <span className="text-base font-normal text-gray-500 ml-1">
+                      원
+                    </span>
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    체결시간{" "}
+                    {realtimePrice.time
+                      ? `${realtimePrice.time.slice(0, 2)}:${realtimePrice.time.slice(2, 4)}:${realtimePrice.time.slice(4, 6)}`
+                      : "-"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    체결량 {realtimePrice.volume?.toLocaleString() || "-"}주
+                  </span>
+                </div>
+              )}
               <div className="flex-1 w-full h-full">
                 {isStockLoading ? (
                   <div className="flex h-full items-center justify-center">
