@@ -66,36 +66,24 @@ const generateSparklineData = () => {
 // 산업명 매핑 (IndustryKey -> 산업명)
 const INDUSTRY_NAMES: Record<IndustryKey, { name: string; indexName: string }> =
   {
-    electronics_kosdaq: {
-      name: "전기·전자(코스닥)",
-      indexName: "전기·전자 지수",
-    },
-    pharmaceuticals: { name: "제약", indexName: "제약 지수" },
-    machinery_kosdaq: {
-      name: "기계·장비(코스닥)",
-      indexName: "기계·장비 지수",
-    },
-    finance: { name: "금융", indexName: "금융 지수" },
-    food_tobacco: {
-      name: "음식료·담배(코스닥)",
-      indexName: "음식료·담배 지수",
-    },
-    chemical: { name: "화학", indexName: "화학 지수" },
+    electronics: { name: "전기·전자", indexName: "전기·전자 지수" },
     transportation: { name: "운송장비·부품", indexName: "운송장비·부품 지수" },
     machinery: { name: "기계·장비", indexName: "기계·장비 지수" },
-    electronics: { name: "전기·전자(코스피)", indexName: "전기·전자 지수" },
-    it_service: { name: "IT 서비스", indexName: "IT 서비스 지수" },
     distribution: { name: "유통", indexName: "유통 지수" },
-    insurance: { name: "보험", indexName: "보험 지수" },
-    entertainment: { name: "오락·문화", indexName: "오락·문화 지수" },
+    pharmaceuticals: { name: "제약", indexName: "제약 지수" },
+    it_service: { name: "IT 서비스", indexName: "IT 서비스 지수" },
+    finance: { name: "금융", indexName: "금융 지수" },
     utilities: { name: "전기·가스", indexName: "전기·가스 지수" },
+    insurance: { name: "보험", indexName: "보험 지수" },
     metal: { name: "금속", indexName: "금속 지수" },
+    chemical: { name: "화학", indexName: "화학 지수" },
     logistics: { name: "운송·창고", indexName: "운송·창고 지수" },
-    pharmaceuticals_kosdaq: { name: "제약(코스닥)", indexName: "제약 지수" },
-    food_tobacco_kospi: {
-      name: "음식료·담배(코스피)",
-      indexName: "음식료·담배 지수",
-    },
+    food_tobacco: { name: "음식료·담배", indexName: "음식료·담배 지수" },
+    telecom: { name: "통신", indexName: "통신 지수" },
+    construction: { name: "건설", indexName: "건설 지수" },
+    securities: { name: "증권", indexName: "증권 지수" },
+    general_service: { name: "일반서비스", indexName: "일반서비스 지수" },
+    entertainment: { name: "오락·문화", indexName: "오락·문화 지수" },
   };
 
 // 시가총액 포맷 함수
