@@ -13,7 +13,7 @@ import {
   getCompanySankeys,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
-import { useStockWebSocket, type StockPrice } from "../hooks";
+import { useStockWebSocket } from "../hooks";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";

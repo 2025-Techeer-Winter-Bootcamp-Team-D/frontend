@@ -89,6 +89,8 @@ export function useStockWebSocket(options: UseStockWebSocketOptions = {}) {
     return `${protocol}//${host}/ws/stock/`;
   }, []);
 
+  const connectRef = useRef<(() => void) | undefined>(undefined);
+
   const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) {
       return;
@@ -113,7 +115,13 @@ export function useStockWebSocket(options: UseStockWebSocketOptions = {}) {
     };
 
     ws.current.onmessage = (event) => {
-      const data: WebSocketMessage = JSON.parse(event.data);
+      let data: WebSocketMessage;
+      try {
+        data = JSON.parse(event.data);
+      } catch (e) {
+        console.error("[WS] 메세지 파싱 실패:", e, event.data);
+        return;
+      }
 
       // 콜백 호출
       onMessage?.(data);
@@ -188,7 +196,7 @@ export function useStockWebSocket(options: UseStockWebSocketOptions = {}) {
         console.log(
           `[WS] ${delay}ms 후 재연결 시도 (${reconnectAttempts.current}/${maxReconnectAttempts})`,
         );
-        setTimeout(connect, delay);
+        setTimeout(() => connectRef.current?.(), delay);
       } else {
         console.error("[WS] 최대 재연결 시도 횟수 초과");
       }
@@ -198,6 +206,10 @@ export function useStockWebSocket(options: UseStockWebSocketOptions = {}) {
       console.error("[WS] 에러:", error);
     };
   }, [getWsUrl, maxReconnectAttempts, onMessage, onConnectionChange]);
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   // 연결 해제
   const disconnect = useCallback(() => {
