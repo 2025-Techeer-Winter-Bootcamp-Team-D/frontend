@@ -3,7 +3,6 @@ import Scene, { type GetOption } from "./Scene";
 import {
   photoColors,
   techeerFont,
-  createTitleGraphic,
   smoothMorphAnimation,
   CHART_CENTER,
 } from "../styles/techeerStyle";
@@ -44,10 +43,6 @@ const expandedData = [
 // ========== Scene 1: Bubble (Force Graph) ==========
 const bubbleOptions: (GetOption | EChartsOption)[] = [
   () => ({
-    graphic: createTitleGraphic(
-      "시장 에너지 흐름",
-      "주요 기술 섹터별 시장 모멘텀을 시각화합니다.",
-    ),
     series: [
       {
         type: "graph",
@@ -99,10 +94,6 @@ export const techeerBubbleChart = new Scene({
 const pieToRoseOptions: (GetOption | EChartsOption)[] = [
   // Step 1: Pie Chart
   () => ({
-    graphic: createTitleGraphic(
-      "시장 점유율",
-      "섹터별 시장 비중을 파이 차트로 분석합니다.",
-    ),
     series: [
       {
         type: "pie",
@@ -135,10 +126,6 @@ const pieToRoseOptions: (GetOption | EChartsOption)[] = [
   }),
   // Step 2: Rose Chart (morphs from Pie)
   () => ({
-    graphic: createTitleGraphic(
-      "시장 점유율",
-      "섹터별 시장 비중을 파이 차트로 분석합니다.",
-    ),
     series: [
       {
         type: "pie",

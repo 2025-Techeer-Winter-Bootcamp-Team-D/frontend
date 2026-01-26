@@ -2,7 +2,6 @@ import type { EChartsOption } from "echarts";
 import Scene, { type GetOption } from "./Scene";
 import {
   techeerFont,
-  createTitleGraphic,
   smoothMorphAnimation,
   universalTransitionConfig,
 } from "../styles/techeerStyle";
@@ -36,10 +35,6 @@ const parallelData = [
 // ========== 1. Sankey Chart (손익흐름도) ==========
 const sankeyOptions: (GetOption | EChartsOption)[] = [
   () => ({
-    graphic: createTitleGraphic(
-      "손익흐름도",
-      "매출 부문별 구성과 비용 구조를 통해 최종 손익이 형성되는 과정을 보여줍니다.",
-    ),
     series: [
       {
         type: "sankey",
@@ -93,55 +88,6 @@ export const techeerSankeyChart = new Scene({
 // ========== 2. Radar Chart (산업 평균 이탈 탐지) ==========
 const industryRadarOptions: (GetOption | EChartsOption)[] = [
   () => ({
-    graphic: [
-      ...createTitleGraphic(
-        "산업 평균 이탈 탐지",
-        "기업의 주요 지표를 산업 평균과 비교 분석합니다.",
-      ),
-      {
-        type: "group",
-        bottom: 50,
-        left: "center",
-        children: [
-          {
-            type: "rect",
-            shape: { width: 15, height: 15, r: 2 },
-            style: { fill: "#4264FB" },
-            left: 0,
-            top: 0,
-          },
-          {
-            type: "text",
-            style: {
-              text: "A",
-              fill: "#1e293b",
-              font: "13px Pretendard",
-              fontWeight: 600,
-            },
-            left: 25,
-            top: 0,
-          },
-          {
-            type: "rect",
-            shape: { width: 15, height: 15, r: 2 },
-            style: { fill: "#94a3b8" },
-            left: 60,
-            top: 0,
-          },
-          {
-            type: "text",
-            style: {
-              text: "비교 평균",
-              fill: "#1e293b",
-              font: "13px Pretendard",
-              fontWeight: 600,
-            },
-            left: 85,
-            top: 0,
-          },
-        ],
-      },
-    ],
     legend: {
       right: 80,
       top: 55,
@@ -224,10 +170,6 @@ export const techeerIndustryRadar = new Scene({
 // ========== 3. Parallel Coordinates (평행좌표 차트) ==========
 const parallelOptions: (GetOption | EChartsOption)[] = [
   () => ({
-    graphic: createTitleGraphic(
-      "기업 재무지표 비교",
-      "주요 재무 지표를 평행좌표로 비교하여 기업간 특성을 파악합니다.",
-    ),
     parallelAxis: [
       {
         dim: 0,

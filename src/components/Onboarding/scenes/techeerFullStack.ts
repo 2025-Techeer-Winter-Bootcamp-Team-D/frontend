@@ -3,8 +3,6 @@ import Scene, { type GetOption } from "./Scene";
 import {
   photoColors,
   techeerFont,
-  createTitleGraphic,
-  smoothMorphAnimation,
   techeerEasing,
 } from "../styles/techeerStyle";
 
@@ -66,10 +64,6 @@ const morphTransition = {
 const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
   // Step 1: Sunburst
   () => ({
-    graphic: createTitleGraphic(
-      "섹터별 계층 구조",
-      "주요 산업 섹터와 하위 분야의 관계를 시각화합니다.",
-    ),
     series: [
       {
         type: "sunburst",
@@ -116,10 +110,6 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
   }),
   // Step 2: Treemap (morphs from Sunburst)
   () => ({
-    graphic: createTitleGraphic(
-      "섹터별 계층 구조",
-      "주요 산업 섹터와 하위 분야의 관계를 시각화합니다.",
-    ),
     series: [
       {
         type: "treemap",
