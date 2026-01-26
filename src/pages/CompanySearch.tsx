@@ -376,7 +376,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         </div>
 
         {/* 우측 사이드바: 나의 관심 기업 (Sticky 적용) */}
-        <div className="lg:col-span-1 sticky top-8">
+        <div className="lg:col-span-1 sticky top-14">
           <GlassCard className="p-0 overflow-hidden flex flex-col bg-white border-2 border-shinhan-light/50 shadow-xl">
             <div className="p-5 border-b border-gray-100 bg-shinhan-blue text-white">
               <h2 className="text-lg font-bold flex items-center gap-2">

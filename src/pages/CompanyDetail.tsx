@@ -538,12 +538,17 @@ const CompanyDetail: React.FC<DetailProps> = ({
     };
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        // 섹션이 화면 상단에 걸쳐있을 때 해당 탭 활성화
-        if (entry.isIntersecting) {
-          setActiveTab(entry.target.id);
-        }
+      // DOM 순서대로 정렬하여 가장 위에 있는 섹션을 활성화
+      const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+      if (visibleEntries.length === 0) return;
+
+      // 가장 위쪽에 있는 섹션 찾기
+      const topEntry = visibleEntries.reduce((top, entry) => {
+        const topRect = top.boundingClientRect;
+        const entryRect = entry.boundingClientRect;
+        return entryRect.top < topRect.top ? entry : top;
       });
+      setActiveTab(topEntry.target.id);
     };
 
     const observer = new IntersectionObserver(
