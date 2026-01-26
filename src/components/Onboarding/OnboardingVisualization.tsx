@@ -25,7 +25,7 @@ import type Scene from "./scenes/Scene";
 import type { EChartsInstance } from "./scenes/Scene";
 
 // 페이드 전환 duration (ms)
-const FADE_DURATION = 400;
+const FADE_DURATION = 300;
 
 // ECharts 컴포넌트 등록
 echarts.use([

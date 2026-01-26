@@ -76,7 +76,7 @@ export const techeerSankeyChart = new Scene({
   option: sankeyOptions,
   file: "techeerFinancialCharts",
   title: "Sankey",
-  duration: 2000,
+  duration: 1500,
   dark: false,
   background: "#FFFFFF",
 });
@@ -147,7 +147,7 @@ export const techeerIndustryRadar = new Scene({
   option: industryRadarOptions,
   file: "techeerFinancialCharts",
   title: "Industry Radar",
-  duration: 2000,
+  duration: 1500,
   dark: false,
   background: "#FFFFFF",
 });
@@ -260,7 +260,7 @@ export const techeerParallelChart = new Scene({
   option: parallelOptions,
   file: "techeerFinancialCharts",
   title: "Parallel Coordinates",
-  duration: 2000,
+  duration: 1500,
   dark: false,
   background: "#FFFFFF",
 });

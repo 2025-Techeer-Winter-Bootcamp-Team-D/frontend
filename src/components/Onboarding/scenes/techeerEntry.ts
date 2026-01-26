@@ -262,7 +262,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
           },
           data: roseData,
           animationType: "expansion",
-          animationDuration: 2500,
+          animationDuration: 1800,
           animationEasing: "cubicOut",
           ...morphAnimation,
         },
@@ -415,7 +415,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
 export default new Scene({
   option: entryOptions,
   file: "techeerEntry",
-  duration: [2500, 1200],
+  duration: [2000, 800],
   dark: false,
   background: "linear-gradient(135deg, #f0f7ff 0%, #eef2ff 60%, #e0e7ff 100%)",
 });

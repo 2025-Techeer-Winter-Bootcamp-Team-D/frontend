@@ -50,8 +50,8 @@ const hierarchyData = [
 
 // 모핑 애니메이션 설정
 const morphTransition = {
-  animationDuration: 1500,
-  animationDurationUpdate: 1500,
+  animationDuration: 1000,
+  animationDurationUpdate: 1000,
   animationEasing: techeerEasing.smooth,
   animationEasingUpdate: techeerEasing.smooth,
   universalTransition: {
@@ -157,7 +157,7 @@ export const techeerSunburstToTreemap = new Scene({
   option: sunburstToTreemapOptions,
   file: "techeerFullStack",
   title: "Sunburst to Treemap",
-  duration: [2000, 2000],
+  duration: [1500, 1500],
   dark: false,
   background: "#FFFFFF",
 });

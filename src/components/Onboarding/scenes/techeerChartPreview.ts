@@ -4,8 +4,8 @@ import { photoColors, techeerFont, CHART_CENTER } from "../styles/techeerStyle";
 
 // 모핑 애니메이션 설정
 const morphAnimation = {
-  animationDuration: 1200,
-  animationDurationUpdate: 1200,
+  animationDuration: 800,
+  animationDurationUpdate: 800,
   animationEasing: "cubicInOut" as const,
   animationEasingUpdate: "cubicInOut" as const,
   universalTransition: {
@@ -129,7 +129,7 @@ export const techeerBubbleChart = new Scene({
   option: bubbleOptions,
   file: "techeerChartPreview",
   title: "Market Energy",
-  duration: 2500,
+  duration: 1800,
   dark: false,
   background: "#FFFFFF",
 });
@@ -201,7 +201,7 @@ export const techeerPieToRoseChart = new Scene({
   option: pieToRoseOptions,
   file: "techeerChartPreview",
   title: "Pie to Rose",
-  duration: [2000, 2000],
+  duration: [1500, 1500],
   dark: false,
   background: "#FFFFFF",
 });
