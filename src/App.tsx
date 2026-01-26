@@ -14,6 +14,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
+import FavoritesSidebar from "./components/Layout/FavoritesSidebar";
 import Dashboard from "./pages/Dashboard";
 import CompanyDetail from "./pages/CompanyDetail";
 import IndustryAnalysis from "./pages/IndustryCompare";
@@ -56,9 +57,14 @@ function CompanyDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { isAuthenticated: isLoggedIn } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
 
   // 네비게이션 처리 함수
   const handlePageChange = (page: PageView) => {
+    if (page === PageView.LOGIN) {
+      setShowLogin(true);
+      return;
+    }
     // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
     navigate("/", { state: { targetPage: page } });
   };
@@ -117,6 +123,14 @@ function CompanyDetailPage() {
           </p>
         </div>
       </footer>
+
+      {/* 즐겨찾기 사이드바 */}
+      <FavoritesSidebar onShowLogin={() => setShowLogin(true)} />
+
+      {/* 로그인 모달 */}
+      {showLogin && (
+        <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
+      )}
     </div>
   );
 }
@@ -316,6 +330,11 @@ function App() {
           navigate(`/company/${code}`);
         }}
       />
+
+      {/* 즐겨찾기 사이드바 (대시보드 제외) */}
+      {!isDashboard && (
+        <FavoritesSidebar onShowLogin={() => setShowLogin(true)} />
+      )}
     </div>
   );
 }
