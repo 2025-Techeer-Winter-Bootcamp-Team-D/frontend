@@ -72,6 +72,14 @@ class Scene {
     return this._dark;
   }
 
+  getOptions(): (GetOption | EChartsOption)[] {
+    return this._options;
+  }
+
+  getDurations(): number[] {
+    return this._durations;
+  }
+
   reset(): void {
     this._currentIndex = 0;
   }

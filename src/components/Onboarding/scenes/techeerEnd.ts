@@ -1,9 +1,5 @@
 import Scene, { type GetOption } from "./Scene";
-import {
-  techeerGradients,
-  techeerFont,
-  techeerColorPalette,
-} from "../styles/techeerStyle";
+import { techeerFont, techeerColorPalette } from "../styles/techeerStyle";
 
 export function getTecheerEndingFontSize(chart: { getWidth: () => number }) {
   return Math.round(chart.getWidth() / 12);
@@ -32,8 +28,7 @@ const endingOptions: GetOption[] = [
         },
         style: {
           fill: techeerColorPalette[i % techeerColorPalette.length],
-          shadowBlur: 20,
-          shadowColor: techeerColorPalette[i % techeerColorPalette.length],
+          opacity: 0.7,
         },
         keyframeAnimation: {
           duration: 2000,
@@ -111,13 +106,13 @@ const endingOptions: GetOption[] = [
             },
           },
 
-          // Main text - BIZSCOPE
+          // Main text - QUASA
           {
             type: "text",
             left: "center",
             top: "center",
             style: {
-              text: "BIZSCOPE",
+              text: "QUASA",
               fontSize: size,
               fontWeight: 800,
               fontFamily: techeerFont,
@@ -148,9 +143,9 @@ const endingOptions: GetOption[] = [
                 {
                   percent: 1,
                   style: {
-                    fill: "#F8FAFC",
-                    textShadowColor: "rgba(99, 102, 241, 0.8)",
-                    textShadowBlur: 20,
+                    fill: "#1E293B",
+                    textShadowColor: "rgba(99, 102, 241, 0.5)",
+                    textShadowBlur: 15,
                   },
                 },
               ],
@@ -163,11 +158,11 @@ const endingOptions: GetOption[] = [
             left: "center",
             top: centerY + size * 0.7,
             style: {
-              text: "Financial Intelligence Platform",
+              text: "QUAntitative Stock Analysis",
               fontSize: size * 0.25,
               fontWeight: 500,
               fontFamily: techeerFont,
-              fill: "#94A3B8",
+              fill: "#475569",
               opacity: 0,
             },
             keyframeAnimation: {
@@ -213,6 +208,6 @@ export default new Scene({
   duration: 999999999, // 엔딩 화면 유지 (사실상 무한)
   file: "techeerEnd",
   title: "",
-  dark: true,
-  background: techeerGradients.dark,
+  dark: false,
+  background: "#FFFFFF",
 });

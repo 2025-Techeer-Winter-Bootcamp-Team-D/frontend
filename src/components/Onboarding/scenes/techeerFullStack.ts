@@ -5,11 +5,11 @@ import {
   techeerFont,
   createTitleGraphic,
   smoothMorphAnimation,
-  universalTransitionConfig,
+  techeerEasing,
 } from "../styles/techeerStyle";
 
-// Sunburst용 계층 데이터
-const sunburstData = [
+// 공통 계층 데이터
+const hierarchyData = [
   {
     name: "반도체",
     id: "semiconductor",
@@ -54,8 +54,17 @@ const sunburstData = [
   },
 ];
 
-// Sunburst Scene
-const fullStackSunburstOptions: (GetOption | EChartsOption)[] = [
+// 모핑 애니메이션 설정
+const morphTransition = {
+  animationDuration: 1500,
+  animationDurationUpdate: 1500,
+  animationEasing: techeerEasing.smooth,
+  animationEasingUpdate: techeerEasing.smooth,
+};
+
+// ========== Sunburst -> Treemap (Combined) ==========
+const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
+  // Step 1: Sunburst
   () => ({
     graphic: createTitleGraphic(
       "섹터별 계층 구조",
@@ -64,6 +73,7 @@ const fullStackSunburstOptions: (GetOption | EChartsOption)[] = [
     series: [
       {
         type: "sunburst",
+        id: "hierarchy-morph",
         radius: ["18%", "78%"],
         center: ["52%", "55%"],
         nodeClick: false,
@@ -95,76 +105,25 @@ const fullStackSunburstOptions: (GetOption | EChartsOption)[] = [
             itemStyle: { borderRadius: 8 },
           },
         ],
-        ...smoothMorphAnimation,
-        universalTransition: universalTransitionConfig,
-        data: sunburstData,
+        ...morphTransition,
+        universalTransition: {
+          enabled: true,
+          seriesKey: "hierarchy",
+        },
+        data: hierarchyData,
       },
     ],
   }),
-];
-
-export const techeerFullStackSunburst = new Scene({
-  option: fullStackSunburstOptions,
-  file: "techeerFullStack",
-  title: "Sunburst",
-  duration: 2000,
-  dark: false,
-  background: "#FFFFFF",
-});
-
-// Treemap 데이터
-const treemapData = [
-  {
-    name: "반도체",
-    id: "semiconductor",
-    itemStyle: { color: photoColors[0] },
-    children: [
-      { name: "AI 반도체", value: 100, id: "ai-chip" },
-      { name: "HBM", value: 95, id: "hbm" },
-      { name: "NPU", value: 92, id: "npu" },
-      { name: "파운드리", value: 88, id: "foundry" },
-    ],
-  },
-  {
-    name: "AI/SW",
-    id: "ai-sw",
-    itemStyle: { color: photoColors[1] },
-    children: [
-      { name: "생성형 AI", value: 98, id: "genai" },
-      { name: "LLM", value: 96, id: "llm" },
-      { name: "온디바이스", value: 90, id: "ondevice" },
-    ],
-  },
-  {
-    name: "모빌리티",
-    id: "mobility",
-    itemStyle: { color: photoColors[2] },
-    children: [
-      { name: "자율주행", value: 88, id: "autonomous" },
-      { name: "로보틱스", value: 85, id: "robotics" },
-    ],
-  },
-  {
-    name: "인프라",
-    id: "infra",
-    itemStyle: { color: photoColors[4] },
-    children: [
-      { name: "클라우드", value: 78, id: "cloud" },
-      { name: "데이터센터", value: 75, id: "datacenter" },
-    ],
-  },
-];
-
-// Treemap Scene
-const fullStackTreemapOptions: (GetOption | EChartsOption)[] = [
+  // Step 2: Treemap (morphs from Sunburst)
   () => ({
     graphic: createTitleGraphic(
-      "시장 비중 분석",
-      "각 섹터가 차지하는 시장 비중을 트리맵으로 표현합니다.",
+      "섹터별 계층 구조",
+      "주요 산업 섹터와 하위 분야의 관계를 시각화합니다.",
     ),
     series: [
       {
         type: "treemap",
+        id: "hierarchy-morph",
         top: 180,
         left: 80,
         right: 80,
@@ -201,21 +160,24 @@ const fullStackTreemapOptions: (GetOption | EChartsOption)[] = [
             itemStyle: { borderWidth: 3, gapWidth: 4, borderRadius: 6 },
           },
         ],
-        ...smoothMorphAnimation,
-        universalTransition: universalTransitionConfig,
-        data: treemapData,
+        ...morphTransition,
+        universalTransition: {
+          enabled: true,
+          seriesKey: "hierarchy",
+        },
+        data: hierarchyData,
       },
     ],
   }),
 ];
 
-export const techeerFullStackTreemap = new Scene({
-  option: fullStackTreemapOptions,
+export const techeerSunburstToTreemap = new Scene({
+  option: sunburstToTreemapOptions,
   file: "techeerFullStack",
-  title: "Treemap",
-  duration: 2000,
+  title: "Sunburst to Treemap",
+  duration: [2000, 2000],
   dark: false,
   background: "#FFFFFF",
 });
 
-export default techeerFullStackSunburst;
+export default techeerSunburstToTreemap;

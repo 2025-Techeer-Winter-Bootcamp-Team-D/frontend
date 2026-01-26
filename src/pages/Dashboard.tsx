@@ -9,14 +9,7 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Search,
-  Loader2,
-  TrendingUp,
-  Bell,
-  X,
-  ChevronDown,
-} from "lucide-react";
+import { Search, Loader2, Bell, X, ChevronDown } from "lucide-react";
 
 // 온보딩 시각화 컴포넌트 (지연 로딩)
 const OnboardingVisualization = lazy(
@@ -266,26 +259,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [visibleSections, setVisibleSections] = useState<Set<string>>(
     new Set(["hero"]),
   );
-
-  // 온보딩 상태 - 항상 표시 (테스트용)
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  // TODO: 배포 시 아래 코드로 복원
-  // const [showOnboarding, setShowOnboarding] = useState(() => {
-  //   const hasSeenOnboarding = sessionStorage.getItem("hasSeenOnboarding");
-  //   return !hasSeenOnboarding;
-  // });
-
-  // 온보딩 완료 핸들러
-  const handleOnboardingComplete = useCallback(() => {
-    setShowOnboarding(false);
-    sessionStorage.setItem("hasSeenOnboarding", "true");
-  }, []);
-
-  // 온보딩 건너뛰기
-  const handleSkipOnboarding = useCallback(() => {
-    setShowOnboarding(false);
-    sessionStorage.setItem("hasSeenOnboarding", "true");
-  }, []);
 
   // 기업 검색 쿼리
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
@@ -583,11 +556,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     const handleScroll = () => {
       if (!scrollRef.current) return;
       onShowNavbar(scrollRef.current.scrollTop > 100);
-
-      // 스크롤하면 온보딩 건너뛰기
-      if (scrollRef.current.scrollTop > 50 && showOnboarding) {
-        handleSkipOnboarding();
-      }
     };
 
     const div = scrollRef.current;
@@ -596,76 +564,36 @@ const Dashboard: React.FC<DashboardProps> = ({
       observers.forEach((obs) => obs?.disconnect());
       div?.removeEventListener("scroll", handleScroll);
     };
-  }, [onShowNavbar, showOnboarding, handleSkipOnboarding]);
+  }, [onShowNavbar]);
 
   return (
     <div
       ref={scrollRef}
       className="h-full overflow-y-auto bg-slate-50 scroll-smooth snap-y snap-proximity"
     >
-      {/* 1. HERO SECTION - 온보딩 또는 기본 히어로 */}
+      {/* 1. HERO SECTION - 온보딩 시각화 */}
       <section
         id="hero"
         className="h-screen w-full relative snap-start overflow-hidden"
       >
-        {showOnboarding ? (
-          // 온보딩 시각화
-          <div className="absolute inset-0 z-10">
-            <Suspense
-              fallback={
-                <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                  <Loader2 className="animate-spin text-blue-500" size={48} />
-                </div>
-              }
-            >
-              <OnboardingVisualization
-                onComplete={handleOnboardingComplete}
-                autoPlay={true}
-                loop={false}
-              />
-            </Suspense>
-            {/* 건너뛰기 버튼 */}
-            <button
-              onClick={handleSkipOnboarding}
-              className="absolute top-6 right-6 z-50 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full border border-white/20 transition-all"
-            >
-              건너뛰기
-            </button>
-            {/* 스크롤 다운 인디케이터 */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 z-20">
-              <span className="text-xs tracking-widest uppercase">
-                Scroll to Skip
-              </span>
-              <ChevronDown className="animate-bounce" size={24} />
-            </div>
-          </div>
-        ) : (
-          // 기본 히어로 섹션
-          <div className="w-full h-full flex flex-col items-center justify-center bg-[#0046FF] px-6">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-            <div
-              className={`relative z-10 max-w-4xl text-center transition-all duration-1000 ${visibleSections.has("hero") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-bold mb-8">
-                <TrendingUp size={14} /> NEXT-GEN QUANT TERMINAL
+        <div className="absolute inset-0 z-10">
+          <Suspense
+            fallback={
+              <div className="w-full h-full flex items-center justify-center bg-slate-900">
+                <Loader2 className="animate-spin text-blue-500" size={48} />
               </div>
-              <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-8 tracking-tight">
-                데이터로 읽는
-                <br />
-                기업의 <span className="text-blue-300">미래 가치</span>
-              </h1>
-            </div>
-            {/* 스크롤 다운 인디케이터 */}
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 z-10">
-              <span className="text-xs tracking-widest uppercase">
-                Scroll Down
-              </span>
-              <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center pt-2">
-                <div className="w-1.5 h-3 bg-white/60 rounded-full animate-bounce"></div>
-              </div>
-            </div>
+            }
+          >
+            <OnboardingVisualization autoPlay={true} loop={false} />
+          </Suspense>
+          {/* 스크롤 다운 인디케이터 */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 z-20">
+            <span className="text-xs tracking-widest uppercase">
+              Scroll Down
+            </span>
+            <ChevronDown className="animate-bounce" size={24} />
           </div>
-        )}
+        </div>
       </section>
 
       {/* 2. QUANT ANALYSIS (평형좌표계) SECTION */}

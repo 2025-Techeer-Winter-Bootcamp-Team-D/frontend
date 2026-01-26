@@ -1,30 +1,24 @@
 import techeerEntry from "./techeerEntry";
 import {
   techeerBubbleChart,
-  techeerPieChart,
-  techeerRoseChart,
+  techeerPieToRoseChart,
 } from "./techeerChartPreview";
 import {
   techeerSankeyChart,
   techeerIndustryRadar,
   techeerParallelChart,
 } from "./techeerFinancialCharts";
-import {
-  techeerFullStackSunburst,
-  techeerFullStackTreemap,
-} from "./techeerFullStack";
+import { techeerSunburstToTreemap } from "./techeerFullStack";
 import techeerEnd from "./techeerEnd";
 
 export const scenes = [
   techeerEntry,
   techeerBubbleChart,
-  techeerPieChart,
-  techeerRoseChart,
+  techeerPieToRoseChart,
   techeerSankeyChart,
   techeerIndustryRadar,
   techeerParallelChart,
-  techeerFullStackSunburst,
-  techeerFullStackTreemap,
+  techeerSunburstToTreemap,
   techeerEnd,
 ];
 
