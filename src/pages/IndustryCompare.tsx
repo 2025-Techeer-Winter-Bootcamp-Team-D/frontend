@@ -608,6 +608,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     return SAMPLE_STOCKS;
   }, [companiesData, currentIndustryInfo]);
 
+  // ROE 평균값 계산 (밸류에이션 차트 기준선용)
+  const avgRoe = useMemo(() => {
+    if (companiesData.length === 0) return 0;
+    const sum = companiesData.reduce((acc, c) => acc + c.roe, 0);
+    return Math.round((sum / companiesData.length) * 10) / 10; // 소수점 1자리
+  }, [companiesData]);
+
   const filteredIds = useMemo(() => {
     const ids = new Set<string>();
     chartStocksData.forEach((stock) => {
@@ -683,7 +690,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           <select
             value={selectedIndustry}
             onChange={(e) => setSelectedIndustry(e.target.value as IndustryKey)}
-            className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-sm font-medium text-slate-700 cursor-pointer hover:border-shinhan-blue focus:outline-none focus:ring-2 focus:ring-shinhan-blue/20 focus:border-shinhan-blue transition-all shadow-sm h-full"
+            className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-sm font-medium text-slate-700 cursor-pointer hover:border-[#0046ff] focus:outline-none focus:ring-2 focus:ring-[#0046ff]/20 focus:border-[#0046ff] transition-all shadow-sm h-full"
           >
             {Object.entries(INDUSTRY_NAMES).map(([key, info]) => (
               <option key={key} value={key}>
@@ -703,7 +710,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         <div className="lg:col-span-2 flex flex-col">
           <div className="mb-6">
             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
-              <TrendingUp size={20} className="text-shinhan-blue" />
+              <TrendingUp size={20} className="text-[#0046ff]" />
               {currentIndustryInfo.indexName} 추이
             </h3>
             <div className="flex justify-between items-end">
@@ -727,7 +734,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     onClick={() => setTimeRange(p as TimeRange)}
                     className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                       timeRange === p
-                        ? "bg-shinhan-blue text-white shadow-md shadow-blue-500/30"
+                        ? "bg-[#0046ff] text-white shadow-md shadow-blue-500/30"
                         : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                     }`}
                   >
@@ -737,7 +744,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               </div>
             </div>
           </div>
-          <div className="flex-1 w-full min-h-[200px]">
+          <div
+            className="flex-1 w-full min-h-[200px] outline-none **:outline-none"
+            tabIndex={-1}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
                 <defs>
@@ -819,11 +829,12 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           {/* Content */}
           <div className="relative z-10 p-6 flex flex-col h-full">
             <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-              <Info size={18} className="text-shinhan-gold" />
               산업분야 전망
             </h3>
             {loading ? (
-              <p className="text-white/60 text-sm">로딩 중...</p>
+              <p className="text-white/60 text-sm">
+                로딩 중입니다. 잠시만 기다려 주십시오.
+              </p>
             ) : error ? (
               <p className="text-red-300 text-sm">{error}</p>
             ) : (
@@ -1260,7 +1271,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       dataKey="x"
                       name="ROE"
                       unit="%"
-                      domain={["auto", "auto"]}
+                      domain={[
+                        (dataMin: number) => Math.min(dataMin, -5),
+                        (dataMax: number) => Math.max(dataMax, avgRoe + 5),
+                      ]}
                       tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
                       stroke="#94a3b8"
                       axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
@@ -1270,7 +1284,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       dataKey="y"
                       name="PBR"
                       unit="배"
-                      domain={["auto", "auto"]}
+                      domain={[
+                        (dataMin: number) => Math.min(dataMin, 0),
+                        (dataMax: number) => Math.max(dataMax, 1.5),
+                      ]}
                       tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
                       stroke="#94a3b8"
                       axisLine={{ strokeDasharray: "3 3", strokeOpacity: 0.1 }}
@@ -1278,7 +1295,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     <ZAxis
                       type="number"
                       dataKey="z"
-                      range={[100, 1000]}
+                      domain={["dataMin", "dataMax"]}
+                      range={[50, 400]}
                       name="시가총액"
                     />
                     <Tooltip
@@ -1339,7 +1357,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
 
                     {/* Highlight the 'Target' Quadrant (High ROE, Low PBR) */}
                     <ReferenceArea
-                      x1={10}
+                      x1={avgRoe}
                       x2={100}
                       y1={0}
                       y2={1}
@@ -1364,7 +1382,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       cursor="pointer"
                     >
                       {companiesData.map((company, index) => {
-                        const isTarget = company.roe >= 10 && company.pbr <= 1;
+                        const isTarget =
+                          company.roe >= avgRoe && company.pbr <= 1;
                         return (
                           <Cell
                             key={`cell-${index}`}
@@ -1377,17 +1396,18 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       })}
                     </Scatter>
 
-                    {/* Quadrant Lines */}
+                    {/* 기준선: ROE 평균, PBR 1배 */}
                     <ReferenceLine
-                      x={10}
+                      x={avgRoe}
                       stroke="#334155"
                       strokeWidth={1}
                       label={{
-                        value: "ROE 10%",
-                        position: "insideTopRight",
+                        value: `ROE ${avgRoe}% (평균)`,
+                        position: "insideTopLeft",
                         fill: "#334155",
                         fontSize: 11,
                         fontWeight: "bold",
+                        offset: 10,
                       }}
                     />
                     <ReferenceLine
@@ -1395,25 +1415,12 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       stroke="#334155"
                       strokeWidth={1}
                       label={{
-                        value: "PBR 1배",
-                        position: "insideTopRight",
+                        value: "PBR 1배 (주가순자산비율)",
+                        position: "insideBottomLeft",
                         fill: "#334155",
                         fontSize: 11,
                         fontWeight: "bold",
-                      }}
-                    />
-
-                    {/* Quadrant Labels */}
-                    <ReferenceLine
-                      x={12}
-                      y={0.5}
-                      stroke="none"
-                      label={{
-                        value: "저평가·고수익 (Target)",
-                        position: "center",
-                        fill: "#0046FF",
-                        fontSize: 13,
-                        fontWeight: "bold",
+                        offset: 10,
                       }}
                     />
                   </ScatterChart>
@@ -1460,7 +1467,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     <ZAxis
                       type="number"
                       dataKey="z"
-                      range={[100, 1000]}
+                      domain={["dataMin", "dataMax"]}
+                      range={[50, 400]}
                       name="시가총액"
                     />
                     <Tooltip
@@ -1519,8 +1527,8 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     {/* Highlight High Efficiency (High ROE, Low Debt) */}
                     <ReferenceArea
                       x1={0}
-                      x2={150}
-                      y1={10}
+                      x2={100}
+                      y1={avgRoe}
                       y2={100}
                       fill="#10B981"
                       fillOpacity={0.08}
@@ -1544,7 +1552,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     >
                       {companiesData.map((company, index) => {
                         const isQuality =
-                          company.roe >= 10 && company.debtRatio <= 150;
+                          company.roe >= avgRoe && company.debtRatio <= 100;
                         return (
                           <Cell
                             key={`cell-leverage-${index}`}
@@ -1558,7 +1566,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     </Scatter>
 
                     <ReferenceLine
-                      x={150}
+                      x={100}
                       stroke="#334155"
                       strokeWidth={1}
                       label={{
@@ -1570,12 +1578,12 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       }}
                     />
                     <ReferenceLine
-                      y={10}
+                      y={avgRoe}
                       stroke="#334155"
                       strokeWidth={1}
                       label={{
-                        value: "ROE 10%",
-                        position: "insideTopRight",
+                        value: `ROE ${avgRoe}% (평균)`,
+                        position: "insideBottomLeft",
                         fontSize: 11,
                         fill: "#334155",
                         fontWeight: "bold",

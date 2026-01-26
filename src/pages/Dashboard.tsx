@@ -126,7 +126,7 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
             <span className="text-blue-400 text-xs font-bold tracking-widest uppercase mb-1 block">
               Real-time Signals
             </span>
-            <h3 className="text-2xl font-bold">AI 속보 브리핑</h3>
+            <h3 className="text-2xl font-bold">속보 브리핑</h3>
           </div>
           <div className="p-2 bg-red-500/20 rounded-full">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
@@ -935,7 +935,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   AI 이슈포착
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
-                  수만 개의 뉴스 데이터 속에서{" "}
+                  수천 개의 뉴스 데이터 속에서{" "}
                   <span className="text-blue-600 font-bold">
                     인공지능이 추출한 핵심 마켓 시그널
                   </span>
