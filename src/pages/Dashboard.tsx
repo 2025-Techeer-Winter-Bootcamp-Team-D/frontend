@@ -4,8 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, TrendingUp, Bell, X } from "lucide-react";
 import {
   SkeletonNewsList,
-  SkeletonChart,
-  SkeletonMarketCard,
   SkeletonSearchResults,
   SkeletonDisclosure,
   Skeleton,
