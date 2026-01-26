@@ -157,7 +157,7 @@ export const techeerSunburstToTreemap = new Scene({
   option: sunburstToTreemapOptions,
   file: "techeerFullStack",
   title: "Sunburst to Treemap",
-  duration: [1500, 1500],
+  duration: [1600, 1600],
   dark: false,
   background: "#FFFFFF",
 });

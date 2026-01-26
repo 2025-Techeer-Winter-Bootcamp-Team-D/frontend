@@ -2,16 +2,41 @@ import type { EChartsOption } from "echarts";
 import Scene, { type GetOption } from "./Scene";
 import { techeerFont, smoothMorphAnimation } from "../styles/techeerStyle";
 
-// Sankey 데이터
+// Sankey 데이터 - 복잡한 손익흐름도
 const sankeyLinks = [
-  { source: "DX 부문", target: "총매출", value: 159.6 },
-  { source: "DS 부문", target: "총매출", value: 101.4 },
-  { source: "SDC", target: "총매출", value: 26.7 },
-  { source: "Harman", target: "총매출", value: 12.2 },
-  { source: "총매출", target: "비용구조", value: 265.5 },
-  { source: "총매출", target: "순수익", value: 34.5 },
-  { source: "비용구조", target: "원가비용", value: 186.6 },
-  { source: "비용구조", target: "판관비", value: 81.6 },
+  // 지역별 매출 → 사업부
+  { source: "아시아태평양", target: "DX 부문", value: 85 },
+  { source: "아시아태평양", target: "DS 부문", value: 65 },
+  { source: "미주", target: "DX 부문", value: 45 },
+  { source: "미주", target: "DS 부문", value: 25 },
+  { source: "미주", target: "SDC", value: 12 },
+  { source: "유럽", target: "DX 부문", value: 30 },
+  { source: "유럽", target: "DS 부문", value: 15 },
+  { source: "유럽", target: "Harman", value: 8 },
+  { source: "국내", target: "DS 부문", value: 20 },
+  { source: "국내", target: "SDC", value: 15 },
+  { source: "국내", target: "Harman", value: 5 },
+  // 사업부 → 총매출
+  { source: "DX 부문", target: "총매출", value: 160 },
+  { source: "DS 부문", target: "총매출", value: 125 },
+  { source: "SDC", target: "총매출", value: 27 },
+  { source: "Harman", target: "총매출", value: 13 },
+  // 총매출 → 비용/이익
+  { source: "총매출", target: "매출원가", value: 210 },
+  { source: "총매출", target: "매출총이익", value: 115 },
+  // 매출원가 → 세부비용
+  { source: "매출원가", target: "원자재비", value: 95 },
+  { source: "매출원가", target: "제조비", value: 115 },
+  // 매출총이익 → 영업이익/판관비
+  { source: "매출총이익", target: "영업이익", value: 65 },
+  { source: "매출총이익", target: "판관비", value: 50 },
+  // 영업이익 → 순이익/세금
+  { source: "영업이익", target: "순이익", value: 48 },
+  { source: "영업이익", target: "법인세", value: 17 },
+  // 판관비 → 세부비용
+  { source: "판관비", target: "R&D 투자", value: 22 },
+  { source: "판관비", target: "마케팅", value: 15 },
+  { source: "판관비", target: "관리비", value: 13 },
 ];
 
 // Parallel 데이터
@@ -35,13 +60,13 @@ const sankeyOptions: (GetOption | EChartsOption)[] = [
       {
         type: "sankey",
         id: "main",
-        top: "26%",
+        top: "12%",
         left: "8%",
         right: "8%",
-        bottom: "10%",
-        nodeWidth: 18,
-        nodeGap: 24,
-        layoutIterations: 32,
+        bottom: "12%",
+        nodeWidth: 14,
+        nodeGap: 16,
+        layoutIterations: 64,
         emphasis: { focus: "adjacency" },
         lineStyle: {
           color: "gradient",
@@ -55,15 +80,32 @@ const sankeyOptions: (GetOption | EChartsOption)[] = [
           color: "#1e293b",
         },
         data: [
+          // 지역
+          { name: "아시아태평양", itemStyle: { color: "#818cf8" } },
+          { name: "미주", itemStyle: { color: "#a5b4fc" } },
+          { name: "유럽", itemStyle: { color: "#c7d2fe" } },
+          { name: "국내", itemStyle: { color: "#6366f1" } },
+          // 사업부
           { name: "DX 부문", itemStyle: { color: "#3B82F6" } },
           { name: "DS 부문", itemStyle: { color: "#10B981" } },
           { name: "SDC", itemStyle: { color: "#F59E0B" } },
           { name: "Harman", itemStyle: { color: "#8B5CF6" } },
+          // 중간
           { name: "총매출", itemStyle: { color: "#4264FB" } },
-          { name: "비용구조", itemStyle: { color: "#64748b" } },
-          { name: "순수익", itemStyle: { color: "#10B981" } },
-          { name: "원가비용", itemStyle: { color: "#EF4444" } },
-          { name: "판관비", itemStyle: { color: "#F97316" } },
+          { name: "매출원가", itemStyle: { color: "#EF4444" } },
+          { name: "매출총이익", itemStyle: { color: "#10B981" } },
+          // 세부비용
+          { name: "원자재비", itemStyle: { color: "#94a3b8" } },
+          { name: "제조비", itemStyle: { color: "#cbd5e1" } },
+          // 이익/비용
+          { name: "영업이익", itemStyle: { color: "#22c55e" } },
+          { name: "판관비", itemStyle: { color: "#f472b6" } },
+          // 최종
+          { name: "순이익", itemStyle: { color: "#10B981" } },
+          { name: "법인세", itemStyle: { color: "#6b7280" } },
+          { name: "R&D 투자", itemStyle: { color: "#ef4444" } },
+          { name: "마케팅", itemStyle: { color: "#ec4899" } },
+          { name: "관리비", itemStyle: { color: "#9ca3af" } },
         ],
         links: sankeyLinks,
         ...smoothMorphAnimation,
@@ -76,7 +118,7 @@ export const techeerSankeyChart = new Scene({
   option: sankeyOptions,
   file: "techeerFinancialCharts",
   title: "Sankey",
-  duration: 1500,
+  duration: 2000,
   dark: false,
   background: "#FFFFFF",
 });
@@ -147,7 +189,7 @@ export const techeerIndustryRadar = new Scene({
   option: industryRadarOptions,
   file: "techeerFinancialCharts",
   title: "Industry Radar",
-  duration: 1500,
+  duration: 2000,
   dark: false,
   background: "#FFFFFF",
 });
@@ -260,7 +302,7 @@ export const techeerParallelChart = new Scene({
   option: parallelOptions,
   file: "techeerFinancialCharts",
   title: "Parallel Coordinates",
-  duration: 1500,
+  duration: 2000,
   dark: false,
   background: "#FFFFFF",
 });

@@ -293,7 +293,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
               opacity: 0,
             },
             keyframeAnimation: {
-              duration: 500,
+              duration: 800,
               keyframes: [
                 { percent: 0, style: { opacity: 1 } },
                 { percent: 1, style: { opacity: 0 } },
@@ -311,7 +311,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
               opacity: 0,
             },
             keyframeAnimation: {
-              duration: 500,
+              duration: 800,
               keyframes: [
                 { percent: 0, style: { opacity: 1 } },
                 { percent: 1, style: { opacity: 0 } },
@@ -329,7 +329,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
               opacity: 0,
             },
             keyframeAnimation: {
-              duration: 500,
+              duration: 800,
               keyframes: [
                 { percent: 0, style: { opacity: 1 } },
                 { percent: 1, style: { opacity: 0 } },
@@ -347,7 +347,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
               opacity: 0,
             },
             keyframeAnimation: {
-              duration: 500,
+              duration: 800,
               keyframes: [
                 { percent: 0, style: { opacity: 1 } },
                 { percent: 1, style: { opacity: 0 } },
@@ -365,7 +365,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
               opacity: 0,
             },
             keyframeAnimation: {
-              duration: 500,
+              duration: 800,
               keyframes: [
                 { percent: 0, style: { opacity: 1 } },
                 { percent: 1, style: { opacity: 0 } },
@@ -383,7 +383,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
               opacity: 0,
             },
             keyframeAnimation: {
-              duration: 500,
+              duration: 800,
               keyframes: [
                 { percent: 0, style: { opacity: 1 } },
                 { percent: 1, style: { opacity: 0 } },
@@ -415,7 +415,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
 export default new Scene({
   option: entryOptions,
   file: "techeerEntry",
-  duration: [2000, 800],
+  duration: [1600, 1000],
   dark: false,
   background: "linear-gradient(135deg, #f0f7ff 0%, #eef2ff 60%, #e0e7ff 100%)",
 });
