@@ -893,7 +893,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   )}
                   <button
                     type="button"
-                    onClick={() => navigate("/disclosures")}
+                    onClick={() => navigate("/search")}
                     className="w-full pt-2 flex items-center justify-center gap-2 cursor-pointer group"
                   >
                     <span className="text-sm font-semibold text-slate-500 group-hover:text-blue-600 transition-colors">

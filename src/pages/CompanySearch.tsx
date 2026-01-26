@@ -7,14 +7,27 @@ import {
   TrendingUp,
   ChevronRight,
   ChevronDown,
+  Bell,
 } from "lucide-react";
-import { Skeleton, SkeletonSearchResults } from "../components/Skeleton";
+import {
+  Skeleton,
+  SkeletonSearchResults,
+  SkeletonDisclosure,
+} from "../components/Skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { PageView } from "../types";
+import type { PageView, RecentReportItem } from "../types";
 import { getCompanyRankings } from "../api/ranking";
-import { searchCompanies, getStockOhlcv } from "../api/company";
+import {
+  searchCompanies,
+  getStockOhlcv,
+  getRecentReports,
+} from "../api/company";
 import type { RankingItem } from "../types";
 import { useStarred } from "../context/StarredContext";
+import { getKospi, getKosdaq } from "../api/indices";
+import type { MarketIndexData } from "../api/indices";
+import StockChart from "../components/Charts/StockChart";
+import IndustryRankingCard from "../components/Ranking/IndustryRankingCard";
 
 // 단일 종목의 주가 및 등락률을 조회하는 헬퍼
 const fetchPriceAndChange = async (
@@ -121,6 +134,43 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   // [추가] 관심기업 노출 개수 상태 (초기 7개)
   const [visibleCount, setVisibleCount] = useState(7);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // 시장 지수 데이터
+  const {
+    data: kospiData,
+    isLoading: isKospiLoading,
+    isError: isKospiError,
+  } = useQuery<MarketIndexData>({
+    queryKey: ["kospi"],
+    queryFn: getKospi,
+    refetchInterval: 60000,
+    retry: 2,
+  });
+
+  const {
+    data: kosdaqData,
+    isLoading: isKosdaqLoading,
+    isError: isKosdaqError,
+  } = useQuery<MarketIndexData>({
+    queryKey: ["kosdaq"],
+    queryFn: getKosdaq,
+    refetchInterval: 60000,
+    retry: 2,
+  });
+
+  // 최신 보고서 데이터
+  const {
+    data: recentReports = [],
+    isLoading: isReportsLoading,
+    isError: isReportsError,
+  } = useQuery<RecentReportItem[]>({
+    queryKey: ["recentReports"],
+    queryFn: async () => {
+      const response = await getRecentReports();
+      return response.data.data ?? [];
+    },
+    refetchInterval: 60000 * 5,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -240,6 +290,146 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
+      {/* 실시간 시장 대시보드 섹션 */}
+      <div className="mb-12">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-slate-900">
+            실시간 시장 대시보드
+          </h2>
+          <p className="text-slate-500 mt-1">
+            주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* KOSPI CARD */}
+              <GlassCard className="p-6 bg-white border border-slate-100 cursor-pointer hover:shadow-md transition-shadow min-h-[240px]">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
+                    KOSPI
+                  </h3>
+                  {kospiData && (
+                    <span
+                      className={`font-bold text-sm ${kospiData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
+                    >
+                      {kospiData.change_rate >= 0 ? "▲" : "▼"}{" "}
+                      {Math.abs(kospiData.change_rate).toFixed(2)}%
+                    </span>
+                  )}
+                </div>
+                <span className="text-3xl font-extrabold text-slate-900">
+                  {isKospiLoading ? (
+                    <Skeleton className="h-9 w-24 inline-block" />
+                  ) : isKospiError ? (
+                    <span className="text-red-400 text-base">연결 실패</span>
+                  ) : (
+                    (kospiData?.current_price?.toLocaleString() ?? "---")
+                  )}
+                </span>
+                <div className="h-24 mt-3">
+                  <StockChart
+                    color={
+                      kospiData && kospiData.change_rate >= 0
+                        ? "#10B981"
+                        : "#EF4444"
+                    }
+                    showAxes={false}
+                  />
+                </div>
+              </GlassCard>
+
+              {/* KOSDAQ CARD */}
+              <GlassCard className="p-6 bg-white border border-slate-100 cursor-pointer hover:shadow-md transition-shadow min-h-[240px]">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
+                    KOSDAQ
+                  </h3>
+                  {kosdaqData && (
+                    <span
+                      className={`font-bold text-sm ${kosdaqData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
+                    >
+                      {kosdaqData.change_rate >= 0 ? "▲" : "▼"}{" "}
+                      {Math.abs(kosdaqData.change_rate).toFixed(2)}%
+                    </span>
+                  )}
+                </div>
+                <span className="text-3xl font-extrabold text-slate-900">
+                  {isKosdaqLoading ? (
+                    <Skeleton className="h-9 w-24 inline-block" />
+                  ) : isKosdaqError ? (
+                    <span className="text-red-400 text-base">연결 실패</span>
+                  ) : (
+                    (kosdaqData?.current_price?.toLocaleString() ?? "---")
+                  )}
+                </span>
+                <div className="h-24 mt-3">
+                  <StockChart
+                    color={
+                      kosdaqData && kosdaqData.change_rate >= 0
+                        ? "#10B981"
+                        : "#EF4444"
+                    }
+                    showAxes={false}
+                  />
+                </div>
+              </GlassCard>
+            </div>
+            <IndustryRankingCard
+              onCompanyClick={(id) => navigate(`/company/${id}`)}
+            />
+          </div>
+
+          <div className="lg:col-span-4">
+            {/* 자본시장 공시 */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+              <h3 className="text-base font-bold mb-5 flex items-center gap-2">
+                <Bell size={18} className="text-blue-600" /> 자본시장 공시
+              </h3>
+              <div className="space-y-4">
+                {isReportsLoading ? (
+                  <SkeletonDisclosure count={4} />
+                ) : isReportsError ? (
+                  <div className="py-6 text-center text-slate-400 text-sm">
+                    공시 데이터를 불러오지 못했습니다
+                  </div>
+                ) : recentReports.length > 0 ? (
+                  recentReports.slice(0, 4).map((report) => (
+                    <div
+                      key={report.id}
+                      className="pb-3 border-b border-slate-50"
+                    >
+                      <span className="text-[10px] font-bold text-blue-600 uppercase">
+                        {report.company_name}
+                      </span>
+                      <a
+                        href={report.report_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-slate-800 mt-1 line-clamp-2 hover:text-blue-600 cursor-pointer block"
+                      >
+                        {report.report_name}
+                      </a>
+                      <span className="text-[11px] text-slate-400 mt-1 block">
+                        {new Date(report.submitted_at).toLocaleDateString(
+                          "ko-KR",
+                        )}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-6 text-center text-slate-400 text-sm">
+                    최신 공시가 없습니다
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 기업 검색 섹션 */}
       <div className="flex flex-col items-center justify-center mb-10 pt-4">
         <div className="w-full max-w-2xl relative" ref={searchContainerRef}>
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
