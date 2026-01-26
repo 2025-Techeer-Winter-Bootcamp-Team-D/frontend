@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
+import AIBubbleChart from "../components/Charts/AIBubbleChart";
 import {
   ArrowLeft,
   TrendingUp,
@@ -46,6 +48,7 @@ import {
   INDUTY_CODE_BY_KEY,
 } from "../hooks/useIndustryQueries";
 import { getStockOhlcv, getCompanyFinancials } from "../api/company";
+import { getNewsKeywords } from "../api/news";
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -247,6 +250,17 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     isLoading: loading,
     error,
   } = useIndustryData(selectedIndustry, timeRange);
+
+  // 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
+  const { data: keywordsData } = useQuery({
+    queryKey: ["newsKeywords"],
+    queryFn: async () => {
+      const response = await getNewsKeywords({ size: 15 });
+      return response.data?.data?.keywords ?? [];
+    },
+    staleTime: 1000 * 60 * 5, // 5분
+  });
+
   // API 응답 구조에 맞게 타입 정의
   const analysisResponse = analysisQuery.data as {
     data?: {
@@ -685,13 +699,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       {/* Sector Overview Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
         <div className="lg:col-span-2 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-shinhan-blue" />
-                {currentIndustryInfo.indexName} 추이
-              </h3>
-              <div className="flex items-baseline gap-2 mt-2">
+          <div className="mb-6">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
+              <TrendingUp size={20} className="text-shinhan-blue" />
+              {currentIndustryInfo.indexName} 추이
+            </h3>
+            <div className="flex justify-between items-end">
+              <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-slate-900">
                   {(latestIndexData?.current_value ?? 0).toLocaleString()}
                 </span>
@@ -704,22 +718,21 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   {latestIndexData?.change_percent ?? 0}%)
                 </span>
               </div>
-            </div>
-            <div className="flex gap-2">
-              {["1M", "3M", "6M", "1Y"].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setTimeRange(p as TimeRange)}
-                  // Rounded-md
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    timeRange === p
-                      ? "bg-shinhan-blue text-white shadow-md shadow-blue-500/30"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              <div className="flex gap-2">
+                {["1M", "3M", "6M", "1Y"].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setTimeRange(p as TimeRange)}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                      timeRange === p
+                        ? "bg-shinhan-blue text-white shadow-md shadow-blue-500/30"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div className="flex-1 w-full min-h-[200px]">
@@ -1543,42 +1556,56 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       {/* Section Divider */}
       <div className="border-t border-gray-200 my-8" />
 
-      {/* --- News Section --- */}
+      {/* --- News Section (Side by Side) --- */}
       <div className="mb-8">
-        <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
-          뉴스 <ChevronRight size={18} />
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {industryNews.length > 0 ? (
-            industryNews.slice(0, 6).map((news) => (
-              <GlassCard
-                key={news.id}
-                className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
-                onClick={() =>
-                  news.url
-                    ? window.open(news.url, "_blank")
-                    : setSelectedNews(news)
-                }
-              >
-                <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
-                  {news.title}
-                </h4>
-                <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
-                  {news.content}
-                </p>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
-                  <span>{news.source}</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                  <span>{news.time}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* 왼쪽: AI 이슈포착 버블 차트 */}
+          <div>
+            <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2 mb-4">
+              AI 이슈포착
+            </h3>
+            <GlassCard className="p-4">
+              <AIBubbleChart keywords={keywordsData} />
+            </GlassCard>
+          </div>
+
+          {/* 오른쪽: 뉴스 */}
+          <div>
+            <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2 mb-4">
+              뉴스
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {industryNews.length > 0 ? (
+                industryNews.slice(0, 4).map((news) => (
+                  <GlassCard
+                    key={news.id}
+                    className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
+                    onClick={() =>
+                      news.url
+                        ? window.open(news.url, "_blank")
+                        : setSelectedNews(news)
+                    }
+                  >
+                    <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
+                      {news.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                      {news.content}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
+                      <span>{news.source}</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                      <span>{news.time}</span>
+                    </div>
+                  </GlassCard>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-10 text-gray-400 bg-white/50 rounded-md border border-gray-100">
+                  해당 산업의 최신 뉴스가 없습니다.
                 </div>
-              </GlassCard>
-            ))
-          ) : (
-            // Rounded-md
-            <div className="col-span-3 text-center py-10 text-gray-400 bg-white/50 rounded-md border border-gray-100">
-              해당 산업의 최신 뉴스가 없습니다.
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
