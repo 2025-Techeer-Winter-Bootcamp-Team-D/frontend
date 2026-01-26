@@ -1,7 +1,13 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Loader2, TrendingUp, Bell, X } from "lucide-react";
+import { Search, TrendingUp, Bell, X } from "lucide-react";
+import {
+  SkeletonNewsList,
+  SkeletonSearchResults,
+  SkeletonDisclosure,
+  Skeleton,
+} from "../components/Skeleton";
 
 // Components
 import GlassCard from "../components/Layout/GlassCard";
@@ -114,8 +120,8 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
           </div>
         </div>
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="animate-spin" />
+          <div className="flex-1 overflow-hidden pr-2">
+            <SkeletonNewsList count={4} />
           </div>
         ) : (
           <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
@@ -152,8 +158,23 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
           ></div>
           <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
             {isNewsDetailLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <Loader2 className="animate-spin text-blue-600" size={32} />
+              <div className="py-8 space-y-4">
+                <div className="flex gap-2 mb-4">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-7 w-full" />
+                <Skeleton className="h-7 w-3/4" />
+                <div className="flex gap-3 py-4 border-b border-gray-100">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="space-y-3 pt-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
               </div>
             ) : (
               selectedNews && (
@@ -604,18 +625,40 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100 shadow-sm">
             {isStocksLoading ? (
-              <div className="h-[500px] flex items-center justify-center">
-                <Loader2 className="animate-spin text-blue-600" />
+              <div className="h-[500px] flex flex-col">
+                <div className="flex gap-4 mb-6">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-20" />
+                  ))}
+                </div>
+                <div className="flex-1 flex items-end gap-4 px-4">
+                  {[45, 70, 55, 80, 40, 65, 75, 50, 60, 85, 45, 70].map(
+                    (height, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 flex flex-col items-center gap-2"
+                      >
+                        <Skeleton
+                          className="w-full rounded"
+                          style={{ height: `${height}%` }}
+                        />
+                        <Skeleton className="h-3 w-12" />
+                      </div>
+                    ),
+                  )}
+                </div>
               </div>
-            ) : (
+            ) : visibleSections.has("parallel-coordinates") ? (
               <ParallelCoordinatesChart
                 data={stocks}
                 onFilterChange={setFilters}
                 filters={filters}
                 filteredIds={filteredIds}
-                onStockSelect={handleChartStockSelect}
+                onStockSelect={setSelectedStock}
                 selectedStockId={selectedStock?.id ?? null}
               />
+            ) : (
+              <div className="h-[600px]" />
             )}
           </div>
         </div>
@@ -661,10 +704,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                   <span className="text-4xl font-extrabold text-slate-900">
                     {isKospiLoading ? (
-                      <Loader2
-                        className="animate-spin text-slate-400"
-                        size={24}
-                      />
+                      <Skeleton className="h-10 w-28 inline-block" />
                     ) : isKospiError ? (
                       <span className="text-red-400 text-lg">연결 실패</span>
                     ) : (
@@ -703,10 +743,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                   <span className="text-4xl font-extrabold text-slate-900">
                     {isKosdaqLoading ? (
-                      <Loader2
-                        className="animate-spin text-slate-400"
-                        size={24}
-                      />
+                      <Skeleton className="h-10 w-28 inline-block" />
                     ) : isKosdaqError ? (
                       <span className="text-red-400 text-lg">연결 실패</span>
                     ) : (
@@ -754,12 +791,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 {showSearchResults && searchQuery.trim() && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 max-h-80 overflow-y-auto z-50">
                     {isSearching ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2
-                          className="animate-spin text-blue-500"
-                          size={24}
-                        />
-                      </div>
+                      <SkeletonSearchResults count={4} />
                     ) : searchResults.length > 0 ? (
                       searchResults
                         .slice(0, MAX_SEARCH_RESULTS)
@@ -814,12 +846,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </h3>
                 <div className="space-y-6">
                   {isReportsLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2
-                        className="animate-spin text-blue-500"
-                        size={24}
-                      />
-                    </div>
+                    <SkeletonDisclosure count={4} />
                   ) : isReportsError ? (
                     <div className="py-8 text-center text-slate-400 text-sm">
                       공시 데이터를 불러오지 못했습니다

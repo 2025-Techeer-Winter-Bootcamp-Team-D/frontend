@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GlassCard from "../Layout/GlassCard";
-import { TrendingUp, Building2, Loader2 } from "lucide-react";
+import { TrendingUp, Building2 } from "lucide-react";
+import { Skeleton } from "../Skeleton";
 import { getCompanyRankings } from "../../api/ranking";
 import { getIndustryRankings, getIndustryCompanies } from "../../api/industry";
 import { getStockOhlcv } from "../../api/company";
@@ -273,8 +274,17 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
           {/* 리스트 - 최대 4개만 표시 */}
           <div className="divide-y divide-gray-50">
             {isCompanyDataLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="animate-spin text-blue-400" />
+              <div className="py-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="px-6 py-4 flex items-center gap-4">
+                    <Skeleton className="w-8 h-6" />
+                    <div className="flex-1">
+                      <Skeleton className="h-5 w-28 mb-1" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="h-5 w-14" />
+                  </div>
+                ))}
               </div>
             ) : displayCompanyData.length === 0 ? (
               <div className="text-center py-12 text-gray-400 text-sm">
@@ -338,8 +348,13 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
           {/* 리스트 - 최대 5개만 표시 */}
           <div className="divide-y divide-gray-50">
             {isIndustryLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="animate-spin text-blue-400" />
+              <div className="py-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="px-6 py-4 flex items-center gap-4">
+                    <Skeleton className="w-8 h-6" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                ))}
               </div>
             ) : (
               industryRankings.slice(0, 5).map((item) => (
