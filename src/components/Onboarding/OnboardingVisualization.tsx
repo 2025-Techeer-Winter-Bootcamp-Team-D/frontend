@@ -149,7 +149,9 @@ const OnboardingVisualization: React.FC<OnboardingVisualizationProps> = ({
         typeof firstOption === "function"
           ? firstOption(chartRef.current)
           : firstOption;
-      chartRef.current.setOption(option);
+      if (option) {
+        chartRef.current.setOption(option);
+      }
     }
 
     setIsEntryDisplayed(true);
@@ -177,7 +179,9 @@ const OnboardingVisualization: React.FC<OnboardingVisualizationProps> = ({
         typeof secondOption === "function"
           ? secondOption(chartRef.current)
           : secondOption;
-      chartRef.current.setOption(option, { notMerge: false });
+      if (option) {
+        chartRef.current.setOption(option, { notMerge: false });
+      }
 
       // 두 번째 단계 duration 후 페이드 아웃 → 다음 씬으로 이동
       setTimeout(() => {
