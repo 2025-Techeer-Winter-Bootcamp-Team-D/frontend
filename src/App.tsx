@@ -58,11 +58,18 @@ function CompanyDetailPage() {
   const qc = useQueryClient();
   const { isAuthenticated: isLoggedIn } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
 
   // 네비게이션 처리 함수
   const handlePageChange = (page: PageView) => {
     if (page === PageView.LOGIN) {
+      setShowSignUp(false);
       setShowLogin(true);
+      return;
+    }
+    if (page === PageView.SIGN_UP) {
+      setShowLogin(false);
+      setShowSignUp(true);
       return;
     }
     // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
@@ -130,6 +137,13 @@ function CompanyDetailPage() {
       {/* 로그인 모달 */}
       {showLogin && (
         <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
+      )}
+      {/* 회원가입 모달 */}
+      {showSignUp && (
+        <SignUp
+          setPage={handlePageChange}
+          onClose={() => setShowSignUp(false)}
+        />
       )}
     </div>
   );
