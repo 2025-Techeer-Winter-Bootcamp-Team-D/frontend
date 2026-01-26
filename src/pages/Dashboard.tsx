@@ -634,18 +634,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                   ))}
                 </div>
                 <div className="flex-1 flex items-end gap-4 px-4">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 flex flex-col items-center gap-2"
-                    >
-                      <Skeleton
-                        className="w-full rounded"
-                        style={{ height: `${20 + Math.random() * 60}%` }}
-                      />
-                      <Skeleton className="h-3 w-12" />
-                    </div>
-                  ))}
+                  {[45, 70, 55, 80, 40, 65, 75, 50, 60, 85, 45, 70].map(
+                    (height, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 flex flex-col items-center gap-2"
+                      >
+                        <Skeleton
+                          className="w-full rounded"
+                          style={{ height: `${height}%` }}
+                        />
+                        <Skeleton className="h-3 w-12" />
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             ) : visibleSections.has("parallel-coordinates") ? (

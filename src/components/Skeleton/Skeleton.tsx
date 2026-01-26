@@ -42,6 +42,7 @@ export const SkeletonCard: React.FC<SkeletonProps> = ({ className = "" }) => (
   </div>
 );
 
+const SKELETON_BAR_HEIGHTS = [45, 70, 55, 80, 40, 65, 75, 50];
 // 차트 스켈레톤
 export const SkeletonChart: React.FC<{
   height?: string;
@@ -49,11 +50,11 @@ export const SkeletonChart: React.FC<{
 }> = ({ height = "h-64", className = "" }) => (
   <div className={`${height} ${className}`}>
     <div className="h-full flex items-end gap-2 px-4 pb-4">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {SKELETON_BAR_HEIGHTS.map((barHeight, i) => (
         <div key={i} className="flex-1 flex flex-col justify-end">
           <Skeleton
             className="w-full rounded-t"
-            style={{ height: `${30 + Math.random() * 50}%` }}
+            style={{ height: `${barHeight}%` }}
           />
         </div>
       ))}

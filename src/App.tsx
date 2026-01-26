@@ -54,6 +54,7 @@ function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { isAuthenticated: isLoggedIn } = useAuth();
 
   // 네비게이션 처리 함수
@@ -74,6 +75,7 @@ function CompanyDetailPage() {
     } finally {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+      qc.clear();
       notifyAuthChange();
     }
   };
