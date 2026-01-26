@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
+import AIBubbleChart from "../components/Charts/AIBubbleChart";
 import {
   ArrowLeft,
   TrendingUp,
@@ -46,6 +48,7 @@ import {
   INDUTY_CODE_BY_KEY,
 } from "../hooks/useIndustryQueries";
 import { getStockOhlcv, getCompanyFinancials } from "../api/company";
+import { getNewsKeywords } from "../api/news";
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -248,6 +251,17 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     isLoading: loading,
     error,
   } = useIndustryData(selectedIndustry, timeRange);
+
+  // 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
+  const { data: keywordsData } = useQuery({
+    queryKey: ["newsKeywords"],
+    queryFn: async () => {
+      const response = await getNewsKeywords({ size: 15 });
+      return response.data?.data?.keywords ?? [];
+    },
+    staleTime: 1000 * 60 * 5, // 5분
+  });
+
   // API 응답 구조에 맞게 타입 정의
   const analysisResponse = analysisQuery.data as {
     data?: {
@@ -632,6 +646,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
     if (setCompanyCode) {
       setCompanyCode(code);
     }
+    window.scrollTo({ top: 0, behavior: "instant" });
     navigate(`/company/${code}`);
   };
 
@@ -693,13 +708,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       {/* Sector Overview Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
         <div className="lg:col-span-2 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-[#0046ff]" />
-                {currentIndustryInfo.indexName} 추이
-              </h3>
-              <div className="flex items-baseline gap-2 mt-2">
+          <div className="mb-6">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
+              <TrendingUp size={20} className="text-[#0046ff]" />
+              {currentIndustryInfo.indexName} 추이
+            </h3>
+            <div className="flex justify-between items-end">
+              <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-slate-900">
                   {(latestIndexData?.current_value ?? 0).toLocaleString()}
                 </span>
@@ -712,22 +727,21 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   {latestIndexData?.change_percent ?? 0}%)
                 </span>
               </div>
-            </div>
-            <div className="flex gap-2">
-              {["1M", "3M", "6M", "1Y"].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setTimeRange(p as TimeRange)}
-                  // Rounded-md
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    timeRange === p
-                      ? "bg-[#0046ff] text-white shadow-md shadow-blue-500/30"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              <div className="flex gap-2">
+                {["1M", "3M", "6M", "1Y"].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setTimeRange(p as TimeRange)}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                      timeRange === p
+                        ? "bg-[#0046ff] text-white shadow-md shadow-blue-500/30"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div
@@ -960,7 +974,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                           <img
                             src={company.logo}
                             alt={company.name}
-                            className="w-6 h-6 object-contain"
+                            className="w-full h-full object-cover"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display =
                                 "none";
@@ -1024,7 +1038,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         <div className="flex gap-2 mb-6 border-b border-slate-200">
           <button
             onClick={() => setChartTab("parallel")}
-            className={`px-4 py-3 text-sm font-bold transition-colors relative outline-none ${
+            className={`px-4 py-3 text-sm font-bold transition-colors relative outline-none focus:outline-none ${
               chartTab === "parallel"
                 ? "text-[#0046FF]"
                 : "text-slate-400 hover:text-slate-600"
@@ -1037,7 +1051,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           </button>
           <button
             onClick={() => setChartTab("valuation")}
-            className={`px-4 py-3 text-sm font-bold transition-colors relative outline-none ${
+            className={`px-4 py-3 text-sm font-bold transition-colors relative outline-none focus:outline-none ${
               chartTab === "valuation"
                 ? "text-[#0046FF]"
                 : "text-slate-400 hover:text-slate-600"
@@ -1050,13 +1064,13 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
           </button>
           <button
             onClick={() => setChartTab("roe")}
-            className={`px-4 py-3 text-sm font-bold transition-colors relative outline-none ${
+            className={`px-4 py-3 text-sm font-bold transition-colors relative outline-none focus:outline-none ${
               chartTab === "roe"
                 ? "text-[#0046FF]"
                 : "text-slate-400 hover:text-slate-600"
             }`}
           >
-            기업 성격 분류 (ROE vs 부채비율)
+            기업 성격 분류
             {chartTab === "roe" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0046FF]" />
             )}
@@ -1104,7 +1118,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                                     <img
                                       src={stock.logo}
                                       alt={stock.name}
-                                      className="w-8 h-8 object-contain"
+                                      className="w-full h-full object-cover"
                                       onError={(e) => {
                                         (
                                           e.target as HTMLImageElement
@@ -1238,12 +1252,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         {chartTab === "valuation" && (
           <div>
             <p className="text-sm text-slate-500 mb-4">
-              X축: 수익성(ROE) / Y축: 저평가(PBR) / 크기: 시가총액
+              X축은 ROE(수익성), Y축은 PBR(저평가 여부)을 나타내며, 각
+              원(버블)의 크기는 시가총액의 규모를 의미합니다.
             </p>
-            <div
-              className="w-full bg-white rounded-xl overflow-hidden relative **:outline-none"
-              tabIndex={-1}
-            >
+            <div className="w-full bg-white rounded-lg shadow-md border border-slate-100 overflow-hidden relative p-4 z-0 outline-none [&_*]:outline-none [&_*]:focus:outline-none">
               <div className="h-[500px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart
@@ -1289,15 +1301,28 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     />
                     <Tooltip
                       cursor={{ strokeDasharray: "3 3" }}
-                      content={({ active, payload, coordinate }) => {
+                      content={(props) => {
+                        const { active, payload, coordinate } = props;
+                        const viewBox = (
+                          props as { viewBox?: { width?: number } }
+                        ).viewBox;
                         if (active && payload && payload.length && coordinate) {
                           const data = payload[0].payload;
+                          const tooltipWidth = 140;
+                          const chartWidth = viewBox?.width || 500;
+
+                          // 오른쪽 공간 부족시 왼쪽에 표시
+                          const left =
+                            coordinate.x + tooltipWidth + 30 > chartWidth
+                              ? coordinate.x - tooltipWidth - 15
+                              : coordinate.x + 15;
+
                           return (
                             <div
                               className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
                               style={{
                                 position: "absolute",
-                                left: coordinate.x + 15,
+                                left,
                                 top: coordinate.y - 40,
                                 pointerEvents: "none",
                                 minWidth: "120px",
@@ -1344,10 +1369,17 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       name="Companies"
                       data={companiesData.map((company) => ({
                         name: company.name,
+                        code: company.code,
                         x: company.roe,
                         y: company.pbr,
                         z: parseMarketCap(company.marketCap),
                       }))}
+                      onClick={(data) => {
+                        if (data && data.payload && data.payload.code) {
+                          handleCompanyClick(data.payload.code);
+                        }
+                      }}
+                      cursor="pointer"
                     >
                       {companiesData.map((company, index) => {
                         const isTarget =
@@ -1401,12 +1433,10 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         {chartTab === "roe" && (
           <div>
             <p className="text-sm text-slate-500 mb-4">
-              X축: 부채비율 (안전성) / Y축: ROE (수익성)
+              X축은 부채비율(재무 건전성)을, Y축은 ROE(자본 수익성)를 나타내며,
+              이를 통해 기업의 안전성과 수익성을 동시에 분석합니다.
             </p>
-            <div
-              className="w-full bg-white rounded-xl overflow-hidden relative **:outline-none"
-              tabIndex={-1}
-            >
+            <div className="w-full bg-white rounded-lg shadow-md border border-slate-100 overflow-hidden relative p-4 z-0 outline-none [&_*]:outline-none [&_*]:focus:outline-none">
               <div className="h-[500px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart
@@ -1443,15 +1473,28 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                     />
                     <Tooltip
                       cursor={{ strokeDasharray: "3 3" }}
-                      content={({ active, payload, coordinate }) => {
+                      content={(props) => {
+                        const { active, payload, coordinate } = props;
+                        const viewBox = (
+                          props as { viewBox?: { width?: number } }
+                        ).viewBox;
                         if (active && payload && payload.length && coordinate) {
                           const data = payload[0].payload;
+                          const tooltipWidth = 140;
+                          const chartWidth = viewBox?.width || 500;
+
+                          // 오른쪽 공간 부족시 왼쪽에 표시
+                          const left =
+                            coordinate.x + tooltipWidth + 30 > chartWidth
+                              ? coordinate.x - tooltipWidth - 15
+                              : coordinate.x + 15;
+
                           return (
                             <div
                               className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
                               style={{
                                 position: "absolute",
-                                left: coordinate.x + 15,
+                                left,
                                 top: coordinate.y - 40,
                                 pointerEvents: "none",
                                 minWidth: "120px",
@@ -1495,11 +1538,17 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       name="Companies"
                       data={companiesData.map((company) => ({
                         name: company.name,
+                        code: company.code,
                         roe: company.roe,
                         debt: company.debtRatio,
                         z: parseMarketCap(company.marketCap),
                       }))}
-                      shape="circle"
+                      onClick={(data) => {
+                        if (data && data.payload && data.payload.code) {
+                          handleCompanyClick(data.payload.code);
+                        }
+                      }}
+                      cursor="pointer"
                     >
                       {companiesData.map((company, index) => {
                         const isQuality =
@@ -1521,9 +1570,9 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       stroke="#334155"
                       strokeWidth={1}
                       label={{
-                        value: "부채비율 100%",
-                        position: "insideTopLeft",
-                        fontSize: 10,
+                        value: "부채비율 150%",
+                        position: "insideTopRight",
+                        fontSize: 11,
                         fill: "#334155",
                         fontWeight: "bold",
                       }}
@@ -1535,22 +1584,22 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       label={{
                         value: `ROE ${avgRoe}% (평균)`,
                         position: "insideBottomLeft",
-                        fontSize: 10,
+                        fontSize: 11,
                         fill: "#334155",
                         fontWeight: "bold",
                       }}
                     />
 
-                    {/* Label */}
+                    {/* Quadrant Label */}
                     <ReferenceLine
-                      x={50}
-                      y={avgRoe + 1}
+                      x={75}
+                      y={20}
                       stroke="none"
                       label={{
-                        value: "고효율 우량형",
-                        position: "top",
+                        value: "고효율 우량형 (Target)",
+                        position: "center",
                         fill: "#10B981",
-                        fontSize: 11,
+                        fontSize: 13,
                         fontWeight: "bold",
                       }}
                     />
@@ -1565,42 +1614,77 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
       {/* Section Divider */}
       <div className="border-t border-gray-200 my-8" />
 
-      {/* --- News Section --- */}
+      {/* --- News Section (Side by Side) --- */}
       <div className="mb-8">
-        <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2">
-          뉴스 <ChevronRight size={18} />
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {industryNews.length > 0 ? (
-            industryNews.slice(0, 6).map((news) => (
-              <GlassCard
-                key={news.id}
-                className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
-                onClick={() =>
-                  news.url
-                    ? window.open(news.url, "_blank")
-                    : setSelectedNews(news)
-                }
-              >
-                <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
-                  {news.title}
-                </h4>
-                <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
-                  {news.content}
-                </p>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
-                  <span>{news.source}</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                  <span>{news.time}</span>
-                </div>
-              </GlassCard>
-            ))
-          ) : (
-            // Rounded-md
-            <div className="col-span-3 text-center py-10 text-gray-400 bg-white/50 rounded-md border border-gray-100">
-              해당 산업의 최신 뉴스가 없습니다.
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* 왼쪽: 산업 이슈 키워드 버블 차트 */}
+          <div>
+            <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2 mb-4">
+              산업 이슈 키워드
+            </h3>
+            <div
+              className="
+                relative overflow-hidden rounded-3xl
+                bg-[#0f172b]
+                backdrop-blur-3xl backdrop-saturate-200
+                border border-white/30
+                shadow-[inset_0_1px_0_0_rgba(255,255,255,0.7),inset_1px_0_0_0_rgba(255,255,255,0.5),inset_0_-1px_0_0_rgba(255,255,255,0.1)]
+                outline-none [&_*]:outline-none [&_*]:focus:outline-none
+              "
+            >
+              <div className="pointer-events-none absolute -top-[60px] -left-[60px] h-[250px] w-[250px] rounded-full" />
+              <div className="pointer-events-none absolute -bottom-[80px] -right-[80px] h-[300px] w-[300px] rounded-full bg-blue-400/30 blur-[70px]" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-3xl" />
+              <div className="relative p-4">
+                <AIBubbleChart keywords={keywordsData} />
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* 오른쪽: 뉴스 */}
+          <div>
+            <h3 className="text-xl font-bold text-[#0046FF] flex items-center gap-2 mb-4">
+              뉴스
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {industryNews.length > 0 ? (
+                industryNews.slice(0, 4).map((news) => (
+                  <GlassCard
+                    key={news.id}
+                    className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
+                    onClick={() => {
+                      if (news.url) {
+                        const newWindow = window.open(
+                          news.url,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                        if (newWindow) newWindow.opener = null;
+                      } else {
+                        setSelectedNews(news);
+                      }
+                    }}
+                  >
+                    <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
+                      {news.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                      {news.content}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
+                      <span>{news.source}</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                      <span>{news.time}</span>
+                    </div>
+                  </GlassCard>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-10 text-gray-400 bg-white/50 rounded-md border border-gray-100">
+                  해당 산업의 최신 뉴스가 없습니다.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

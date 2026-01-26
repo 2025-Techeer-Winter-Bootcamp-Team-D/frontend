@@ -14,6 +14,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
+import FavoritesSidebar from "./components/Layout/FavoritesSidebar";
 import Dashboard from "./pages/Dashboard";
 import CompanyDetail from "./pages/CompanyDetail";
 import IndustryAnalysis from "./pages/IndustryCompare";
@@ -56,9 +57,26 @@ function CompanyDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { isAuthenticated: isLoggedIn } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
 
   // 네비게이션 처리 함수
   const handlePageChange = (page: PageView) => {
+    if (page === PageView.LOGIN) {
+      setShowSignUp(false);
+      setShowLogin(true);
+      return;
+    }
+    if (page === PageView.SIGN_UP) {
+      setShowLogin(false);
+      setShowSignUp(true);
+      return;
+    }
+    if (page === PageView.COMPANY_DETAIL) {
+      // 이미 기업 상세 페이지에 있으므로 상단으로 스크롤
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
     navigate("/", { state: { targetPage: page } });
   };
@@ -117,6 +135,21 @@ function CompanyDetailPage() {
           </p>
         </div>
       </footer>
+
+      {/* 즐겨찾기 사이드바 */}
+      <FavoritesSidebar onShowLogin={() => setShowLogin(true)} />
+
+      {/* 로그인 모달 */}
+      {showLogin && (
+        <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
+      )}
+      {/* 회원가입 모달 */}
+      {showSignUp && (
+        <SignUp
+          setPage={handlePageChange}
+          onClose={() => setShowSignUp(false)}
+        />
+      )}
     </div>
   );
 }
@@ -264,7 +297,7 @@ function App() {
 
   return (
     <div
-      className={`font-sans text-slate-800 transition-all duration-500 ${isDashboard ? "h-screen flex flex-col overflow-hidden bg-[#002C9C]" : "min-h-screen pb-10 bg-white"}`}
+      className={`font-sans text-slate-800 ${isDashboard ? "h-screen flex flex-col overflow-hidden bg-[#002C9C]" : "min-h-screen pb-10 bg-white"}`}
     >
       <div
         className={`z-50 transition-all duration-500 ease-in-out ${isDashboard ? "fixed top-0 left-0 right-0" : "sticky top-0"} ${!showNavbar ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
@@ -316,6 +349,11 @@ function App() {
           navigate(`/company/${code}`);
         }}
       />
+
+      {/* 즐겨찾기 사이드바 (대시보드 제외) */}
+      {!isDashboard && (
+        <FavoritesSidebar onShowLogin={() => setShowLogin(true)} />
+      )}
     </div>
   );
 }

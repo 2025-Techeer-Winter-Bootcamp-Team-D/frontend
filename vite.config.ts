@@ -13,10 +13,15 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       proxy: {
         "/api": {
-          target: "http://quasa.info/",
+          target: "http://localhost:8000/",
           changeOrigin: true,
         },
       },
+    },
+    // preview 서버 설정 (빌드 후 테스트 시)
+    preview: {
+      port: 5173,
+      host: "0.0.0.0",
     },
 
     plugins: [react(), tailwindcss()],

@@ -128,6 +128,7 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
           {nodes.map((node: any) => {
             const isLeftSide = node.x0 < dimensions.width / 3;
             const isRightSide = node.x0 > (dimensions.width * 2) / 3;
+            const isMiddle = !isLeftSide && !isRightSide;
             const textAnchor = isLeftSide
               ? "end"
               : isRightSide
@@ -139,6 +140,14 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
                 ? node.x1 + 10
                 : (node.x0 + node.x1) / 2;
             const nodeHeight = node.y1 - node.y0;
+
+            // 중간 노드는 상단에 텍스트 배치
+            const textY = isMiddle
+              ? node.y0 - 28
+              : (node.y0 + node.y1) / 2 - (nodeHeight > 40 ? 6 : 0);
+            const valueY = isMiddle
+              ? node.y0 - 12
+              : (node.y0 + node.y1) / 2 + 12;
 
             return (
               <g key={node.id}>
@@ -171,7 +180,7 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
                 {/* Node name */}
                 <text
                   x={textX}
-                  y={(node.y0 + node.y1) / 2 - (nodeHeight > 40 ? 6 : 0)}
+                  y={textY}
                   dy="0.35em"
                   textAnchor={textAnchor}
                   className="text-[11px] font-bold fill-[#1a1a1a]"
@@ -179,10 +188,10 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
                   {node.name}
                 </text>
                 {/* Node value */}
-                {nodeHeight > 30 && (
+                {(nodeHeight > 30 || isMiddle) && (
                   <text
                     x={textX}
-                    y={(node.y0 + node.y1) / 2 + 12}
+                    y={valueY}
                     dy="0.35em"
                     textAnchor={textAnchor}
                     className="text-[10px] font-medium fill-[#666]"

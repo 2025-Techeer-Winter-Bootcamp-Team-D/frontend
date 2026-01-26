@@ -300,8 +300,11 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
   }, [filteredIds, selectedStockId]);
 
   useEffect(() => {
-    if (Object.keys(filters).length === 0 && svgRef.current) {
-      const svg = d3.select(svgRef.current);
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+
+    // 모든 필터 제거된 경우
+    if (Object.keys(filters).length === 0) {
       svg.selectAll<SVGGElement, AxisInfo>(".brush").each(function () {
         d3.select<SVGGElement, AxisInfo>(this).call(
           d3.brushY<AxisInfo>().move,
@@ -309,6 +312,25 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
         );
       });
       activeFilters.current = {};
+    } else {
+      // 개별 필터 제거된 경우: activeFilters에는 있지만 filters에는 없는 축의 브러시 클리어
+      const currentFilterKeys = Object.keys(filters) as AxisKey[];
+      const activeFilterKeys = Object.keys(activeFilters.current) as AxisKey[];
+
+      activeFilterKeys.forEach((key) => {
+        if (!currentFilterKeys.includes(key)) {
+          // 이 축의 브러시 선택 해제
+          svg.selectAll<SVGGElement, AxisInfo>(".brush").each(function (d) {
+            if (d.key === key) {
+              d3.select<SVGGElement, AxisInfo>(this).call(
+                d3.brushY<AxisInfo>().move,
+                null,
+              );
+            }
+          });
+          delete activeFilters.current[key];
+        }
+      });
     }
   }, [filters]);
 
