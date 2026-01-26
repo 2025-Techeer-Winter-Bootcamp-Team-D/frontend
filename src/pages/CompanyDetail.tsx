@@ -13,6 +13,7 @@ import {
   getCompanySankeys,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
+import { useStockWebSocket } from "../hooks";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
@@ -52,12 +53,24 @@ import {
   User,
   X,
   HelpCircle,
-  Loader2,
   TrendingUp,
   TrendingDown,
   Target,
   Trophy,
 } from "lucide-react";
+import {
+  Skeleton,
+  SkeletonPage,
+  SkeletonChart,
+  SkeletonRankingList,
+  SkeletonFinancialCard,
+  SkeletonPieChart,
+  SkeletonSankey,
+  SkeletonOutlook,
+  SkeletonNewsCardLight,
+  SkeletonDisclosureTable,
+  SkeletonText,
+} from "../components/Skeleton";
 
 interface DetailProps {
   setPage: (page: PageView) => void;
@@ -189,6 +202,29 @@ const CompanyDetail: React.FC<DetailProps> = ({
 }) => {
   const { id } = useParams<{ id: string }>();
   const companyCode = id ? id : propCompanyCode;
+
+  // 실시간 주가 WebSocket 연결
+  const {
+    isConnected: wsConnected,
+    prices: wsPrices,
+    subscribe: wsSubscribe,
+    unsubscribe: wsUnsubscribe,
+  } = useStockWebSocket();
+
+  // 실시간 주가 데이터
+  const realtimePrice = wsPrices.get(companyCode);
+
+  // 종목 구독 관리
+  useEffect(() => {
+    if (wsConnected && companyCode) {
+      wsSubscribe([companyCode]);
+    }
+    return () => {
+      if (companyCode) {
+        wsUnsubscribe([companyCode]);
+      }
+    };
+  }, [wsConnected, companyCode, wsSubscribe, wsUnsubscribe]);
 
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
@@ -980,11 +1016,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
   };
 
   if (isDetailLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 size={48} className="animate-spin text-blue-600" />
-      </div>
-    );
+    return <SkeletonPage />;
   }
   if (isError) {
     return (
@@ -1119,11 +1151,27 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
+        {/* Section Divider */}
+        <div className="border-t border-gray-200 my-8" />
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8" ref={priceRef}>
             <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-800">주가 분석</h3>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-slate-800">
+                    주가 분석
+                  </h3>
+                  {/* 실시간 연결 상태 */}
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`w-2 h-2 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-gray-300"}`}
+                    />
+                    <span className="text-xs text-gray-400">
+                      {wsConnected ? "실시간" : "연결 끊김"}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                   {["1D", "1W", "1M", "1Y"].map((p) => (
                     <button
@@ -1136,10 +1184,33 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* 실시간 주가 정보 */}
+              {realtimePrice && (
+                <div className="flex items-baseline gap-4 mb-4 pb-4 border-b border-gray-100">
+                  <span className="text-3xl font-bold text-slate-800">
+                    {realtimePrice.price.toLocaleString()}
+                    <span className="text-base font-normal text-gray-500 ml-1">
+                      원
+                    </span>
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    체결시간{" "}
+                    {realtimePrice.time
+                      ? `${realtimePrice.time.slice(0, 2)}:${realtimePrice.time.slice(2, 4)}:${realtimePrice.time.slice(4, 6)}`
+                      : "-"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    체결량 {realtimePrice.volume?.toLocaleString() || "-"}주
+                  </span>
+                </div>
+              )}
               <div className="flex-1 w-full h-full">
                 {isStockLoading ? (
-                  <div className="flex h-full items-center justify-center">
-                    <Loader2 className="animate-spin text-blue-400" />
+                  <div className="h-full flex flex-col justify-between py-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-px w-full" />
+                    ))}
                   </div>
                 ) : isStockError ? (
                   <div className="flex h-full items-center justify-center text-red-500 text-sm">
@@ -1170,8 +1241,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 동종업계 순위
               </h3>
               {isPeerLoading ? (
-                <div className="flex justify-center items-center flex-1">
-                  <Loader2 className="animate-spin text-blue-400" />
+                <div className="flex-1">
+                  <div className="flex items-end justify-center gap-2 mb-4 px-2 pt-2">
+                    <Skeleton className="w-14 h-12 rounded-t" />
+                    <Skeleton className="w-14 h-16 rounded-t" />
+                    <Skeleton className="w-14 h-9 rounded-t" />
+                  </div>
+                  <div className="h-px bg-gray-200 mx-4 mb-4" />
+                  <SkeletonRankingList count={4} />
                 </div>
               ) : (
                 <div className="flex flex-col">
@@ -1347,8 +1424,18 @@ const CompanyDetail: React.FC<DetailProps> = ({
               재무 데이터 분석
             </h3>
             {isFinancialsLoading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-blue-600" />
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-xl p-5 border border-gray-100">
+                    <Skeleton className="h-5 w-20 mb-4" />
+                    <SkeletonPieChart />
+                  </div>
+                  <SkeletonFinancialCard />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SkeletonFinancialCard />
+                  <SkeletonFinancialCard />
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
@@ -1389,9 +1476,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
               시각적으로 보여줍니다.
             </p>
             {isSankeysLoading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-blue-600" />
-              </div>
+              <SkeletonSankey />
             ) : sankeyChartData ? (
               <div className="h-[500px]">
                 <IncomeSankeyChart
@@ -1419,6 +1504,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
             )}
           </GlassCard>
         </div>
+        <div className="border-t border-gray-200 my-8" />
         {/* 기업 전망 분석 */}
         <div ref={outlookRef} className="scroll-mt-32">
           <GlassCard className="p-6">
@@ -1428,9 +1514,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
             </h3>
 
             {isOutlookLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="animate-spin text-blue-600" />
-              </div>
+              <SkeletonOutlook />
             ) : outlookData ? (
               <div className="space-y-6">
                 {/* 전망 요약 */}
@@ -1516,12 +1600,15 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
+        <div className="border-t border-gray-200 my-8" />
         <div ref={newsRef} className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-4">기업 뉴스</h3>
             {isNewsLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="animate-spin text-blue-400" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <SkeletonNewsCardLight key={i} />
+                ))}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1556,6 +1643,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
+        <div className="border-t border-gray-200 my-8" />
         <div ref={disclosureRef} className="scroll-mt-32">
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -1621,8 +1709,23 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     </p>
                   </div>
                 ) : isReportsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="animate-spin" />
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="bg-slate-50 border border-gray-200 rounded-lg p-6"
+                      >
+                        <div className="flex gap-8">
+                          <div className="w-64">
+                            <Skeleton className="h-7 w-48 mb-3" />
+                            <Skeleton className="h-4 w-32" />
+                          </div>
+                          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+                            <SkeletonText lines={4} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : analysisQueries.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -1654,11 +1757,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
                         className="bg-slate-50 border border-gray-200 rounded-lg p-6"
                       >
                         {query.isLoading ? (
-                          <div className="flex justify-center py-8">
-                            <Loader2
-                              className="animate-spin text-blue-500"
-                              size={32}
-                            />
+                          <div className="flex gap-8">
+                            <div className="w-64">
+                              <Skeleton className="h-7 w-48 mb-3" />
+                              <Skeleton className="h-4 w-32" />
+                            </div>
+                            <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+                              <SkeletonText lines={4} />
+                            </div>
                           </div>
                         ) : query.isError ? (
                           <div className="text-center text-red-400 py-4">
@@ -1780,8 +1886,23 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     </p>
                   </div>
                 ) : isReportsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="animate-spin" />
+                  <div className="py-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="grid grid-cols-12 border-b border-gray-200 py-3"
+                      >
+                        <div className="col-span-2 px-4">
+                          <Skeleton className="h-4 w-20" />
+                        </div>
+                        <div className="col-span-3 px-4">
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                        <div className="col-span-7 px-4">
+                          <Skeleton className="h-4 w-full" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : filteredReports.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -1844,8 +1965,23 @@ const CompanyDetail: React.FC<DetailProps> = ({
           ></div>
           <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
             {isNewsLoading2 ? (
-              <div className="flex justify-center items-center py-20">
-                <Loader2 className="animate-spin text-blue-600" size={32} />
+              <div className="py-4 space-y-4">
+                <div className="flex gap-2 mb-4">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-7 w-full" />
+                <Skeleton className="h-7 w-3/4" />
+                <div className="flex gap-3 py-4 border-b border-gray-100">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="space-y-3 pt-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
               </div>
             ) : (
               selectedNews && (

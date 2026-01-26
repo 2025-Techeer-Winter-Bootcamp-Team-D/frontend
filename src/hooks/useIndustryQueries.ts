@@ -18,24 +18,24 @@ import type { TimeRange, IndustryKey } from "../types";
 
 // 산업 코드 매핑
 export const INDUTY_CODE_BY_KEY: Record<IndustryKey, string> = {
-  electronics_kosdaq: "1028", // 전기·전자(코스닥)
-  pharmaceuticals: "0009", // 제약
-  machinery_kosdaq: "1027", // 기계·장비(코스닥)
-  finance: "0021", // 금융
-  food_tobacco: "1019", // 음식료·담배(코스닥)
-  chemical: "0008", // 화학
+  electronics: "0013", // 전기·전자
   transportation: "0015", // 운송장비·부품
   machinery: "0012", // 기계·장비
-  electronics: "0013", // 전기·전자(코스피)
-  it_service: "0029", // IT 서비스
   distribution: "0016", // 유통
-  insurance: "0025", // 보험
-  entertainment: "1015", // 오락·문화
+  pharmaceuticals: "0009", // 제약
+  it_service: "0029", // IT 서비스
+  finance: "0021", // 금융
   utilities: "0017", // 전기·가스
+  insurance: "0025", // 보험
   metal: "0011", // 금속
+  chemical: "0008", // 화학
   logistics: "0019", // 운송·창고
-  pharmaceuticals_kosdaq: "1024", // 제약(코스닥)
-  food_tobacco_kospi: "0005", // 음식료·담배(코스피)
+  food_tobacco: "0005", // 음식료·담배
+  telecom: "0020", // 통신
+  construction: "0018", // 건설
+  securities: "0024", // 증권
+  general_service: "0026", // 일반서비스
+  entertainment: "0030", // 오락·문화
 };
 
 // 캐시 설정 상수

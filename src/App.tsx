@@ -4,7 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -25,9 +25,27 @@ import SearchModal from "./components/Layout/SearchModal";
 import { PageView } from "./types";
 import { StarredProvider, useStarred } from "./context/StarredContext";
 import { logout } from "./api/users";
-import { notifyAuthChange } from "./hooks/useAuth";
+import { notifyAuthChange, useAuth } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
+
+// URL 경로와 PageView 매핑
+const PATH_TO_PAGE: Record<string, PageView> = {
+  "/": PageView.DASHBOARD,
+  "/search": PageView.COMPANY_SEARCH,
+  "/compare": PageView.COMPANY_COMPARE,
+  "/industry": PageView.INDUSTRY_ANALYSIS,
+};
+
+const PAGE_TO_PATH: Record<PageView, string> = {
+  [PageView.DASHBOARD]: "/",
+  [PageView.COMPANY_SEARCH]: "/search",
+  [PageView.COMPANY_COMPARE]: "/compare",
+  [PageView.INDUSTRY_ANALYSIS]: "/industry",
+  [PageView.COMPANY_DETAIL]: "/company",
+  [PageView.LOGIN]: "/",
+  [PageView.SIGN_UP]: "/",
+};
 
 /**
  * 기업 상세 페이지 (독립 라우트용)
@@ -36,14 +54,30 @@ function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem("isLoggedIn") === "true";
-  });
+  const qc = useQueryClient();
+  const { isAuthenticated: isLoggedIn } = useAuth();
 
   // 네비게이션 처리 함수
   const handlePageChange = (page: PageView) => {
     // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
     navigate("/", { state: { targetPage: page } });
+  };
+
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (refreshToken) {
+        await logout(refreshToken);
+      }
+    } catch (error) {
+      console.error("로그아웃 API 실패:", error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      qc.clear();
+      notifyAuthChange();
+    }
   };
 
   return (
@@ -53,10 +87,7 @@ function CompanyDetailPage() {
           currentPage={PageView.COMPANY_DETAIL}
           setPage={handlePageChange}
           isLoggedIn={isLoggedIn}
-          onLogout={() => {
-            setIsLoggedIn(false);
-            localStorage.removeItem("isLoggedIn");
-          }}
+          onLogout={handleLogout}
         />
       </div>
       <main className="container mx-auto px-4 pt-6 max-w-7xl">
@@ -91,7 +122,6 @@ function CompanyDetailPage() {
 }
 
 function App() {
-  const [page, setPage] = useState<PageView>(PageView.DASHBOARD);
   const [selectedIndustry, setSelectedIndustry] = useState<string>("finance");
   const [selectedCompanyCode, setSelectedCompanyCode] =
     useState<string>("005930");
@@ -101,24 +131,41 @@ function App() {
   const qc = useQueryClient();
   const location = useLocation();
 
+  // URL 경로로부터 현재 페이지 결정
+  const getCurrentPageFromPath = useCallback((): PageView => {
+    const path = location.pathname;
+    if (path.startsWith("/industry")) return PageView.INDUSTRY_ANALYSIS;
+    return PATH_TO_PAGE[path] ?? PageView.DASHBOARD;
+  }, [location.pathname]);
+
+  const page = getCurrentPageFromPath();
+
   // CompanyDetailPage에서 전달된 targetPage state 처리
-  React.useEffect(() => {
+  useEffect(() => {
     const state = location.state as { targetPage?: PageView } | null;
     if (state?.targetPage) {
-      setPage(state.targetPage);
-      // state 초기화 (뒤로 가기 시 중복 처리 방지)
-      navigate(location.pathname, { replace: true, state: null });
+      const targetPath = PAGE_TO_PATH[state.targetPage];
+      // state 초기화하면서 해당 페이지로 이동
+      navigate(targetPath, { replace: true, state: null });
     }
-  }, [location.state, navigate, location.pathname]);
+  }, [location.state, navigate]);
+
+  // URL에서 industry code 읽어서 설정
+  useEffect(() => {
+    const match = location.pathname.match(/^\/industry\/(.+)$/);
+    if (match && match[1]) {
+      setSelectedIndustry(match[1]);
+    }
+  }, [location.pathname]);
 
   // UI 상태 관리
-  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [isNavbarVisible, setIsNavbarVisible] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem("isLoggedIn") === "true";
-  });
   const [showSearch, setShowSearch] = useState(false);
+
+  // useAuth 훅으로 로그인 상태 관리 (accessToken 기반)
+  const { isAuthenticated: isLoggedIn } = useAuth();
 
   const isDashboard = page === PageView.DASHBOARD;
 
@@ -137,10 +184,8 @@ function App() {
       localStorage.removeItem("refreshToken");
       // React Query 캐시 초기화
       qc.clear();
-      // 인증 상태 변경 알림
+      // 인증 상태 변경 알림 (useAuth 훅이 자동으로 감지)
       notifyAuthChange();
-      // 로그인 상태 업데이트
-      setIsLoggedIn(false);
     }
   };
 
@@ -155,13 +200,16 @@ function App() {
     } else {
       setShowLogin(false);
       setShowSignUp(false);
-      setPage(newPage);
+      // URL 경로를 변경하여 페이지 이동 (브라우저 히스토리에 기록됨)
+      const targetPath = PAGE_TO_PATH[newPage];
+      navigate(targetPath);
     }
   };
 
   const handleIndustryClick = (indutyCode: string) => {
     setSelectedIndustry(indutyCode);
-    setPage(PageView.INDUSTRY_ANALYSIS);
+    // URL 경로를 변경하여 산업 분석 페이지로 이동
+    navigate(`/industry/${indutyCode}`);
   };
 
   const showNavbar = !isDashboard || isNavbarVisible;
@@ -249,14 +297,7 @@ function App() {
       )}
 
       {showLogin && (
-        <Login
-          setPage={handlePageChange}
-          onClose={() => setShowLogin(false)}
-          onLogin={() => {
-            setIsLoggedIn(true);
-            localStorage.setItem("isLoggedIn", "true");
-          }}
-        />
+        <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
       )}
       {showSignUp && (
         <SignUp
@@ -286,7 +327,13 @@ function AppWrapper() {
         <BrowserRouter>
           <Routes>
             <Route path="/company/:id" element={<CompanyDetailPage />} />
-            <Route path="/*" element={<App />} />
+            {/* 각 페이지에 고유 경로 부여 - 브라우저 뒤로가기 지원 */}
+            <Route path="/" element={<App />} />
+            <Route path="/search" element={<App />} />
+            <Route path="/compare" element={<App />} />
+            <Route path="/industry" element={<App />} />
+            <Route path="/industry/:code" element={<App />} />
+            <Route path="*" element={<App />} />
           </Routes>
         </BrowserRouter>
       </StarredProvider>

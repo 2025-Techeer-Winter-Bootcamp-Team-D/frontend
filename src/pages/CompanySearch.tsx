@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
-import { Search, Star, TrendingUp, ChevronRight, Loader2 } from "lucide-react";
+import { Search, Star, TrendingUp, ChevronRight } from "lucide-react";
+import { Skeleton, SkeletonSearchResults } from "../components/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { PageView } from "../types";
 import { getCompanyRankings } from "../api/ranking";
@@ -262,10 +263,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           {isDropdownOpen && searchQuery.trim() && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto z-50">
               {isSearching ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="animate-spin text-[#0046ff]" size={24} />
-                  <span className="ml-2 text-gray-500">검색 중...</span>
-                </div>
+                <SkeletonSearchResults count={4} />
               ) : searchResults.length > 0 ? (
                 <ul>
                   {searchResults.map((item: RankingItem) => (
@@ -439,7 +437,21 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
               ) : (
                 <div className="text-center py-10 px-4">
                   {isStarredLoading ? (
-                    <Loader2 className="animate-spin mx-auto text-gray-300" />
+                    <div className="space-y-3">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"
+                        >
+                          <Skeleton className="w-4 h-4 rounded-full" />
+                          <div className="flex-1">
+                            <Skeleton className="h-4 w-20 mb-1" />
+                            <Skeleton className="h-3 w-14" />
+                          </div>
+                          <Skeleton className="h-4 w-12" />
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <p className="text-slate-400 text-sm">
                       관심 기업이 없습니다.

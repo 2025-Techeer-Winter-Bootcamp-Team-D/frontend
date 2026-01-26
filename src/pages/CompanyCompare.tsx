@@ -14,6 +14,7 @@ import {
   Crosshair,
   Lock,
 } from "lucide-react";
+import { Skeleton, SkeletonSearchResults } from "../components/Skeleton";
 import { useAuth } from "../hooks/useAuth";
 import { PageView } from "../types";
 import type { Comparison, CompareCompany, TimeRange } from "../types";
@@ -916,12 +917,23 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
               </div>
               <div className="h-72">
                 {ohlcvQuery.isLoading ? (
-                  <div className="h-full flex items-center justify-center text-gray-400">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0046ff] mx-auto mb-2"></div>
-                      <p className="text-sm">
-                        주가 데이터를 불러오는 중입니다.
-                      </p>
+                  <div className="h-full flex flex-col justify-between py-4 px-4">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-3 w-12" />
+                      <Skeleton className="h-3 w-12" />
+                      <Skeleton className="h-3 w-12" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                    <Skeleton className="h-px w-full" />
+                    <Skeleton className="h-px w-full" />
+                    <Skeleton className="h-px w-full" />
+                    <Skeleton className="h-px w-full" />
+                    <div className="flex justify-between">
+                      <Skeleton className="h-3 w-8" />
+                      <Skeleton className="h-3 w-8" />
+                      <Skeleton className="h-3 w-8" />
+                      <Skeleton className="h-3 w-8" />
+                      <Skeleton className="h-3 w-8" />
                     </div>
                   </div>
                 ) : trendChartData.length === 0 ? (
@@ -1388,9 +1400,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                   검색어를 입력하여 기업을 찾아보세요
                 </div>
               ) : isSearching ? (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  검색 중...
-                </div>
+                <SkeletonSearchResults count={4} />
               ) : searchResults.length > 0 ? (
                 searchResults
                   .filter(

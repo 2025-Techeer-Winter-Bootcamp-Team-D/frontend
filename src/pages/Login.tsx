@@ -3,6 +3,7 @@ import { PageView } from "../types";
 import { Mail, Lock, Eye, EyeOff, X, Loader2 } from "lucide-react";
 import { login } from "../api/users";
 import GlassCard from "../components/Layout/GlassCard";
+import { notifyAuthChange } from "../hooks/useAuth";
 
 interface LoginProps {
   setPage: (page: PageView) => void;
@@ -34,6 +35,8 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
         localStorage.setItem("accessToken", response.data.access);
         localStorage.setItem("refreshToken", response.data.refresh);
         localStorage.setItem("userEmail", response.data.email);
+        // 인증 상태 변경 알림 (useAuth 훅 동기화)
+        notifyAuthChange();
         onLogin?.();
         onClose();
         setPage(PageView.DASHBOARD);
