@@ -648,15 +648,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : visibleSections.has("parallel-coordinates") ? (
               <ParallelCoordinatesChart
                 data={stocks}
                 onFilterChange={setFilters}
                 filters={filters}
                 filteredIds={filteredIds}
-                onStockSelect={handleChartStockSelect}
+                onStockSelect={setSelectedStock}
                 selectedStockId={selectedStock?.id ?? null}
               />
+            ) : (
+              <div className="h-[600px]" />
             )}
           </div>
         </div>

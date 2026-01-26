@@ -1151,6 +1151,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
+        {/* Section Divider */}
+        <div className="border-t border-gray-200 my-8" />
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8" ref={priceRef}>
             <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
@@ -1501,6 +1504,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
             )}
           </GlassCard>
         </div>
+        <div className="border-t border-gray-200 my-8" />
         {/* 기업 전망 분석 */}
         <div ref={outlookRef} className="scroll-mt-32">
           <GlassCard className="p-6">
@@ -1596,6 +1600,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
+        <div className="border-t border-gray-200 my-8" />
         <div ref={newsRef} className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-4">기업 뉴스</h3>
@@ -1638,6 +1643,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
 
+        <div className="border-t border-gray-200 my-8" />
         <div ref={disclosureRef} className="scroll-mt-32">
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-4">

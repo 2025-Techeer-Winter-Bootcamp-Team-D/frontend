@@ -319,7 +319,8 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
   return (
     <div
       ref={containerRef}
-      className="w-full bg-white rounded-lg shadow-md border border-slate-100 overflow-hidden relative p-4"
+      className="w-full bg-white rounded-lg shadow-md border border-slate-100 overflow-hidden relative p-4 z-0"
+      style={{ isolation: "isolate" }}
     >
       <svg
         ref={svgRef}
