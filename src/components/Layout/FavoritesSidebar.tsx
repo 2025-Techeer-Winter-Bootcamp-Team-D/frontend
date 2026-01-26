@@ -149,6 +149,7 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
         {/* 접기/펼치기 버튼 */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-label={isExpanded ? "사이드바 접기" : "사이드바 펼치기"}
           className="w-10 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 mb-2"
         >
           {isExpanded ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}

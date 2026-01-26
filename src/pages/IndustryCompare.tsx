@@ -1652,11 +1652,18 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                   <GlassCard
                     key={news.id}
                     className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
-                    onClick={() =>
-                      news.url
-                        ? window.open(news.url, "_blank")
-                        : setSelectedNews(news)
-                    }
+                    onClick={() => {
+                      if (news.url) {
+                        const newWindow = window.open(
+                          news.url,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                        if (newWindow) newWindow.opener = null;
+                      } else {
+                        setSelectedNews(news);
+                      }
+                    }}
                   >
                     <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
                       {news.title}
