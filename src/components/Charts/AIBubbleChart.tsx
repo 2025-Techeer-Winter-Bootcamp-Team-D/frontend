@@ -137,14 +137,21 @@ const COLORS = [
 
 const CustomBubble = (props: any) => {
   const { cx, cy, fill, payload } = props;
+  const [isHovered, setIsHovered] = React.useState(false);
+
   // Calculate radius based on size. Adjust divider to fit container.
-  const radius = Math.sqrt(payload.size) * 1.5;
+  const baseRadius = Math.sqrt(payload.size) * 1.5;
+  const radius = isHovered ? baseRadius * 1.1 : baseRadius;
 
   // Determine if bubble is small to adjust text size or hide score
-  const isSmall = radius < 30;
+  const isSmall = baseRadius < 30;
 
   return (
-    <g className="transition-all duration-500 hover:scale-110 cursor-pointer group">
+    <g
+      className="cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <defs>
         <filter
           id={`shadow-${payload.keyword.replace(/\s+/g, "-")}`}
@@ -156,9 +163,9 @@ const CustomBubble = (props: any) => {
           <feDropShadow
             dx="0"
             dy="4"
-            stdDeviation="6"
+            stdDeviation={isHovered ? "10" : "6"}
             floodColor={fill}
-            floodOpacity="0.3"
+            floodOpacity={isHovered ? "0.5" : "0.3"}
           />
         </filter>
         <linearGradient
@@ -175,10 +182,10 @@ const CustomBubble = (props: any) => {
 
       {/* Pulse effect for top ranked items */}
       {payload.score > 90 && (
-        <circle cx={cx} cy={cy} r={radius + 5} fill={fill} opacity="0.2">
+        <circle cx={cx} cy={cy} r={baseRadius + 5} fill={fill} opacity="0.2">
           <animate
             attributeName="r"
-            values={`${radius};${radius + 10};${radius}`}
+            values={`${baseRadius};${baseRadius + 10};${baseRadius}`}
             dur="3s"
             repeatCount="indefinite"
           />
@@ -198,8 +205,9 @@ const CustomBubble = (props: any) => {
         fill={`url(#grad-${payload.keyword.replace(/\s+/g, "-")})`}
         filter={`url(#shadow-${payload.keyword.replace(/\s+/g, "-")})`}
         stroke="white"
-        strokeWidth={1}
-        strokeOpacity={0.2}
+        strokeWidth={isHovered ? 2 : 1}
+        strokeOpacity={isHovered ? 0.5 : 0.2}
+        style={{ transition: "all 0.3s ease" }}
       />
 
       <text
@@ -312,6 +320,7 @@ const AIBubbleChart: React.FC<AIBubbleChartProps> = ({ keywords }) => {
           <Tooltip
             content={<CustomTooltip />}
             cursor={{ strokeDasharray: "3 3" }}
+            isAnimationActive={false}
           />
           <Scatter name="AI Trends" data={chartData} shape={<CustomBubble />}>
             {chartData.map((entry, index) => (

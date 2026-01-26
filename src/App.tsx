@@ -25,7 +25,7 @@ import SearchModal from "./components/Layout/SearchModal";
 import { PageView } from "./types";
 import { StarredProvider, useStarred } from "./context/StarredContext";
 import { logout } from "./api/users";
-import { notifyAuthChange } from "./hooks/useAuth";
+import { notifyAuthChange, useAuth } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
 
@@ -36,14 +36,28 @@ function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { starred, toggleStar } = useStarred();
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem("isLoggedIn") === "true";
-  });
+  const { isAuthenticated: isLoggedIn } = useAuth();
 
   // 네비게이션 처리 함수
   const handlePageChange = (page: PageView) => {
     // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
     navigate("/", { state: { targetPage: page } });
+  };
+
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (refreshToken) {
+        await logout(refreshToken);
+      }
+    } catch (error) {
+      console.error("로그아웃 API 실패:", error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      notifyAuthChange();
+    }
   };
 
   return (
@@ -53,10 +67,7 @@ function CompanyDetailPage() {
           currentPage={PageView.COMPANY_DETAIL}
           setPage={handlePageChange}
           isLoggedIn={isLoggedIn}
-          onLogout={() => {
-            setIsLoggedIn(false);
-            localStorage.removeItem("isLoggedIn");
-          }}
+          onLogout={handleLogout}
         />
       </div>
       <main className="container mx-auto px-4 pt-6 max-w-7xl">
@@ -115,10 +126,10 @@ function App() {
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem("isLoggedIn") === "true";
-  });
   const [showSearch, setShowSearch] = useState(false);
+
+  // useAuth 훅으로 로그인 상태 관리 (accessToken 기반)
+  const { isAuthenticated: isLoggedIn } = useAuth();
 
   const isDashboard = page === PageView.DASHBOARD;
 
@@ -137,10 +148,8 @@ function App() {
       localStorage.removeItem("refreshToken");
       // React Query 캐시 초기화
       qc.clear();
-      // 인증 상태 변경 알림
+      // 인증 상태 변경 알림 (useAuth 훅이 자동으로 감지)
       notifyAuthChange();
-      // 로그인 상태 업데이트
-      setIsLoggedIn(false);
     }
   };
 
@@ -249,14 +258,7 @@ function App() {
       )}
 
       {showLogin && (
-        <Login
-          setPage={handlePageChange}
-          onClose={() => setShowLogin(false)}
-          onLogin={() => {
-            setIsLoggedIn(true);
-            localStorage.setItem("isLoggedIn", "true");
-          }}
-        />
+        <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
       )}
       {showSignUp && (
         <SignUp
