@@ -3,24 +3,7 @@
  * accessToken 존재 여부를 확인하여 API 요청 활성화 결정에 사용
  */
 
-import { useMemo, useSyncExternalStore } from "react";
-
-// localStorage 변경 감지를 위한 스냅샷
-const getSnapshot = () => localStorage.getItem("accessToken");
-
-// 서버 사이드 렌더링용 (항상 null)
-const getServerSnapshot = () => null;
-
-// localStorage 변경 구독
-const subscribe = (callback: () => void) => {
-  window.addEventListener("storage", callback);
-  // custom event for same-tab updates
-  window.addEventListener("auth-change", callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener("auth-change", callback);
-  };
-};
+import { useState, useEffect, useCallback } from "react";
 
 /**
  * 인증 토큰 변경 알림 (로그인/로그아웃 시 호출)
@@ -34,17 +17,34 @@ export const notifyAuthChange = () => {
  * @returns { isAuthenticated, accessToken }
  */
 export function useAuth() {
-  const accessToken = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
+  // 초기 상태: localStorage에서 직접 읽기 (새로고침 시에도 유지)
+  const [accessToken, setAccessToken] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("accessToken");
+    }
+    return null;
+  });
 
-  return useMemo(
-    () => ({
-      isAuthenticated: !!accessToken,
-      accessToken,
-    }),
-    [accessToken],
-  );
+  // localStorage 변경 감지
+  const handleStorageChange = useCallback(() => {
+    const token = localStorage.getItem("accessToken");
+    setAccessToken(token);
+  }, []);
+
+  useEffect(() => {
+    // 다른 탭에서의 localStorage 변경 감지
+    window.addEventListener("storage", handleStorageChange);
+    // 같은 탭에서의 인증 변경 감지 (로그인/로그아웃 시)
+    window.addEventListener("auth-change", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-change", handleStorageChange);
+    };
+  }, [handleStorageChange]);
+
+  return {
+    isAuthenticated: !!accessToken,
+    accessToken,
+  };
 }
