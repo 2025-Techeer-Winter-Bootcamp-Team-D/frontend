@@ -1,7 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
-import { Search, Star, TrendingUp, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Star,
+  TrendingUp,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 import { Skeleton, SkeletonSearchResults } from "../components/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { PageView } from "../types";
@@ -15,7 +21,6 @@ const fetchPriceAndChange = async (
   stockCode: string,
 ): Promise<{ price: string; change: string; changeVal: number }> => {
   try {
-    // 1m interval로 실시간 분봉 데이터 조회 (가장 빠름)
     const response = await getStockOhlcv(stockCode, "1m");
     const priceData = (response?.data?.data?.data ?? []) as unknown as Array<{
       close: number;
@@ -47,7 +52,6 @@ const fetchPriceAndChange = async (
   }
 };
 
-// 여러 종목의 주가 및 등락률을 병렬로 가져오는 헬퍼 (동시성 제한)
 const fetchPricesBatch = async (
   stockCodes: string[],
 ): Promise<
@@ -75,11 +79,10 @@ const fetchPricesBatch = async (
   return resultMap;
 };
 
-// 시가총액 포맷 함수 (억/조 단위)
 const formatMarketCap = (value: number | string): string => {
   const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(numValue) || numValue === 0) return "-";
-  const uk = Math.floor(numValue / 100000000); // 억 단위로 변환
+  const uk = Math.floor(numValue / 100000000);
   if (uk >= 10000) {
     const jo = Math.floor(uk / 10000);
     const remainder = uk % 10000;
@@ -90,7 +93,6 @@ const formatMarketCap = (value: number | string): string => {
   return `${uk.toLocaleString()}억`;
 };
 
-// 가격 포맷 함수
 const formatPrice = (price: number): string => {
   return price.toLocaleString();
 };
@@ -104,18 +106,20 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   setPage: _setPage,
   setCompanyCode,
 }) => {
-  void _setPage; // props 유지용
+  void _setPage;
   const navigate = useNavigate();
-  // [수정: 25번 라인] Context에서 필요한 모든 상태 가져오기
   const {
     starred,
     toggleStar,
     favoriteMap,
     isLoading: isStarredLoading,
   } = useStarred();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // [추가] 관심기업 노출 개수 상태 (초기 7개)
+  const [visibleCount, setVisibleCount] = useState(7);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -125,7 +129,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 외부 클릭시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -150,11 +153,9 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         amount?: number;
       }>;
 
-      // 모든 종목 코드 수집 후 배치로 주가 조회 (동시성 제한 적용)
       const stockCodes = data.map((item) => item.stock_code);
       const priceMap = await fetchPricesBatch(stockCodes);
 
-      // 결과 매핑
       return data.map((item): RankingItem => {
         const priceData = priceMap.get(item.stock_code) ?? {
           price: "-",
@@ -209,10 +210,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   const isLoading = debouncedQuery.trim() ? isSearching : isRankingLoading;
 
-  // [수정: 82번 라인] starredList 생성 로직 (fav 에러 해결 핵심 부분)
   const starredList = useMemo(() => {
     return Array.from(favoriteMap.values()).map((fav) => {
-      // 랭킹 데이터에 있으면 시세 정보를 가져오고, 없으면 기본값 표시
       const liveData = rankingData.find((r) => r.code === fav.companyId);
       return {
         code: fav.companyId,
@@ -241,9 +240,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
-      {/* 검색창 섹션 */}
       <div className="flex flex-col items-center justify-center mb-10 pt-4">
-        <h1 className="text-3xl font-bold text-slate-800 mb-6">기업 검색</h1>
         <div className="w-full max-w-2xl relative" ref={searchContainerRef}>
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
             <Search className="text-gray-400" size={24} />
@@ -259,7 +256,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             }}
             onFocus={() => setIsDropdownOpen(true)}
           />
-          {/* 검색 결과 드롭다운 */}
           {isDropdownOpen && searchQuery.trim() && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto z-50">
               {isSearching ? (
@@ -286,17 +282,17 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     </li>
                   ))}
                 </ul>
-              ) : debouncedQuery.trim() ? (
+              ) : (
                 <div className="py-6 text-center text-gray-500">
                   검색 결과가 없습니다
                 </div>
-              ) : null}
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
         {/* 메인 리스트 */}
         <div className="lg:col-span-3">
           <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
@@ -379,9 +375,9 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           </GlassCard>
         </div>
 
-        {/* [수정] 우측 사이드바: 나의 관심 기업 */}
-        <div className="lg:col-span-1">
-          <GlassCard className="p-0 overflow-hidden flex flex-col h-full bg-white border-2 border-shinhan-light/50">
+        {/* 우측 사이드바: 나의 관심 기업 (Sticky 적용) */}
+        <div className="lg:col-span-1 sticky top-8">
+          <GlassCard className="p-0 overflow-hidden flex flex-col bg-white border-2 border-shinhan-light/50 shadow-xl">
             <div className="p-5 border-b border-gray-100 bg-shinhan-blue text-white">
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <Star size={20} className="fill-white" /> 나의 관심 기업
@@ -391,14 +387,15 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[600px] custom-scrollbar p-3">
+            <div className="p-3 overflow-hidden">
               {starredList.length > 0 ? (
                 <div className="flex flex-col gap-2">
-                  {starredList.map((item) => (
+                  {/* [수정] slice를 사용하여 visibleCount만큼만 렌더링 */}
+                  {starredList.slice(0, visibleCount).map((item) => (
                     <div
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className="p-3 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer"
+                      className="p-3 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-100"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -433,12 +430,23 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                       </div>
                     </div>
                   ))}
+
+                  {/* [추가] 더 보기 버튼 */}
+                  {starredList.length > visibleCount && (
+                    <button
+                      onClick={() => setVisibleCount((prev) => prev + 3)}
+                      className="mt-2 py-3 w-full flex items-center justify-center gap-1 text-sm font-bold text-shinhan-blue hover:bg-blue-50 rounded-xl transition-all border border-dashed border-blue-200"
+                    >
+                      <ChevronDown size={16} />
+                      {starredList.length - visibleCount}개 더 보기
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-10 px-4">
                   {isStarredLoading ? (
                     <div className="space-y-3">
-                      {Array.from({ length: 3 }).map((_, i) => (
+                      {[1, 2, 3].map((i) => (
                         <div
                           key={i}
                           className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"

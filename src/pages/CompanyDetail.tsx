@@ -519,37 +519,55 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const disclosureRef = useRef<HTMLDivElement>(null);
   const outlookRef = useRef<HTMLDivElement>(null);
 
+  // 1. 기존 스크롤 이벤트 useEffect를 제거하고 아래 로직을 넣습니다.
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+    const sections = [
+      { id: "info", ref: infoRef },
+      { id: "price", ref: priceRef },
+      { id: "financial", ref: financialRef },
+      { id: "outlook", ref: outlookRef },
+      { id: "news", ref: newsRef },
+      { id: "disclosure", ref: disclosureRef },
+    ];
 
-      // 각 섹션의 위치를 체크하여 현재 보이는 섹션에 따라 activeTab 업데이트
-      const sections = [
-        { id: "info", ref: infoRef },
-        { id: "price", ref: priceRef },
-        { id: "financial", ref: financialRef },
-        { id: "outlook", ref: outlookRef },
-        { id: "news", ref: newsRef },
-        { id: "disclosure", ref: disclosureRef },
-      ];
-
-      const headerOffset = 150; // 상단 헤더 높이 고려
-
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = sections[i];
-        if (section.ref.current) {
-          const rect = section.ref.current.getBoundingClientRect();
-          if (rect.top <= headerOffset) {
-            setActiveTab(section.id);
-            break;
-          }
-        }
-      }
+    // 스크롤 감지 시 헤더 높이를 제외하고 판단하도록 rootMargin 설정
+    const observerOptions = {
+      root: null,
+      rootMargin: "-150px 0px -70% 0px", // 상단 헤더(150px)를 제외하고 화면 위쪽에 도달했을 때 감지
+      threshold: 0,
     };
 
-    handleScroll();
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        // 섹션이 화면 상단에 걸쳐있을 때 해당 탭 활성화
+        if (entry.isIntersecting) {
+          setActiveTab(entry.target.id);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      observerCallback,
+      observerOptions,
+    );
+
+    // 각 섹션 관찰 시작
+    sections.forEach((section) => {
+      if (section.ref.current) {
+        observer.observe(section.ref.current);
+      }
+    });
+
+    // 별도의 스크롤 핸들러 (isScrolled 처리용)
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const currentCompany = useMemo(() => {
@@ -920,7 +938,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </div>
         </div>
         {/* Recharts 에러 해결을 위해 부모 div에 명시적 높이(h-48) 부여 */}
-        <div className="w-full h-48 mt-auto">
+        <div className="w-full h-48 mt-auto focus:outline-none">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data.history}
@@ -972,7 +990,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </Tooltip>
         </div>
         <div className="flex-1 flex items-center min-h-[180px]">
-          <div className="w-1/2">
+          <div className="w-1/2 focus:outline-none">
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
                 <Pie
@@ -1034,10 +1052,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         <div
           className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
         >
-          <div
-            className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center cursor-pointer overflow-hidden"
-            onClick={() => setPage("DASHBOARD" as PageView)}
-          >
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center overflow-hidden">
             {currentCompany.logoUrl ? (
               <img
                 src={currentCompany.logoUrl}
@@ -1090,7 +1105,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
       </div>
 
       <div className="space-y-8">
-        <div ref={infoRef} className="scroll-mt-32">
+        <div ref={infoRef} id="info" className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-gray-100 pb-3">
               기업정보
@@ -1418,7 +1433,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </div>
         </div>
 
-        <div ref={financialRef} className="scroll-mt-32">
+        <div ref={financialRef} id="financial" className="scroll-mt-32">
           <GlassCard className="p-6 bg-slate-50/50">
             <h3 className="text-xl font-bold text-slate-800 mb-6">
               재무 데이터 분석
@@ -1506,7 +1521,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
         <div className="border-t border-gray-200 my-8" />
         {/* 기업 전망 분석 */}
-        <div ref={outlookRef} className="scroll-mt-32">
+        <div ref={outlookRef} id="outlook" className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
               <Target size={24} className="text-blue-600" />
@@ -1601,7 +1616,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
 
         <div className="border-t border-gray-200 my-8" />
-        <div ref={newsRef} className="scroll-mt-32">
+        <div ref={newsRef} id="news" className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-4">기업 뉴스</h3>
             {isNewsLoading ? (
@@ -1644,7 +1659,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         </div>
 
         <div className="border-t border-gray-200 my-8" />
-        <div ref={disclosureRef} className="scroll-mt-32">
+        <div ref={disclosureRef} id="disclosure" className="scroll-mt-32">
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex gap-2">
