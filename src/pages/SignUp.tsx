@@ -101,7 +101,7 @@ const SignUp: React.FC<SignUpProps> = ({ setPage, onClose }) => {
               </div>
               <input
                 type="email"
-                placeholder="example@shinhan.com"
+                placeholder="user@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800"

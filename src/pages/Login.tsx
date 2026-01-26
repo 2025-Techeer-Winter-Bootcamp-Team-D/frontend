@@ -71,7 +71,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-slate-800 mb-2">로그인</h1>
           <p className="text-slate-500 text-sm">
-            신한 파이낸셜 인사이트에 오신 것을 환영합니다
+            퀘이사 QAISA에 오신 것을 환영합니다.
           </p>
         </div>
 
@@ -92,15 +92,15 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail
                   size={18}
-                  className="text-gray-400 group-focus-within:text-shinhan-blue transition-colors"
+                  className="text-gray-400 group-focus-within:text-[#0046ff] transition-colors"
                 />
               </div>
               <input
                 type="email"
-                placeholder="example@shinhan.com"
+                placeholder="user@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400"
               />
             </div>
           </div>
@@ -114,7 +114,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock
                   size={18}
-                  className="text-gray-400 group-focus-within:text-shinhan-blue transition-colors"
+                  className="text-gray-400 group-focus-within:text-[0046ff] transition-colors"
                 />
               </div>
               <input
@@ -123,7 +123,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
                 placeholder="비밀번호 입력"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
+                className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100/50 outline-none transition-all text-slate-800 placeholder:text-gray-400 font-sans"
               />
               <button
                 type="button"
@@ -142,7 +142,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-shinhan-blue hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-4 bg-[#0046ff] hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -162,7 +162,7 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
             <button
               type="button"
               onClick={() => setPage(PageView.SIGN_UP)}
-              className="font-bold text-shinhan-blue hover:text-blue-700 ml-1 hover:underline"
+              className="font-bold text-[#0046ff] hover:text-blue-700 ml-1 hover:underline"
             >
               회원가입
             </button>
