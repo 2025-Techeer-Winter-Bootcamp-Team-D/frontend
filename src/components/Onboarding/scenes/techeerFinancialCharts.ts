@@ -84,14 +84,7 @@ export const techeerSankeyChart = new Scene({
 // ========== 2. Radar Chart (산업 평균 이탈 탐지) ==========
 const industryRadarOptions: (GetOption | EChartsOption)[] = [
   () => ({
-    legend: {
-      right: 80,
-      top: 55,
-      data: ["삼성전자(주)", "SK(주)"],
-      textStyle: { fontFamily: techeerFont, fontSize: 13, fontWeight: 600 },
-      itemWidth: 20,
-      itemHeight: 10,
-    },
+    legend: { show: false },
     radar: {
       center: ["50%", "55%"],
       radius: "55%",
@@ -124,7 +117,6 @@ const industryRadarOptions: (GetOption | EChartsOption)[] = [
         symbolSize: 10,
         data: [
           {
-            name: "삼성전자(주)",
             value: [15, 27, 1.8, 5, 12],
             areaStyle: { color: "rgba(66,100,251,0.35)" },
             lineStyle: { color: "#4264FB", width: 3 },
@@ -135,7 +127,6 @@ const industryRadarOptions: (GetOption | EChartsOption)[] = [
             },
           },
           {
-            name: "SK(주)",
             value: [8, 12, 0.9, -2, 6],
             areaStyle: { color: "rgba(148,163,184,0.25)" },
             lineStyle: { color: "#94a3b8", width: 2 },
