@@ -125,8 +125,8 @@ const industryRadarOptions: (GetOption | EChartsOption)[] = [
   () => ({
     legend: { show: false },
     radar: {
-      center: ["50%", "55%"],
-      radius: "55%",
+      center: ["50%", "50%"],
+      radius: "70%",
       indicator: [
         { name: "ROE", max: 30 },
         { name: "PER", max: 50 },
@@ -267,10 +267,10 @@ const parallelOptions: (GetOption | EChartsOption)[] = [
       },
     ],
     parallel: {
-      top: 180,
-      left: 100,
-      right: 100,
-      bottom: 80,
+      top: 80,
+      left: 80,
+      right: 80,
+      bottom: 60,
       parallelAxisDefault: {
         type: "value",
         nameGap: 20,

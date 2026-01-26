@@ -165,5 +165,5 @@ export const universalTransitionConfig = {
   enabled: false,
 };
 
-// 차트 센터 위치 (타이틀 영역 고려)
-export const CHART_CENTER: [string, string] = ["52%", "55%"];
+// 차트 센터 위치 (전체 화면 활용)
+export const CHART_CENTER: [string, string] = ["50%", "50%"];

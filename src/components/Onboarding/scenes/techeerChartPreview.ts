@@ -163,10 +163,10 @@ const bubbleToLineOptions: (GetOption | EChartsOption)[] = [
       splitLine: { lineStyle: { color: "#f1f5f9" } },
     },
     grid: {
-      top: 80,
+      top: 50,
       left: 60,
       right: 60,
-      bottom: 80,
+      bottom: 60,
     },
     series: [
       {
@@ -254,7 +254,7 @@ const pieToRoseOptions: (GetOption | EChartsOption)[] = [
       {
         type: "pie",
         id: "main",
-        radius: ["25%", "68%"],
+        radius: ["20%", "75%"],
         center: CHART_CENTER,
         data: baseData.map((d, i) => ({
           id: `bubble-${i}`, // 버블과 동일한 ID
@@ -273,8 +273,8 @@ const pieToRoseOptions: (GetOption | EChartsOption)[] = [
         },
         labelLine: {
           lineStyle: { color: "#94a3b8", width: 2 },
-          length: 15,
-          length2: 20,
+          length: 12,
+          length2: 15,
         },
         ...morphAnimation,
       },
@@ -286,7 +286,7 @@ const pieToRoseOptions: (GetOption | EChartsOption)[] = [
       {
         type: "pie",
         id: "main",
-        radius: ["12%", "72%"],
+        radius: ["10%", "80%"],
         center: CHART_CENTER,
         roseType: "area",
         data: baseData.map((d, i) => ({

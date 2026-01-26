@@ -68,8 +68,8 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
       {
         type: "sunburst",
         id: "main",
-        radius: ["18%", "78%"],
-        center: ["52%", "55%"],
+        radius: ["15%", "85%"],
+        center: ["50%", "50%"],
         nodeClick: false,
         emphasis: { disabled: true },
         label: {
@@ -87,14 +87,14 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
         levels: [
           {},
           {
-            r0: "18%",
-            r: "48%",
+            r0: "15%",
+            r: "50%",
             label: { fontSize: 14, fontWeight: 700 },
             itemStyle: { borderRadius: 6 },
           },
           {
-            r0: "48%",
-            r: "78%",
+            r0: "50%",
+            r: "85%",
             label: { fontSize: 11, fontWeight: 600 },
             itemStyle: { borderRadius: 8 },
           },
@@ -110,10 +110,10 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
       {
         type: "treemap",
         id: "main",
-        top: 180,
-        left: 80,
-        right: 80,
-        bottom: 60,
+        top: 40,
+        left: 40,
+        right: 40,
+        bottom: 40,
         roam: false,
         nodeClick: false,
         breadcrumb: { show: false },
