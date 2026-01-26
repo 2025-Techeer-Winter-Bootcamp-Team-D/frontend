@@ -268,8 +268,6 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
 
 // --- Main Dashboard Component ---
 
-const ONBOARDING_SEEN_KEY = "bizscope_onboarding_seen";
-
 const Dashboard: React.FC<DashboardProps> = ({
   onIndustryClick,
   onShowNavbar,
@@ -282,22 +280,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [visibleSections, setVisibleSections] = useState<Set<string>>(
     new Set(["hero"]),
   );
-
-  // 온보딩을 이미 봤다면 스킵하고 메인 콘텐츠로 이동
-  useEffect(() => {
-    const hasSeenOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY);
-    if (hasSeenOnboarding && scrollRef.current) {
-      // 약간의 딜레이 후 메인 섹션으로 스크롤
-      const timer = setTimeout(() => {
-        const mainSection = document.getElementById("parallel-coordinates");
-        if (mainSection) {
-          mainSection.scrollIntoView({ behavior: "instant" });
-          onShowNavbar(true);
-        }
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [onShowNavbar]);
 
   // 기업 검색 쿼리
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
@@ -594,13 +576,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     const handleScroll = () => {
       if (!scrollRef.current) return;
-      const scrollTop = scrollRef.current.scrollTop;
-      onShowNavbar(scrollTop > 100);
-
-      // 히어로 섹션을 지나면 온보딩을 본 것으로 저장
-      if (scrollTop > window.innerHeight * 0.5) {
-        localStorage.setItem(ONBOARDING_SEEN_KEY, "true");
-      }
+      onShowNavbar(scrollRef.current.scrollTop > 100);
     };
 
     const div = scrollRef.current;
