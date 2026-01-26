@@ -72,6 +72,11 @@ function CompanyDetailPage() {
       setShowSignUp(true);
       return;
     }
+    if (page === PageView.COMPANY_DETAIL) {
+      // 이미 기업 상세 페이지에 있으므로 상단으로 스크롤
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
     navigate("/", { state: { targetPage: page } });
   };

@@ -143,10 +143,10 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
 
             // 중간 노드는 상단에 텍스트 배치
             const textY = isMiddle
-              ? node.y0 - 20
+              ? node.y0 - 28
               : (node.y0 + node.y1) / 2 - (nodeHeight > 40 ? 6 : 0);
             const valueY = isMiddle
-              ? node.y0 - 6
+              ? node.y0 - 12
               : (node.y0 + node.y1) / 2 + 12;
 
             return (
