@@ -128,11 +128,12 @@ const bubbleOptions: (GetOption | EChartsOption)[] = [
 ];
 
 // ========== Scene 2: Bubble -> Line Chart ==========
-// 버블 중 일부가 라인 차트의 꼭짓점으로 모핑
+// 역동적인 주식 차트 스타일 데이터
+const volatileValues = [35, 52, 78, 45, 95, 38, 72, 88];
 const lineChartData = baseData.map((item, i) => ({
   id: `bubble-${i}`,
   name: item.n,
-  value: item.v,
+  value: volatileValues[i],
 }));
 
 const bubbleToLineOptions: (GetOption | EChartsOption)[] = [
@@ -151,6 +152,7 @@ const bubbleToLineOptions: (GetOption | EChartsOption)[] = [
     },
     yAxis: {
       type: "value",
+      min: 20,
       max: 110,
       axisLabel: {
         fontFamily: techeerFont,
@@ -215,13 +217,7 @@ const bubbleToLineOptions: (GetOption | EChartsOption)[] = [
           },
         },
         label: {
-          show: true,
-          position: "top",
-          fontFamily: techeerFont,
-          fontSize: 11,
-          fontWeight: 600,
-          color: "#1e293b",
-          formatter: "{c}",
+          show: false,
         },
         ...morphAnimation,
       },
@@ -243,7 +239,7 @@ export const techeerBubbleToLineChart = new Scene({
   option: bubbleToLineOptions,
   file: "techeerChartPreview",
   title: "Bubble to Line",
-  duration: 1500,
+  duration: 1800,
   dark: false,
   background: "#FFFFFF",
   morphFromPrevious: true, // 버블에서 라인으로 모핑
