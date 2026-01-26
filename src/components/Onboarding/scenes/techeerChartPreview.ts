@@ -2,12 +2,12 @@ import type { EChartsOption } from "echarts";
 import Scene, { type GetOption } from "./Scene";
 import { photoColors, techeerFont, CHART_CENTER } from "../styles/techeerStyle";
 
-// 모핑 애니메이션 설정
+// 모핑 애니메이션 설정 (빠른 전환)
 const morphAnimation = {
-  animationDuration: 800,
-  animationDurationUpdate: 800,
-  animationEasing: "cubicInOut" as const,
-  animationEasingUpdate: "cubicInOut" as const,
+  animationDuration: 500,
+  animationDurationUpdate: 500,
+  animationEasing: "cubicOut" as const,
+  animationEasingUpdate: "cubicOut" as const,
   universalTransition: {
     enabled: true,
     seriesKey: "main",
