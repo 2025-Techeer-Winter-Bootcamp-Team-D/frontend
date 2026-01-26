@@ -47,45 +47,82 @@ const expandedData = [
   { n: "LLM", v: 96 },
 ];
 
+// 버블 위치 - 화면 전체에 분산
+const bubblePositions = [
+  { x: "15%", y: "20%" },
+  { x: "85%", y: "25%" },
+  { x: "25%", y: "75%" },
+  { x: "75%", y: "80%" },
+  { x: "50%", y: "50%" }, // 중앙 버블 (확대될 버블)
+  { x: "10%", y: "50%" },
+  { x: "90%", y: "55%" },
+  { x: "35%", y: "15%" },
+  { x: "65%", y: "12%" },
+  { x: "20%", y: "40%" },
+  { x: "80%", y: "42%" },
+  { x: "40%", y: "85%" },
+  { x: "60%", y: "88%" },
+  { x: "8%", y: "75%" },
+  { x: "92%", y: "72%" },
+  { x: "30%", y: "55%" },
+  { x: "70%", y: "58%" },
+  { x: "45%", y: "30%" },
+  { x: "55%", y: "70%" },
+  { x: "12%", y: "88%" },
+  { x: "88%", y: "15%" },
+  { x: "50%", y: "8%" },
+  { x: "50%", y: "92%" },
+  { x: "5%", y: "30%" },
+];
+
 // ========== Scene 1: Bubble (Force Graph) ==========
 const bubbleOptions: (GetOption | EChartsOption)[] = [
-  () => ({
-    series: [
-      {
-        type: "graph",
-        id: "main",
-        layout: "force",
-        data: expandedData.map((item, i) => ({
-          name: item.n,
-          value: item.v,
-          symbolSize: item.v * 1.4 + 20,
-          itemStyle: {
-            color: photoColors[i % photoColors.length],
-            opacity: 0.85,
-            borderColor: "rgba(255,255,255,0.3)",
-            borderWidth: 2,
-          },
-          label: {
-            show: true,
-            color: "#FFFFFF",
-            fontSize: item.v > 80 ? 13 : 10,
-            fontWeight: 700,
-            fontFamily: techeerFont,
-            formatter: "{b}\n{c}",
-            lineHeight: 14,
-          },
-        })),
-        force: {
-          repulsion: 280,
-          gravity: 0.1,
-          edgeLength: 100,
-          friction: 0.2,
+  // Step 1: 버블들이 화면 전체에 퍼져있는 상태
+  (chart) => {
+    const width = chart.getWidth();
+    const height = chart.getHeight();
+
+    return {
+      series: [
+        {
+          type: "graph",
+          id: "main",
+          layout: "none", // 고정 위치 사용
+          data: expandedData.map((item, i) => {
+            const pos = bubblePositions[i % bubblePositions.length];
+            const xPercent = parseFloat(pos.x) / 100;
+            const yPercent = parseFloat(pos.y) / 100;
+
+            return {
+              name: item.n,
+              value: item.v,
+              x: width * xPercent,
+              y: height * yPercent,
+              symbolSize: item.v * 1.2 + 15,
+              itemStyle: {
+                color: photoColors[i % photoColors.length],
+                opacity: 0.9,
+                borderColor: "rgba(255,255,255,0.4)",
+                borderWidth: 2,
+                shadowBlur: 15,
+                shadowColor: "rgba(0,0,0,0.15)",
+              },
+              label: {
+                show: item.v > 60,
+                color: "#FFFFFF",
+                fontSize: item.v > 85 ? 12 : 10,
+                fontWeight: 700,
+                fontFamily: techeerFont,
+                formatter: "{b}",
+              },
+            };
+          }),
+          roam: false,
+          ...morphAnimation,
         },
-        roam: false,
-        ...morphAnimation,
-      },
-    ],
-  }),
+      ],
+    };
+  },
 ];
 
 export const techeerBubbleChart = new Scene({
