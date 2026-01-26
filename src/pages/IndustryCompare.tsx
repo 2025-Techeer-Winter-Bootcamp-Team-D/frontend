@@ -963,7 +963,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                           <img
                             src={company.logo}
                             alt={company.name}
-                            className="w-6 h-6 object-contain"
+                            className="w-full h-full object-cover"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display =
                                 "none";
@@ -1107,7 +1107,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                                     <img
                                       src={stock.logo}
                                       alt={stock.name}
-                                      className="w-8 h-8 object-contain"
+                                      className="w-full h-full object-cover"
                                       onError={(e) => {
                                         (
                                           e.target as HTMLImageElement
