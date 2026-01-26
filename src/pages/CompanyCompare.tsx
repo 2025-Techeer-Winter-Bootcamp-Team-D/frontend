@@ -676,7 +676,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                     onClick={() => setActiveSetId(item.id)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
                       effectiveSetId === item.id
-                        ? "bg-shinhan-blue text-white shadow-lg shadow-blue-500/30"
+                        ? "bg-[#0046ff] text-white shadow-lg shadow-blue-500/30"
                         : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
                     }`}
                   >
@@ -701,7 +701,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
               <button
                 onClick={handleAddSet}
                 disabled={createSetMutation.isPending}
-                className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-shinhan-blue hover:text-shinhan-blue hover:bg-blue-50 transition-all disabled:opacity-50"
+                className="w-full mt-4 flex items-center justify-center gap-2 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-[#0046ff] hover:text-[#0046ff] hover:bg-blue-50 transition-all disabled:opacity-50"
               >
                 <Plus size={16} />
                 세트 추가하기
@@ -794,7 +794,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                     setIsSearchOpen(true);
                   }}
                   disabled={createSetMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-shinhan-blue rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-shinhan-light/50 text-[#0046ff] rounded-full border border-blue-100 hover:bg-shinhan-light hover:border-blue-200 transition-all group disabled:opacity-50"
                 >
                   <Plus
                     size={16}
@@ -814,7 +814,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             <GlassCard className="p-6 hover:shadow-none">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <BarChart3 size={20} className="text-shinhan-blue" />
+                  <BarChart3 size={20} className="text-[#0046ff]" />
                   {currentMetricOption.label} 비교 (단위:{" "}
                   {currentMetricOption.unit})
                 </h3>
@@ -826,7 +826,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                       onClick={() => setSelectedMetric(option.id)}
                       className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                         selectedMetric === option.id
-                          ? "bg-white text-shinhan-blue shadow-sm"
+                          ? "bg-white text-[#0046ff] shadow-sm"
                           : "text-gray-500 hover:text-gray-700"
                       }`}
                     >
@@ -896,7 +896,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             <GlassCard className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <TrendingUp size={20} className="text-shinhan-blue" />
+                  <TrendingUp size={20} className="text-[#0046ff]" />
                   주가 추이 (최근 {timeRange})
                 </h3>
                 <div className="flex gap-2">
@@ -906,7 +906,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                       onClick={() => setTimeRange(p)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                         timeRange === p
-                          ? "bg-shinhan-blue text-white shadow-md shadow-blue-300"
+                          ? "bg-[#0046ff] text-white shadow-md shadow-blue-300"
                           : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                       }`}
                     >
@@ -999,7 +999,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             {/* Row 3: PER-YoY Matrix (Quadrant Style) */}
             <GlassCard className="p-6">
               <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                <Crosshair size={18} className="text-shinhan-blue" />
+                <Crosshair size={18} className="text-[#0046ff]" />
                 이익 성장성 대비 저평가 분석
               </h3>
               <p className="text-sm text-slate-500 mb-4">
@@ -1149,7 +1149,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
           <GlassCard className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <Radar size={18} className="text-shinhan-blue" />
+                <Radar size={18} className="text-[#0046ff]" />
                 산업 평균 이탈 탐지
               </h3>
               <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
@@ -1159,7 +1159,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                     onClick={() => setSelectedRadarCompany(c.companyName)}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                       effectiveRadarCompany === c.companyName
-                        ? "bg-white text-shinhan-blue shadow-sm"
+                        ? "bg-white text-[#0046ff] shadow-sm"
                         : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
@@ -1219,7 +1219,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                <BarChart3 size={18} className="text-shinhan-blue" />
+                <BarChart3 size={18} className="text-[#0046ff]" />
                 투자 지표 비교
               </h2>
             </div>
@@ -1242,7 +1242,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                           {info.title}
                         </h3>
                         <div className="relative group">
-                          <div className="text-gray-400 hover:text-shinhan-blue transition-colors cursor-help">
+                          <div className="text-gray-400 hover:text-[#0046ff] transition-colors cursor-help">
                             <HelpCircle size={20} />
                           </div>
 
@@ -1258,7 +1258,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                               <p className="text-xs text-slate-500 font-bold mb-1">
                                 계산식
                               </p>
-                              <p className="text-sm font-mono text-shinhan-blue">
+                              <p className="text-sm font-mono text-[#0046ff]">
                                 {info.formula}
                               </p>
                             </div>
@@ -1337,12 +1337,12 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                           }`}
                         >
                           <span
-                            className={`font-bold text-sm ${isActive ? "text-shinhan-blue" : "group-hover:text-slate-700"}`}
+                            className={`font-bold text-sm ${isActive ? "text-[#0046ff]" : "group-hover:text-slate-700"}`}
                           >
                             {info.title}
                           </span>
                           {isActive && (
-                            <div className="bg-shinhan-blue text-white rounded-full p-0.5">
+                            <div className="bg-[#0046ff] text-white rounded-full p-0.5">
                               <Check size={12} strokeWidth={3} />
                             </div>
                           )}
@@ -1384,7 +1384,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="기업명 또는 종목코드를 입력하세요"
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100/50 outline-none transition-all"
                 autoFocus
               />
               <Search
@@ -1424,13 +1424,13 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                             className="w-8 h-8 rounded-full object-cover"
                           />
                         )}
-                        <span className="font-bold text-slate-700 group-hover:text-shinhan-blue">
+                        <span className="font-bold text-slate-700 group-hover:text-[#0046ff]">
                           {company.company_name}
                         </span>
                       </div>
                       <Plus
                         size={18}
-                        className="text-gray-400 group-hover:text-shinhan-blue"
+                        className="text-gray-400 group-hover:text-[#0046ff]"
                       />
                     </button>
                   ))
@@ -1453,7 +1453,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
           ></div>
           <GlassCard className="relative z-10 p-8 text-center max-w-sm animate-fade-in">
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
-              <Lock size={32} className="text-shinhan-blue" />
+              <Lock size={32} className="text-[#0046ff]" />
             </div>
             <h2 className="text-xl font-bold text-slate-800 mb-2">
               로그인이 필요한 서비스입니다
@@ -1477,7 +1477,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                     setPage(PageView.LOGIN);
                   }
                 }}
-                className="flex-1 py-2.5 bg-shinhan-blue text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                className="flex-1 py-2.5 bg-[#0046ff] text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
               >
                 로그인
               </button>
