@@ -4,7 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -28,6 +28,24 @@ import { logout } from "./api/users";
 import { notifyAuthChange, useAuth } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
+
+// URL 경로와 PageView 매핑
+const PATH_TO_PAGE: Record<string, PageView> = {
+  "/": PageView.DASHBOARD,
+  "/search": PageView.COMPANY_SEARCH,
+  "/compare": PageView.COMPANY_COMPARE,
+  "/industry": PageView.INDUSTRY_ANALYSIS,
+};
+
+const PAGE_TO_PATH: Record<PageView, string> = {
+  [PageView.DASHBOARD]: "/",
+  [PageView.COMPANY_SEARCH]: "/search",
+  [PageView.COMPANY_COMPARE]: "/compare",
+  [PageView.INDUSTRY_ANALYSIS]: "/industry",
+  [PageView.COMPANY_DETAIL]: "/company",
+  [PageView.LOGIN]: "/",
+  [PageView.SIGN_UP]: "/",
+};
 
 /**
  * 기업 상세 페이지 (독립 라우트용)
@@ -102,7 +120,6 @@ function CompanyDetailPage() {
 }
 
 function App() {
-  const [page, setPage] = useState<PageView>(PageView.DASHBOARD);
   const [selectedIndustry, setSelectedIndustry] = useState<string>("finance");
   const [selectedCompanyCode, setSelectedCompanyCode] =
     useState<string>("005930");
@@ -112,15 +129,32 @@ function App() {
   const qc = useQueryClient();
   const location = useLocation();
 
+  // URL 경로로부터 현재 페이지 결정
+  const getCurrentPageFromPath = useCallback((): PageView => {
+    const path = location.pathname;
+    if (path.startsWith("/industry")) return PageView.INDUSTRY_ANALYSIS;
+    return PATH_TO_PAGE[path] ?? PageView.DASHBOARD;
+  }, [location.pathname]);
+
+  const page = getCurrentPageFromPath();
+
   // CompanyDetailPage에서 전달된 targetPage state 처리
-  React.useEffect(() => {
+  useEffect(() => {
     const state = location.state as { targetPage?: PageView } | null;
     if (state?.targetPage) {
-      setPage(state.targetPage);
-      // state 초기화 (뒤로 가기 시 중복 처리 방지)
-      navigate(location.pathname, { replace: true, state: null });
+      const targetPath = PAGE_TO_PATH[state.targetPage];
+      // state 초기화하면서 해당 페이지로 이동
+      navigate(targetPath, { replace: true, state: null });
     }
-  }, [location.state, navigate, location.pathname]);
+  }, [location.state, navigate]);
+
+  // URL에서 industry code 읽어서 설정
+  useEffect(() => {
+    const match = location.pathname.match(/^\/industry\/(.+)$/);
+    if (match && match[1]) {
+      setSelectedIndustry(match[1]);
+    }
+  }, [location.pathname]);
 
   // UI 상태 관리
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
@@ -164,13 +198,16 @@ function App() {
     } else {
       setShowLogin(false);
       setShowSignUp(false);
-      setPage(newPage);
+      // URL 경로를 변경하여 페이지 이동 (브라우저 히스토리에 기록됨)
+      const targetPath = PAGE_TO_PATH[newPage];
+      navigate(targetPath);
     }
   };
 
   const handleIndustryClick = (indutyCode: string) => {
     setSelectedIndustry(indutyCode);
-    setPage(PageView.INDUSTRY_ANALYSIS);
+    // URL 경로를 변경하여 산업 분석 페이지로 이동
+    navigate(`/industry/${indutyCode}`);
   };
 
   const showNavbar = !isDashboard || isNavbarVisible;
@@ -288,7 +325,13 @@ function AppWrapper() {
         <BrowserRouter>
           <Routes>
             <Route path="/company/:id" element={<CompanyDetailPage />} />
-            <Route path="/*" element={<App />} />
+            {/* 각 페이지에 고유 경로 부여 - 브라우저 뒤로가기 지원 */}
+            <Route path="/" element={<App />} />
+            <Route path="/search" element={<App />} />
+            <Route path="/compare" element={<App />} />
+            <Route path="/industry" element={<App />} />
+            <Route path="/industry/:code" element={<App />} />
+            <Route path="*" element={<App />} />
           </Routes>
         </BrowserRouter>
       </StarredProvider>
