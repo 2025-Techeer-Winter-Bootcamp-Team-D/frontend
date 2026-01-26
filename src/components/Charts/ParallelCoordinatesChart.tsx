@@ -142,7 +142,7 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
         filteredIds.has(d.id) ? (d.id === selectedStockId ? 3 : 1.2) : 1,
       )
       .style("pointer-events", (d) => (filteredIds.has(d.id) ? "auto" : "none"))
-      .on("mouseover", function (_event, d) {
+      .on("mouseover", function (event, d) {
         if (!filteredIds.has(d.id)) return;
         d3.select(this)
           .raise()
@@ -151,6 +151,9 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
           .style("opacity", 1);
 
         if (tooltipRef.current) {
+          // 초기 위치를 마우스 근처로 설정하여 왼쪽 위에서 날아오는 현상 방지
+          tooltipRef.current.style.left = event.clientX + 15 + "px";
+          tooltipRef.current.style.top = event.clientY - 15 + "px";
           tooltipRef.current.style.opacity = "1";
           tooltipRef.current.style.visibility = "visible";
           tooltipRef.current.innerHTML = `
@@ -316,7 +319,8 @@ const ParallelCoordinatesChart: React.FC<Props> = ({
   return (
     <div
       ref={containerRef}
-      className="w-full bg-white rounded-lg shadow-md border border-slate-100 overflow-hidden relative p-4"
+      className="w-full bg-white rounded-lg shadow-md border border-slate-100 overflow-hidden relative p-4 z-0"
+      style={{ isolation: "isolate" }}
     >
       <svg
         ref={svgRef}
