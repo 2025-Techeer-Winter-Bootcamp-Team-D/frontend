@@ -190,7 +190,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="기업명 또는 종목코드를 입력하세요"
-            className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100/50 outline-none transition-all"
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100/50 outline-none transition-all"
             autoFocus
           />
           <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
@@ -238,7 +238,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                           {index + 1}
                         </span>
                         <div className="flex-1">
-                          <span className="font-bold text-slate-700 group-hover:text-shinhan-blue transition-colors">
+                          <span className="font-bold text-slate-700 group-hover:text-[#0046ff] transition-colors">
                             {company.name}
                           </span>
                           <span className="ml-2 text-xs text-gray-400 font-mono">
@@ -248,7 +248,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                         <span className="font-medium text-sm text-slate-500">
                           {formatMarketCap(company.amount)}
                         </span>
-                        <TrendingUp size={14} className="text-shinhan-blue" />
+                        <TrendingUp size={14} className="text-[#0046ff]" />
                       </button>
                     ))}
                   </div>
@@ -257,7 +257,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             </div>
           ) : isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 size={24} className="animate-spin text-shinhan-blue" />
+              <Loader2 size={24} className="animate-spin text-[#0046ff]" />
             </div>
           ) : searchResults.length > 0 ? (
             searchResults.map((company) => (
@@ -269,11 +269,11 @@ const SearchModal: React.FC<SearchModalProps> = ({
                 className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-600 group-hover:bg-blue-100 group-hover:text-shinhan-blue transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-600 group-hover:bg-blue-100 group-hover:text-[#0046ff] transition-colors">
                     {company.company_name[0]}
                   </div>
                   <div>
-                    <span className="font-bold text-slate-700 group-hover:text-shinhan-blue transition-colors">
+                    <span className="font-bold text-slate-700 group-hover:text-[#0046ff] transition-colors">
                       {company.company_name}
                     </span>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -286,7 +286,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                 <div className="text-right flex items-center gap-2">
                   <ChevronRight
                     size={18}
-                    className="text-gray-400 group-hover:text-shinhan-blue"
+                    className="text-gray-400 group-hover:text-[#0046ff]"
                   />
                 </div>
               </button>

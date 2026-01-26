@@ -29,7 +29,7 @@ export const getMarketIndex = async (
   marketType: "kospi" | "kosdaq",
 ): Promise<MarketIndexData> => {
   // baseURL 설정에 따라 '/api' 추가 여부를 결정하세요.
-  const res = await api.get<MarketIndexResponse>(`/indices/${marketType}`);
+  const res = await api.get<MarketIndexResponse>(`/indices/${marketType}/`);
   const indices = res.data.data.indices;
 
   // 데이터가 2개 이상일 때 최신 데이터와 이전 데이터를 비교

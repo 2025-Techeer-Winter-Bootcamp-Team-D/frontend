@@ -248,7 +248,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           <input
             type="text"
             placeholder="기업명 또는 종목코드를 입력하세요..."
-            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-shinhan-blue focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
+            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -298,7 +298,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
             <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-shinhan-blue" />
+                <TrendingUp size={20} className="text-[#0046ff]" />
                 {isLoading
                   ? "로딩 중..."
                   : debouncedQuery
@@ -364,7 +364,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                         <td className="px-6 py-4 text-right">
                           <ChevronRight
                             size={18}
-                            className="text-gray-300 group-hover:text-shinhan-blue"
+                            className="text-gray-300 group-hover:text-[#0046ff]"
                           />
                         </td>
                       </tr>
