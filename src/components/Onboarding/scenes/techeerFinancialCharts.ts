@@ -2,41 +2,41 @@ import type { EChartsOption } from "echarts";
 import Scene, { type GetOption } from "./Scene";
 import { techeerFont, smoothMorphAnimation } from "../styles/techeerStyle";
 
-// Sankey 데이터 - 복잡한 손익흐름도
+// Sankey 데이터 - 손익흐름도 (이미지 기반)
 const sankeyLinks = [
   // 지역별 매출 → 사업부
-  { source: "아시아태평양", target: "DX 부문", value: 85 },
-  { source: "아시아태평양", target: "DS 부문", value: 65 },
-  { source: "미주", target: "DX 부문", value: 45 },
-  { source: "미주", target: "DS 부문", value: 25 },
-  { source: "미주", target: "SDC", value: 12 },
-  { source: "유럽", target: "DX 부문", value: 30 },
-  { source: "유럽", target: "DS 부문", value: 15 },
-  { source: "유럽", target: "Harman", value: 8 },
-  { source: "국내", target: "DS 부문", value: 20 },
-  { source: "국내", target: "SDC", value: 15 },
-  { source: "국내", target: "Harman", value: 5 },
+  { source: "n1", target: "n5", value: 85 }, // Asia Pacific → DX
+  { source: "n1", target: "n6", value: 65 }, // Asia Pacific → DS
+  { source: "n2", target: "n5", value: 45 }, // Americas → DX
+  { source: "n2", target: "n6", value: 25 }, // Americas → DS
+  { source: "n2", target: "n7", value: 12 }, // Americas → SDC
+  { source: "n3", target: "n5", value: 30 }, // Europe → DX
+  { source: "n3", target: "n6", value: 15 }, // Europe → DS
+  { source: "n3", target: "n8", value: 8 }, // Europe → Harman
+  { source: "n4", target: "n6", value: 20 }, // Domestic → DS
+  { source: "n4", target: "n7", value: 15 }, // Domestic → SDC
+  { source: "n4", target: "n8", value: 5 }, // Domestic → Harman
   // 사업부 → 총매출
-  { source: "DX 부문", target: "총매출", value: 160 },
-  { source: "DS 부문", target: "총매출", value: 125 },
-  { source: "SDC", target: "총매출", value: 27 },
-  { source: "Harman", target: "총매출", value: 13 },
+  { source: "n5", target: "n9", value: 160 }, // DX → Global Revenue
+  { source: "n6", target: "n9", value: 125 }, // DS → Global Revenue
+  { source: "n7", target: "n9", value: 27 }, // SDC → Global Revenue
+  { source: "n8", target: "n9", value: 13 }, // Harman → Global Revenue
   // 총매출 → 비용/이익
-  { source: "총매출", target: "매출원가", value: 210 },
-  { source: "총매출", target: "매출총이익", value: 115 },
+  { source: "n9", target: "n10", value: 210 }, // Global Revenue → Cost of Revenue
+  { source: "n9", target: "n11", value: 115 }, // Global Revenue → Gross Profit
   // 매출원가 → 세부비용
-  { source: "매출원가", target: "원자재비", value: 95 },
-  { source: "매출원가", target: "제조비", value: 115 },
+  { source: "n10", target: "n12", value: 95 }, // Cost of Revenue → Raw Materials
+  { source: "n10", target: "n13", value: 115 }, // Cost of Revenue → Manufacturing
   // 매출총이익 → 영업이익/판관비
-  { source: "매출총이익", target: "영업이익", value: 65 },
-  { source: "매출총이익", target: "판관비", value: 50 },
+  { source: "n11", target: "n14", value: 65 }, // Gross Profit → Operating Income
+  { source: "n11", target: "n15", value: 50 }, // Gross Profit → SG&A Expenses
   // 영업이익 → 순이익/세금
-  { source: "영업이익", target: "순이익", value: 48 },
-  { source: "영업이익", target: "법인세", value: 17 },
+  { source: "n14", target: "n16", value: 48 }, // Operating Income → Net Profit
+  { source: "n14", target: "n17", value: 17 }, // Operating Income → Corporate Tax
   // 판관비 → 세부비용
-  { source: "판관비", target: "R&D 투자", value: 22 },
-  { source: "판관비", target: "마케팅", value: 15 },
-  { source: "판관비", target: "관리비", value: 13 },
+  { source: "n15", target: "n18", value: 22 }, // SG&A → R&D Investment
+  { source: "n15", target: "n19", value: 15 }, // SG&A → Marketing
+  { source: "n15", target: "n20", value: 13 }, // SG&A → Admin Costs
 ];
 
 // Parallel 데이터
@@ -74,38 +74,35 @@ const sankeyOptions: (GetOption | EChartsOption)[] = [
           opacity: 0.4,
         },
         label: {
-          fontFamily: techeerFont,
-          fontSize: 14,
-          fontWeight: 600,
-          color: "#1e293b",
+          show: false, // 라벨 숨김
         },
         data: [
-          // 지역
-          { name: "아시아태평양", itemStyle: { color: "#818cf8" } },
-          { name: "미주", itemStyle: { color: "#a5b4fc" } },
-          { name: "유럽", itemStyle: { color: "#c7d2fe" } },
-          { name: "국내", itemStyle: { color: "#6366f1" } },
-          // 사업부
-          { name: "DX 부문", itemStyle: { color: "#3B82F6" } },
-          { name: "DS 부문", itemStyle: { color: "#10B981" } },
-          { name: "SDC", itemStyle: { color: "#F59E0B" } },
-          { name: "Harman", itemStyle: { color: "#8B5CF6" } },
-          // 중간
-          { name: "총매출", itemStyle: { color: "#4264FB" } },
-          { name: "매출원가", itemStyle: { color: "#EF4444" } },
-          { name: "매출총이익", itemStyle: { color: "#10B981" } },
-          // 세부비용
-          { name: "원자재비", itemStyle: { color: "#94a3b8" } },
-          { name: "제조비", itemStyle: { color: "#cbd5e1" } },
-          // 이익/비용
-          { name: "영업이익", itemStyle: { color: "#22c55e" } },
-          { name: "판관비", itemStyle: { color: "#f472b6" } },
-          // 최종
-          { name: "순이익", itemStyle: { color: "#10B981" } },
-          { name: "법인세", itemStyle: { color: "#6b7280" } },
-          { name: "R&D 투자", itemStyle: { color: "#ef4444" } },
-          { name: "마케팅", itemStyle: { color: "#ec4899" } },
-          { name: "관리비", itemStyle: { color: "#9ca3af" } },
+          // 지역 (Sales Regions)
+          { name: "n1", itemStyle: { color: "#818cf8" } }, // Asia Pacific Sales
+          { name: "n2", itemStyle: { color: "#a5b4fc" } }, // Americas Sales
+          { name: "n3", itemStyle: { color: "#c7d2fe" } }, // Europe Sales
+          { name: "n4", itemStyle: { color: "#6366f1" } }, // Domestic Market
+          // 사업부 (Divisions)
+          { name: "n5", itemStyle: { color: "#3B82F6" } }, // DX Division
+          { name: "n6", itemStyle: { color: "#10B981" } }, // DS Division
+          { name: "n7", itemStyle: { color: "#F59E0B" } }, // SDC Display
+          { name: "n8", itemStyle: { color: "#8B5CF6" } }, // Harman Audio
+          // 중간 (Center)
+          { name: "n9", itemStyle: { color: "#4264FB" } }, // Global Revenue
+          { name: "n10", itemStyle: { color: "#EF4444" } }, // Cost of Revenue
+          { name: "n11", itemStyle: { color: "#10B981" } }, // Gross Profit
+          // 세부비용 (Cost Details)
+          { name: "n12", itemStyle: { color: "#94a3b8" } }, // Raw Materials
+          { name: "n13", itemStyle: { color: "#cbd5e1" } }, // Manufacturing
+          // 이익/비용 (Income/Expenses)
+          { name: "n14", itemStyle: { color: "#22c55e" } }, // Operating Income
+          { name: "n15", itemStyle: { color: "#f472b6" } }, // SG&A Expenses
+          // 최종 (Final)
+          { name: "n16", itemStyle: { color: "#10B981" } }, // Net Profit
+          { name: "n17", itemStyle: { color: "#6b7280" } }, // Corporate Tax
+          { name: "n18", itemStyle: { color: "#ef4444" } }, // R&D Investment
+          { name: "n19", itemStyle: { color: "#ec4899" } }, // Marketing
+          { name: "n20", itemStyle: { color: "#9ca3af" } }, // Admin Costs
         ],
         links: sankeyLinks,
         ...smoothMorphAnimation,
