@@ -13,7 +13,7 @@ const morphAnimation = {
 // Liquid Glass 스타일 색상 - 반짝이는 글래스 효과
 const liquidGlassColors = [
   {
-    type: "linear",
+    type: "linear" as const,
     x: 0,
     y: 0,
     x2: 1,
@@ -25,7 +25,7 @@ const liquidGlassColors = [
     ],
   },
   {
-    type: "linear",
+    type: "linear" as const,
     x: 0,
     y: 0,
     x2: 1,
@@ -37,7 +37,7 @@ const liquidGlassColors = [
     ],
   },
   {
-    type: "linear",
+    type: "linear" as const,
     x: 0,
     y: 0,
     x2: 1,
@@ -49,7 +49,7 @@ const liquidGlassColors = [
     ],
   },
   {
-    type: "linear",
+    type: "linear" as const,
     x: 0,
     y: 0,
     x2: 1,
@@ -61,7 +61,7 @@ const liquidGlassColors = [
     ],
   },
   {
-    type: "linear",
+    type: "linear" as const,
     x: 0,
     y: 0,
     x2: 1,
@@ -73,7 +73,7 @@ const liquidGlassColors = [
     ],
   },
   {
-    type: "linear",
+    type: "linear" as const,
     x: 0,
     y: 0,
     x2: 1,
@@ -85,7 +85,7 @@ const liquidGlassColors = [
     ],
   },
   {
-    type: "linear",
+    type: "linear" as const,
     x: 0,
     y: 0,
     x2: 1,

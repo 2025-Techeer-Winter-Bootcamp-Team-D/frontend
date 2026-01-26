@@ -57,10 +57,10 @@ export const techeerFont = "'Pretendard', 'Inter', sans-serif";
 
 // Animation easings (QUASA style)
 export const techeerEasing = {
-  smooth: "cubicInOut",
-  bounce: "elasticOut",
-  fast: "cubicOut",
-  slow: "quinticInOut",
+  smooth: "cubicInOut" as const,
+  bounce: "elasticOut" as const,
+  fast: "cubicOut" as const,
+  slow: "quinticInOut" as const,
 };
 
 // Force graph settings (for bubble clustering effect)
