@@ -63,7 +63,7 @@ const morphTransition = {
 // ========== Sunburst -> Treemap (Combined) ==========
 const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
   // Step 1: Sunburst
-  () => ({
+  (): EChartsOption => ({
     series: [
       {
         type: "sunburst",
@@ -105,7 +105,7 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
     ],
   }),
   // Step 2: Treemap (morphs from Sunburst)
-  () => ({
+  (): EChartsOption => ({
     series: [
       {
         type: "treemap",
