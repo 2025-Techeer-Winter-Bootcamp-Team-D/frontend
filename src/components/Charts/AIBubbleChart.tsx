@@ -140,11 +140,14 @@ const CustomBubble = (props: any) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
   // Calculate radius based on size. Adjust divider to fit container.
-  const baseRadius = Math.sqrt(payload.size) * 1.5;
+  const baseRadius = Math.sqrt(payload.size) * 1.8;
   const radius = isHovered ? baseRadius * 1.1 : baseRadius;
 
   // Determine if bubble is small to adjust text size or hide score
-  const isSmall = baseRadius < 30;
+  const isSmall = baseRadius < 35;
+
+  const gradId = `grad-${payload.keyword.replace(/\s+/g, "-")}`;
+  const glowId = `glow-${payload.keyword.replace(/\s+/g, "-")}`;
 
   return (
     <g
@@ -153,61 +156,45 @@ const CustomBubble = (props: any) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <defs>
-        <filter
-          id={`shadow-${payload.keyword.replace(/\s+/g, "-")}`}
-          x="-50%"
-          y="-50%"
-          width="200%"
-          height="200%"
-        >
-          <feDropShadow
-            dx="0"
-            dy="4"
-            stdDeviation={isHovered ? "10" : "6"}
-            floodColor={fill}
-            floodOpacity={isHovered ? "0.5" : "0.3"}
-          />
-        </filter>
-        <linearGradient
-          id={`grad-${payload.keyword.replace(/\s+/g, "-")}`}
-          x1="0"
-          y1="0"
-          x2="1"
-          y2="1"
-        >
-          <stop offset="0%" stopColor={fill} stopOpacity={0.9} />
-          <stop offset="100%" stopColor={fill} stopOpacity={0.7} />
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={fill} stopOpacity={0.95} />
+          <stop offset="100%" stopColor={fill} stopOpacity={0.8} />
         </linearGradient>
+        {/* Blur filter for outer glow */}
+        <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="12" />
+        </filter>
       </defs>
 
-      {/* Pulse effect for top ranked items */}
-      {payload.score > 90 && (
-        <circle cx={cx} cy={cy} r={baseRadius + 5} fill={fill} opacity="0.2">
-          <animate
-            attributeName="r"
-            values={`${baseRadius};${baseRadius + 10};${baseRadius}`}
-            dur="3s"
-            repeatCount="indefinite"
-          />
-          <animate
-            attributeName="opacity"
-            values="0.2;0;0.2"
-            dur="3s"
-            repeatCount="indefinite"
-          />
-        </circle>
-      )}
+      {/* Outer glow - blurred circle behind */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={radius + 8}
+        fill={fill}
+        fillOpacity={isHovered ? 0.5 : 0.35}
+        filter={`url(#${glowId})`}
+        style={{ transition: "all 0.5s ease" }}
+      />
 
+      {/* Main bubble */}
       <circle
         cx={cx}
         cy={cy}
         r={radius}
-        fill={`url(#grad-${payload.keyword.replace(/\s+/g, "-")})`}
-        filter={`url(#shadow-${payload.keyword.replace(/\s+/g, "-")})`}
-        stroke="white"
+        fill={`url(#${gradId})`}
+        stroke="rgba(255,255,255,0.4)"
         strokeWidth={isHovered ? 2 : 1}
-        strokeOpacity={isHovered ? 0.5 : 0.2}
         style={{ transition: "all 0.3s ease" }}
+      />
+
+      {/* Inner highlight */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={radius}
+        fill="url(#inner-highlight)"
+        style={{ pointerEvents: "none" }}
       />
 
       <text
@@ -216,11 +203,11 @@ const CustomBubble = (props: any) => {
         dy={isSmall ? 4 : -4}
         textAnchor="middle"
         fill="white"
-        fontSize={isSmall ? 10 : 14}
+        fontSize={isSmall ? 11 : 14}
         fontWeight="bold"
         style={{
           pointerEvents: "none",
-          textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+          textShadow: "0 2px 4px rgba(0,0,0,0.3)",
         }}
       >
         {payload.keyword}
@@ -230,10 +217,10 @@ const CustomBubble = (props: any) => {
         <text
           x={cx}
           y={cy}
-          dy={14}
+          dy={16}
           textAnchor="middle"
           fill="white"
-          fontSize={11}
+          fontSize={12}
           fillOpacity={0.9}
           style={{ pointerEvents: "none" }}
         >
@@ -313,10 +300,10 @@ const AIBubbleChart: React.FC<AIBubbleChartProps> = ({ keywords }) => {
   return (
     <div className="w-full h-[400px] select-none">
       <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+        <ScatterChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
           <XAxis type="number" dataKey="x" hide domain={[0, 100]} />
           <YAxis type="number" dataKey="y" hide domain={[0, 100]} />
-          <ZAxis type="number" dataKey="size" range={[0, 1200]} />
+          <ZAxis type="number" dataKey="size" range={[0, 1600]} />
           <Tooltip
             content={<CustomTooltip />}
             cursor={{ strokeDasharray: "3 3" }}
