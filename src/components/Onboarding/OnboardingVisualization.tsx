@@ -24,6 +24,9 @@ import scenes from "./scenes";
 import type Scene from "./scenes/Scene";
 import type { EChartsInstance } from "./scenes/Scene";
 
+// 페이드 전환 duration (ms)
+const FADE_DURATION = 400;
+
 // ECharts 컴포넌트 등록
 echarts.use([
   PieChart,
@@ -62,20 +65,34 @@ const OnboardingVisualization: React.FC<OnboardingVisualizationProps> = ({
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [showStartButton, setShowStartButton] = useState<boolean>(true);
   const [isEntryDisplayed, setIsEntryDisplayed] = useState<boolean>(false);
+  const [chartOpacity, setChartOpacity] = useState<number>(1);
 
-  // 씬 플레이 함수 - clear() 제거하여 빈 화면 방지
+  // 씬 플레이 함수 - 페이드 전환 효과 추가
   const playScene = useCallback((scene: Scene, onFinish: () => void) => {
     if (!chartRef.current || !isPlayingRef.current) return;
 
-    scene.reset();
-    setCurrentBackground(scene.getBackground());
+    // 페이드 아웃
+    setChartOpacity(0);
 
-    // Scene.ts에서 첫 옵션에 notMerge=true 사용하므로 clear() 불필요
-    scene.play(chartRef.current, () => {
-      if (isPlayingRef.current) {
-        onFinish();
-      }
-    });
+    setTimeout(() => {
+      if (!chartRef.current || !isPlayingRef.current) return;
+
+      scene.reset();
+      setCurrentBackground(scene.getBackground());
+
+      // Scene.ts에서 첫 옵션에 notMerge=true 사용하므로 clear() 불필요
+      scene.play(chartRef.current, () => {
+        if (isPlayingRef.current) {
+          // 씬 완료 후 페이드 아웃 → 다음 씬
+          onFinish();
+        }
+      });
+
+      // 페이드 인
+      requestAnimationFrame(() => {
+        setChartOpacity(1);
+      });
+    }, FADE_DURATION);
   }, []);
 
   // 다음 씬으로 이동
@@ -151,15 +168,18 @@ const OnboardingVisualization: React.FC<OnboardingVisualizationProps> = ({
           : secondOption;
       chartRef.current.setOption(option, { notMerge: false });
 
-      // 두 번째 단계 duration 후 다음 씬으로 이동
+      // 두 번째 단계 duration 후 페이드 아웃 → 다음 씬으로 이동
       setTimeout(() => {
         sceneIndexRef.current = 1; // 다음 씬부터 시작
         playNextScene();
       }, durations[1] || 1200);
     } else {
-      // 옵션이 하나뿐이면 바로 다음 씬으로
-      sceneIndexRef.current = 1;
-      playNextScene();
+      // 옵션이 하나뿐이면 페이드 후 다음 씬으로
+      setChartOpacity(0);
+      setTimeout(() => {
+        sceneIndexRef.current = 1;
+        playNextScene();
+      }, FADE_DURATION);
     }
   }, [playNextScene]);
 
@@ -276,7 +296,14 @@ const OnboardingVisualization: React.FC<OnboardingVisualizationProps> = ({
         </>
       )}
 
-      <div ref={containerRef} className="w-full h-full" />
+      <div
+        ref={containerRef}
+        className="w-full h-full transition-opacity ease-in-out"
+        style={{
+          opacity: chartOpacity,
+          transitionDuration: `${FADE_DURATION}ms`,
+        }}
+      />
 
       {/* Glass Play Button - Apple/Toss 스타일 */}
       {showStartButton && isEntryDisplayed && (
