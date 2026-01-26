@@ -25,7 +25,7 @@ export interface SceneConfig {
   title?: string;
   dark?: boolean;
   file?: string;
-  morphFromPrevious?: boolean; // true면 이전 씬에서 페이드 없이 모핑 전환
+  morphFromPrevious?: boolean; // 이전 씬에서 모핑할지 여부
 }
 
 class Scene {
@@ -47,6 +47,10 @@ class Scene {
     this._dark = opts.dark || false;
     this._file = opts.file || "scene";
     this._morphFromPrevious = opts.morphFromPrevious || false;
+  }
+
+  shouldMorphFromPrevious(): boolean {
+    return this._morphFromPrevious;
   }
 
   getDuration(): number {
@@ -73,10 +77,6 @@ class Scene {
 
   isDark(): boolean {
     return this._dark;
-  }
-
-  shouldMorphFromPrevious(): boolean {
-    return this._morphFromPrevious;
   }
 
   getOptions(): (GetOption | EChartsOption)[] {
@@ -111,17 +111,19 @@ class Scene {
       return;
     }
 
-    // morphFromPrevious가 true면 첫 번째 옵션에서도 notMerge: false로 설정해야 모핑이 작동함
-    const notMerge = this._currentIndex === 0 && !this._morphFromPrevious;
+    // 첫 번째 옵션: morphFromPrevious면 notMerge: false, 아니면 notMerge: true
+    // 이후 옵션: 씬 내부 모핑을 위해 항상 notMerge: false
+    const isFirstOption = this._currentIndex === 0;
+    const notMerge = isFirstOption && !this._morphFromPrevious;
     const option = this._options[this._currentIndex];
 
     if (typeof option === "function") {
       const ret = option(chart);
       if (ret) {
-        chart.setOption(ret, notMerge);
+        chart.setOption(ret, { notMerge });
       }
     } else {
-      chart.setOption(option, notMerge);
+      chart.setOption(option, { notMerge });
     }
 
     const duration =

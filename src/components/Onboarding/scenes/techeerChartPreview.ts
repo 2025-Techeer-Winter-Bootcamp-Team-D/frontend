@@ -2,11 +2,15 @@ import type { EChartsOption } from "echarts";
 import Scene, { type GetOption } from "./Scene";
 import { photoColors, techeerFont, CHART_CENTER } from "../styles/techeerStyle";
 
-// 모핑 애니메이션 설정 (divideShape: 'clone'이 핵심)
+// 모핑 애니메이션 설정
 const morphAnimation = {
-  animationDurationUpdate: 1100,
+  animationDuration: 800,
+  animationDurationUpdate: 800,
+  animationEasing: "cubicInOut" as const,
+  animationEasingUpdate: "cubicInOut" as const,
   universalTransition: {
     enabled: true,
+    seriesKey: "main",
     divideShape: "clone" as const,
   },
 };
@@ -44,134 +48,78 @@ const expandedData = [
   { n: "LLM", v: 96 },
 ];
 
-// 데이터 포인트 ID (버블과 라인 간 모핑 매칭용)
-const dataIds = Array.from({ length: 20 }, (_, i) => `node_${i}`);
+// 버블 위치 - 화면 전체에 분산
+const bubblePositions = [
+  { x: "15%", y: "20%" },
+  { x: "85%", y: "25%" },
+  { x: "25%", y: "75%" },
+  { x: "75%", y: "80%" },
+  { x: "50%", y: "50%" }, // 중앙 버블 (확대될 버블)
+  { x: "10%", y: "50%" },
+  { x: "90%", y: "55%" },
+  { x: "35%", y: "15%" },
+  { x: "65%", y: "12%" },
+  { x: "20%", y: "40%" },
+  { x: "80%", y: "42%" },
+  { x: "40%", y: "85%" },
+  { x: "60%", y: "88%" },
+  { x: "8%", y: "75%" },
+  { x: "92%", y: "72%" },
+  { x: "30%", y: "55%" },
+  { x: "70%", y: "58%" },
+  { x: "45%", y: "30%" },
+  { x: "55%", y: "70%" },
+  { x: "12%", y: "88%" },
+  { x: "88%", y: "15%" },
+  { x: "50%", y: "8%" },
+  { x: "50%", y: "92%" },
+  { x: "5%", y: "30%" },
+];
 
-// ========== Scene 1: Bubble (Graph with Force Layout) ==========
+// ========== Scene 1: Bubble (Force Graph) ==========
 const bubbleOptions: (GetOption | EChartsOption)[] = [
+  // Step 1: 버블들이 화면 전체에 퍼져있는 상태
   (chart) => {
     const width = chart.getWidth();
     const height = chart.getHeight();
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    // 기준 단위: 화면 비율 보정해서 원형에 가깝게 분포
-    const padding = 60;
-    // 가로가 더 넓으므로 세로 기준으로 맞추고, 가로는 비율만큼 확장
-    const base = height / 2 - padding;
-    const aspectRatio = width / height;
-    const baseX = base * aspectRatio * 1.05; // 가로 확장
-    const baseY = base * 1.1; // 세로 확장
-
-    const mainNames = expandedData.slice(0, 20).map((d) => d.n);
-
-    // === 규칙 기반 버블 배치 ===
-    // 1. 크기와 반경은 단조 관계: 클수록 중심에
-    // 2. 같은 티어 내 각도 균등 분포
-    // 3. 무게중심이 정확히 화면 중앙
-    // 4. 반경 = base * ratio (ratio: 0~1)
-
-    // 티어 1: 가장 큰 버블 3개 - 중앙에서 약간 떨어진 위치
-    const tier1 = [
-      { size: 140, radiusRatio: 0.18, angle: 270 }, // 상단
-      { size: 135, radiusRatio: 0.22, angle: 30 }, // 우하단
-      { size: 130, radiusRatio: 0.2, angle: 150 }, // 좌하단
-    ];
-
-    // 티어 2: 중대형 버블 5개 - 중간 영역
-    const tier2 = [
-      { size: 110, radiusRatio: 0.42, angle: 0 }, // 우
-      { size: 105, radiusRatio: 0.45, angle: 72 }, // 우상
-      { size: 100, radiusRatio: 0.48, angle: 144 }, // 좌상
-      { size: 95, radiusRatio: 0.45, angle: 216 }, // 좌하
-      { size: 90, radiusRatio: 0.42, angle: 288 }, // 우하
-    ];
-
-    // 티어 3: 중형 버블 6개 - 중간 영역
-    const tier3 = [
-      { size: 80, radiusRatio: 0.55, angle: 20 },
-      { size: 75, radiusRatio: 0.58, angle: 80 },
-      { size: 72, radiusRatio: 0.6, angle: 140 },
-      { size: 70, radiusRatio: 0.62, angle: 200 },
-      { size: 68, radiusRatio: 0.58, angle: 260 },
-      { size: 65, radiusRatio: 0.6, angle: 320 },
-    ];
-
-    // 티어 4: 작은 버블 6개 - 외곽
-    const tier4 = [
-      { size: 58, radiusRatio: 0.78, angle: 45 },
-      { size: 55, radiusRatio: 0.82, angle: 105 },
-      { size: 52, radiusRatio: 0.8, angle: 165 },
-      { size: 50, radiusRatio: 0.84, angle: 225 },
-      { size: 48, radiusRatio: 0.8, angle: 285 },
-      { size: 45, radiusRatio: 0.85, angle: 345 },
-    ];
-
-    const allTiers = [...tier1, ...tier2, ...tier3, ...tier4];
-
-    const mainNodes = dataIds.map((id, i) => {
-      const config = allTiers[i];
-      const angleRad = (config.angle * Math.PI) / 180;
-      // 타원형 분포: x, y 반경 따로 계산
-      const radiusX = baseX * config.radiusRatio;
-      const radiusY = baseY * config.radiusRatio;
-
-      return {
-        id,
-        name: mainNames[i],
-        symbolSize: config.size,
-        x: centerX + Math.cos(angleRad) * radiusX,
-        y: centerY + Math.sin(angleRad) * radiusY,
-        itemStyle: {
-          color: photoColors[i % photoColors.length],
-          opacity: 0.92,
-        },
-        fixed: false,
-      };
-    });
-
-    // === 외곽 헤일로 링 ===
-    // 동일 크기, 낮은 투명도, 타원형 궤도 배치
-    const haloRatioX = 0.92;
-    const haloRatioY = 0.92;
-    const haloCount = 10;
-    const haloSize = 20;
-    const haloNodes = Array.from({ length: haloCount }, (_, i) => {
-      const angle = (((i * 360) / haloCount) * Math.PI) / 180;
-      return {
-        id: `halo_${i}`,
-        name: "",
-        symbolSize: haloSize,
-        x: centerX + Math.cos(angle) * baseX * haloRatioX,
-        y: centerY + Math.sin(angle) * baseY * haloRatioY,
-        itemStyle: {
-          color: photoColors[(i + 2) % photoColors.length],
-          opacity: 0.18,
-        },
-        fixed: true,
-      };
-    });
 
     return {
       series: [
         {
           type: "graph",
           id: "main",
-          layout: "none", // Force 끔 - 정적 배치 유지
+          layout: "none", // 고정 위치 사용
+          data: expandedData.map((item, i) => {
+            const pos = bubblePositions[i % bubblePositions.length];
+            const xPercent = parseFloat(pos.x) / 100;
+            const yPercent = parseFloat(pos.y) / 100;
+
+            return {
+              id: `bubble-${i}`,
+              name: item.n,
+              value: item.v,
+              x: width * xPercent,
+              y: height * yPercent,
+              symbolSize: item.v * 1.2 + 15,
+              itemStyle: {
+                color: photoColors[i % photoColors.length],
+                opacity: 0.9,
+                borderColor: "rgba(255,255,255,0.4)",
+                borderWidth: 2,
+                shadowBlur: 15,
+                shadowColor: "rgba(0,0,0,0.15)",
+              },
+              label: {
+                show: item.v > 60,
+                color: "#FFFFFF",
+                fontSize: item.v > 85 ? 12 : 10,
+                fontWeight: 700,
+                fontFamily: techeerFont,
+                formatter: "{b}",
+              },
+            };
+          }),
           roam: false,
-          data: [...mainNodes, ...haloNodes],
-          label: {
-            show: true,
-            position: "inside",
-            fontSize: 11,
-            fontWeight: 800,
-            fontFamily: techeerFont,
-            color: "#fff",
-          },
-          // 진입 애니메이션
-          animationDuration: 800,
-          animationEasing: "cubicOut",
-          animationDelay: (idx: number) => idx * 50,
           ...morphAnimation,
         },
       ],
@@ -179,58 +127,79 @@ const bubbleOptions: (GetOption | EChartsOption)[] = [
   },
 ];
 
-export const techeerBubbleChart = new Scene({
-  option: bubbleOptions,
-  file: "techeerChartPreview",
-  title: "Market Energy",
-  duration: 2000,
-  dark: false,
-  background: "#FFFFFF",
-});
+// ========== Scene 2: Bubble -> Line Chart ==========
+// 버블 중 일부가 라인 차트의 꼭짓점으로 모핑
+const lineChartData = baseData.map((item, i) => ({
+  id: `bubble-${i}`,
+  name: item.n,
+  value: item.v,
+}));
 
-// ========== Scene 2: Line Chart (Growth Path) - Morphs from Bubble ==========
-// 굴곡있는 라인 데이터 - 부드러운 파형 (20개)
-const waveLineData = [
-  { n: "1", v: 75 },
-  { n: "2", v: 82 },
-  { n: "3", v: 72 },
-  { n: "4", v: 88 },
-  { n: "5", v: 78 },
-  { n: "6", v: 85 },
-  { n: "7", v: 70 },
-  { n: "8", v: 80 },
-  { n: "9", v: 74 },
-  { n: "10", v: 90 },
-  { n: "11", v: 77 },
-  { n: "12", v: 85 },
-  { n: "13", v: 68 },
-  { n: "14", v: 92 },
-  { n: "15", v: 76 },
-  { n: "16", v: 83 },
-  { n: "17", v: 71 },
-  { n: "18", v: 87 },
-  { n: "19", v: 79 },
-  { n: "20", v: 84 },
-];
-
-const lineChartOptions: (GetOption | EChartsOption)[] = [
+const bubbleToLineOptions: (GetOption | EChartsOption)[] = [
   () => ({
-    xAxis: { type: "category", data: dataIds, show: false },
-    yAxis: { type: "value", show: false },
+    xAxis: {
+      type: "category",
+      data: lineChartData.map((d) => d.name),
+      axisLabel: {
+        fontFamily: techeerFont,
+        fontSize: 11,
+        color: "#64748b",
+        rotate: 30,
+      },
+      axisLine: { lineStyle: { color: "#e2e8f0" } },
+      axisTick: { show: false },
+    },
+    yAxis: {
+      type: "value",
+      max: 110,
+      axisLabel: {
+        fontFamily: techeerFont,
+        fontSize: 11,
+        color: "#64748b",
+      },
+      axisLine: { show: false },
+      splitLine: { lineStyle: { color: "#f1f5f9" } },
+    },
+    grid: {
+      top: 80,
+      left: 60,
+      right: 60,
+      bottom: 80,
+    },
     series: [
       {
         type: "line",
         id: "main",
         smooth: true,
-        // 각 데이터 포인트에 id를 부여하여 버블과 1:1 매칭
-        data: dataIds.map((id, i) => ({
-          id, // 모핑 매칭용 ID
-          value: waveLineData[i].v,
+        data: lineChartData.map((d) => ({
+          id: d.id,
+          name: d.name,
+          value: d.value,
         })),
-        symbolSize: 14,
+        symbolSize: 16,
+        symbol: "circle",
+        itemStyle: {
+          color: "#4264FB",
+          borderColor: "#fff",
+          borderWidth: 3,
+          shadowBlur: 10,
+          shadowColor: "rgba(66, 100, 251, 0.4)",
+        },
         lineStyle: {
-          width: 6,
-          color: photoColors[0],
+          width: 4,
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 1,
+            y2: 0,
+            colorStops: [
+              { offset: 0, color: "#4264FB" },
+              { offset: 1, color: "#10B981" },
+            ],
+          },
+          shadowBlur: 8,
+          shadowColor: "rgba(66, 100, 251, 0.3)",
         },
         areaStyle: {
           color: {
@@ -245,23 +214,43 @@ const lineChartOptions: (GetOption | EChartsOption)[] = [
             ],
           },
         },
+        label: {
+          show: true,
+          position: "top",
+          fontFamily: techeerFont,
+          fontSize: 11,
+          fontWeight: 600,
+          color: "#1e293b",
+          formatter: "{c}",
+        },
         ...morphAnimation,
       },
     ],
   }),
 ];
 
-export const techeerLineChart = new Scene({
-  option: lineChartOptions,
+export const techeerBubbleChart = new Scene({
+  option: bubbleOptions,
   file: "techeerChartPreview",
-  title: "Growth Path",
-  duration: 2000,
+  title: "Market Energy",
+  duration: 1800,
   dark: false,
   background: "#FFFFFF",
-  morphFromPrevious: true, // Bubble에서 모핑 전환 (페이드 없음)
+  morphFromPrevious: true, // 로즈에서 버블로 모핑
 });
 
-// ========== Scene 3: Pie -> Rose Chart (Combined) ==========
+export const techeerBubbleToLineChart = new Scene({
+  option: bubbleToLineOptions,
+  file: "techeerChartPreview",
+  title: "Bubble to Line",
+  duration: 1500,
+  dark: false,
+  background: "#FFFFFF",
+  morphFromPrevious: true, // 버블에서 라인으로 모핑
+});
+
+// ========== Scene 2: Pie -> Rose Chart (Combined) ==========
+// 버블과 모핑을 위해 ID 추가
 const pieToRoseOptions: (GetOption | EChartsOption)[] = [
   // Step 1: Pie Chart
   () => ({
@@ -272,6 +261,7 @@ const pieToRoseOptions: (GetOption | EChartsOption)[] = [
         radius: ["25%", "68%"],
         center: CHART_CENTER,
         data: baseData.map((d, i) => ({
+          id: `bubble-${i}`, // 버블과 동일한 ID
           name: d.n,
           value: d.v,
           itemStyle: { color: photoColors[i % photoColors.length] },
@@ -304,6 +294,7 @@ const pieToRoseOptions: (GetOption | EChartsOption)[] = [
         center: CHART_CENTER,
         roseType: "area",
         data: baseData.map((d, i) => ({
+          id: `bubble-${i}`, // 버블과 동일한 ID
           name: d.n,
           value: d.v,
           itemStyle: { color: photoColors[i % photoColors.length] },
@@ -328,7 +319,7 @@ export const techeerPieToRoseChart = new Scene({
   option: pieToRoseOptions,
   file: "techeerChartPreview",
   title: "Pie to Rose",
-  duration: [1600, 1600],
+  duration: [1500, 1500],
   dark: false,
   background: "#FFFFFF",
 });

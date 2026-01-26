@@ -1,7 +1,7 @@
 import techeerEntry from "./techeerEntry";
 import {
   techeerBubbleChart,
-  techeerLineChart,
+  techeerBubbleToLineChart,
   techeerPieToRoseChart,
 } from "./techeerChartPreview";
 import {
@@ -16,7 +16,7 @@ export const scenes = [
   techeerEntry,
   techeerPieToRoseChart, // Entry의 Pie와 모핑 연결
   techeerBubbleChart,
-  techeerLineChart, // Bubble에서 모핑 → Line, 그 후 Sankey로 페이드
+  techeerBubbleToLineChart, // 버블 → 라인 모핑
   techeerSankeyChart,
   techeerIndustryRadar,
   techeerParallelChart,

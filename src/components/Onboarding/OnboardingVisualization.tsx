@@ -9,7 +9,6 @@ import {
   TreemapChart,
   GraphChart,
   LineChart,
-  ScatterChart,
 } from "echarts/charts";
 import {
   GridComponent,
@@ -27,7 +26,7 @@ import type Scene from "./scenes/Scene";
 import type { EChartsInstance } from "./scenes/Scene";
 
 // 페이드 전환 duration (ms)
-const FADE_DURATION = 250;
+const FADE_DURATION = 300;
 
 // ECharts 컴포넌트 등록
 echarts.use([
@@ -39,7 +38,6 @@ echarts.use([
   TreemapChart,
   GraphChart,
   LineChart,
-  ScatterChart,
   GridComponent,
   TitleComponent,
   LegendComponent,
@@ -71,40 +69,41 @@ const OnboardingVisualization: React.FC<OnboardingVisualizationProps> = ({
   const [isEntryDisplayed, setIsEntryDisplayed] = useState<boolean>(false);
   const [chartOpacity, setChartOpacity] = useState<number>(1);
 
-  // 씬 플레이 함수 - 페이드 전환 또는 모핑 전환 적용
+  // 씬 플레이 함수 - 모핑 씬은 페이드 없이, 일반 씬은 페이드 적용
   const playScene = useCallback((scene: Scene, onFinish: () => void) => {
     if (!chartRef.current || !isPlayingRef.current) return;
 
-    scene.reset();
+    const shouldMorph = scene.shouldMorphFromPrevious();
 
-    // 모핑 전환인 경우 페이드 없이 바로 재생 (ECharts universal transition 활용)
-    if (scene.shouldMorphFromPrevious()) {
+    if (shouldMorph) {
+      // 모핑 씬: 페이드 없이 바로 전환
+      scene.reset();
       setCurrentBackground(scene.getBackground());
       scene.play(chartRef.current, () => {
         if (isPlayingRef.current) {
           onFinish();
         }
       });
-      return;
-    }
+    } else {
+      // 일반 씬: 페이드 전환
+      setChartOpacity(0);
 
-    // 페이드아웃 → 배경 변경 → 씬 재생 → 페이드인
-    setChartOpacity(0);
-    setTimeout(() => {
-      if (!chartRef.current || !isPlayingRef.current) return;
-
-      setCurrentBackground(scene.getBackground());
-      scene.play(chartRef.current, () => {
-        if (isPlayingRef.current) {
-          onFinish();
-        }
-      });
-
-      // 약간의 딜레이 후 페이드인
       setTimeout(() => {
-        setChartOpacity(1);
-      }, 50);
-    }, FADE_DURATION);
+        if (!chartRef.current || !isPlayingRef.current) return;
+
+        scene.reset();
+        setCurrentBackground(scene.getBackground());
+        scene.play(chartRef.current, () => {
+          if (isPlayingRef.current) {
+            onFinish();
+          }
+        });
+
+        requestAnimationFrame(() => {
+          setChartOpacity(1);
+        });
+      }, FADE_DURATION);
+    }
   }, []);
 
   // 다음 씬으로 이동
@@ -180,15 +179,18 @@ const OnboardingVisualization: React.FC<OnboardingVisualizationProps> = ({
           : secondOption;
       chartRef.current.setOption(option, { notMerge: false });
 
-      // 두 번째 단계 duration 후 다음 씬으로 이동
+      // 두 번째 단계 duration 후 페이드 아웃 → 다음 씬으로 이동
       setTimeout(() => {
-        sceneIndexRef.current = 1;
+        sceneIndexRef.current = 1; // 다음 씬부터 시작
         playNextScene();
       }, durations[1] || 1200);
     } else {
-      // 옵션이 하나뿐이면 바로 다음 씬으로
-      sceneIndexRef.current = 1;
-      playNextScene();
+      // 옵션이 하나뿐이면 페이드 후 다음 씬으로
+      setChartOpacity(0);
+      setTimeout(() => {
+        sceneIndexRef.current = 1;
+        playNextScene();
+      }, FADE_DURATION);
     }
   }, [playNextScene]);
 
