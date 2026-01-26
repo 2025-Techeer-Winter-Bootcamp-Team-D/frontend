@@ -13,8 +13,8 @@ import techeerEnd from "./techeerEnd";
 
 export const scenes = [
   techeerEntry,
+  techeerPieToRoseChart, // Entry의 Pie와 모핑 연결
   techeerBubbleChart,
-  techeerPieToRoseChart,
   techeerSankeyChart,
   techeerIndustryRadar,
   techeerParallelChart,

@@ -10,44 +10,40 @@ import {
 const hierarchyData = [
   {
     name: "반도체",
-    id: "semiconductor",
     itemStyle: { color: photoColors[0] },
     children: [
-      { name: "AI 반도체", value: 100, id: "ai-chip" },
-      { name: "HBM", value: 95, id: "hbm" },
-      { name: "NPU", value: 92, id: "npu" },
-      { name: "파운드리", value: 88, id: "foundry" },
+      { name: "AI 반도체", value: 100 },
+      { name: "HBM", value: 95 },
+      { name: "NPU", value: 92 },
+      { name: "파운드리", value: 88 },
     ],
   },
   {
     name: "AI/SW",
-    id: "ai-sw",
     itemStyle: { color: photoColors[1] },
     children: [
-      { name: "생성형 AI", value: 98, id: "genai" },
-      { name: "LLM", value: 96, id: "llm" },
-      { name: "온디바이스", value: 90, id: "ondevice" },
-      { name: "엣지컴퓨팅", value: 85, id: "edge" },
+      { name: "생성형 AI", value: 98 },
+      { name: "LLM", value: 96 },
+      { name: "온디바이스", value: 90 },
+      { name: "엣지컴퓨팅", value: 85 },
     ],
   },
   {
     name: "모빌리티",
-    id: "mobility",
     itemStyle: { color: photoColors[2] },
     children: [
-      { name: "자율주행", value: 88, id: "autonomous" },
-      { name: "로보틱스", value: 85, id: "robotics" },
-      { name: "UAM", value: 75, id: "uam" },
+      { name: "자율주행", value: 88 },
+      { name: "로보틱스", value: 85 },
+      { name: "UAM", value: 75 },
     ],
   },
   {
     name: "인프라",
-    id: "infra",
     itemStyle: { color: photoColors[4] },
     children: [
-      { name: "6G", value: 82, id: "6g" },
-      { name: "클라우드", value: 78, id: "cloud" },
-      { name: "데이터센터", value: 75, id: "datacenter" },
+      { name: "6G", value: 82 },
+      { name: "클라우드", value: 78 },
+      { name: "데이터센터", value: 75 },
     ],
   },
 ];
@@ -58,6 +54,10 @@ const morphTransition = {
   animationDurationUpdate: 1500,
   animationEasing: techeerEasing.smooth,
   animationEasingUpdate: techeerEasing.smooth,
+  universalTransition: {
+    enabled: true,
+    seriesKey: "main",
+  },
 };
 
 // ========== Sunburst -> Treemap (Combined) ==========
@@ -67,7 +67,7 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
     series: [
       {
         type: "sunburst",
-        id: "hierarchy-morph",
+        id: "main",
         radius: ["18%", "78%"],
         center: ["52%", "55%"],
         nodeClick: false,
@@ -100,10 +100,6 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
           },
         ],
         ...morphTransition,
-        universalTransition: {
-          enabled: true,
-          seriesKey: "hierarchy",
-        },
         data: hierarchyData,
       },
     ],
@@ -113,7 +109,7 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
     series: [
       {
         type: "treemap",
-        id: "hierarchy-morph",
+        id: "main",
         top: 180,
         left: 80,
         right: 80,
@@ -151,10 +147,6 @@ const sunburstToTreemapOptions: (GetOption | EChartsOption)[] = [
           },
         ],
         ...morphTransition,
-        universalTransition: {
-          enabled: true,
-          seriesKey: "hierarchy",
-        },
         data: hierarchyData,
       },
     ],

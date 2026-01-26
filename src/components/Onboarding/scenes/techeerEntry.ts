@@ -1,15 +1,17 @@
 import type { EChartsOption } from "echarts";
 import Scene, { type GetOption } from "./Scene";
-import {
-  photoColors,
-  universalTransitionConfig,
-  techeerFont,
-} from "../styles/techeerStyle";
+import { photoColors, techeerFont } from "../styles/techeerStyle";
+
+// 모핑 애니메이션 설정
+const morphAnimation = {
+  universalTransition: {
+    enabled: true,
+    seriesKey: "main",
+  },
+};
 
 // 로즈 차트 데이터 - 고정값으로 생성 (애니메이션 일관성 유지)
 const roseData = Array.from({ length: 40 }, (_, i) => ({
-  id: `rose-${i}`,
-  groupId: `rose-${i}`,
   value: 40 + ((i * 17 + 7) % 60), // 의사 난수 패턴으로 고정값 생성
   itemStyle: {
     color: photoColors[i % photoColors.length],
@@ -129,7 +131,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
       series: [
         {
           type: "pie",
-          id: "entry-rose",
+          id: "main",
           radius: ["25%", "75%"],
           center: ["68%", "50%"],
           roseType: "area",
@@ -146,7 +148,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
           data: roseData,
           animationDuration: 1200,
           animationEasing: "cubicOut",
-          universalTransition: universalTransitionConfig,
+          ...morphAnimation,
         },
       ],
     };
@@ -258,7 +260,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
       series: [
         {
           type: "pie",
-          id: "entry-rose",
+          id: "main",
           radius: ["0%", "5%"],
           center: ["50%", "50%"],
           roseType: "area",
@@ -268,7 +270,7 @@ const entryOptions: (GetOption | EChartsOption)[] = [
           animationDurationUpdate: 1000,
           animationEasingUpdate: "cubicIn",
           animationDelayUpdate: (idx: number) => idx * 10,
-          universalTransition: universalTransitionConfig,
+          ...morphAnimation,
         },
       ],
     };

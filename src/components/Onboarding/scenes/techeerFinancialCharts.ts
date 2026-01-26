@@ -1,10 +1,6 @@
 import type { EChartsOption } from "echarts";
 import Scene, { type GetOption } from "./Scene";
-import {
-  techeerFont,
-  smoothMorphAnimation,
-  universalTransitionConfig,
-} from "../styles/techeerStyle";
+import { techeerFont, smoothMorphAnimation } from "../styles/techeerStyle";
 
 // Sankey 데이터
 const sankeyLinks = [
@@ -38,6 +34,7 @@ const sankeyOptions: (GetOption | EChartsOption)[] = [
     series: [
       {
         type: "sankey",
+        id: "main",
         top: "26%",
         left: "8%",
         right: "8%",
@@ -70,7 +67,6 @@ const sankeyOptions: (GetOption | EChartsOption)[] = [
         ],
         links: sankeyLinks,
         ...smoothMorphAnimation,
-        universalTransition: universalTransitionConfig,
       },
     ],
   }),
@@ -123,11 +119,11 @@ const industryRadarOptions: (GetOption | EChartsOption)[] = [
     series: [
       {
         type: "radar",
+        id: "main",
         symbol: "circle",
         symbolSize: 10,
         data: [
           {
-            id: "samsung",
             name: "삼성전자(주)",
             value: [15, 27, 1.8, 5, 12],
             areaStyle: { color: "rgba(66,100,251,0.35)" },
@@ -139,7 +135,6 @@ const industryRadarOptions: (GetOption | EChartsOption)[] = [
             },
           },
           {
-            id: "sk",
             name: "SK(주)",
             value: [8, 12, 0.9, -2, 6],
             areaStyle: { color: "rgba(148,163,184,0.25)" },
@@ -152,7 +147,6 @@ const industryRadarOptions: (GetOption | EChartsOption)[] = [
           },
         ],
         ...smoothMorphAnimation,
-        universalTransition: universalTransitionConfig,
       },
     ],
   }),
@@ -258,6 +252,7 @@ const parallelOptions: (GetOption | EChartsOption)[] = [
     series: [
       {
         type: "parallel",
+        id: "main",
         lineStyle: {
           width: 2.5,
           opacity: 0.7,
@@ -265,7 +260,6 @@ const parallelOptions: (GetOption | EChartsOption)[] = [
         },
         data: parallelData,
         ...smoothMorphAnimation,
-        universalTransition: universalTransitionConfig,
       },
     ],
   }),
