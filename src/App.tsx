@@ -1,9 +1,4 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   BrowserRouter,
@@ -27,8 +22,6 @@ import { PageView } from "./types";
 import { StarredProvider, useStarred } from "./context/StarredContext";
 import { logout } from "./api/users";
 import { notifyAuthChange, useAuth } from "./hooks/useAuth";
-
-const queryClient = new QueryClient();
 
 // URL 경로와 PageView 매핑
 const PATH_TO_PAGE: Record<string, PageView> = {
@@ -361,23 +354,20 @@ function App() {
 
 function AppWrapper() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <StarredProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/company/:id" element={<CompanyDetailPage />} />
-            {/* 각 페이지에 고유 경로 부여 - 브라우저 뒤로가기 지원 */}
-            <Route path="/" element={<App />} />
-            <Route path="/search" element={<App />} />
-            <Route path="/compare" element={<App />} />
-            <Route path="/industry" element={<App />} />
-            <Route path="/industry/:code" element={<App />} />
-            <Route path="*" element={<App />} />
-          </Routes>
-        </BrowserRouter>
-      </StarredProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <StarredProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/company/:id" element={<CompanyDetailPage />} />
+          {/* 각 페이지에 고유 경로 부여 - 브라우저 뒤로가기 지원 */}
+          <Route path="/" element={<App />} />
+          <Route path="/search" element={<App />} />
+          <Route path="/compare" element={<App />} />
+          <Route path="/industry" element={<App />} />
+          <Route path="/industry/:code" element={<App />} />
+          <Route path="*" element={<App />} />
+        </Routes>
+      </BrowserRouter>
+    </StarredProvider>
   );
 }
 
