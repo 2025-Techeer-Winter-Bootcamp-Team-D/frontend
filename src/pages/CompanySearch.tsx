@@ -1,14 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
-import {
-  Search,
-  Star,
-  TrendingUp,
-  ChevronRight,
-  ChevronDown,
-  Bell,
-} from "lucide-react";
+import { Search, TrendingUp, ChevronRight, Bell } from "lucide-react";
 import {
   Skeleton,
   SkeletonSearchResults,
@@ -121,18 +114,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 }) => {
   void _setPage;
   const navigate = useNavigate();
-  const {
-    starred,
-    toggleStar,
-    favoriteMap,
-    isLoading: isStarredLoading,
-  } = useStarred();
+  const { starred, toggleStar } = useStarred();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  // [추가] 관심기업 노출 개수 상태 (초기 7개)
-  const [visibleCount, setVisibleCount] = useState(7);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // 시장 지수 데이터
@@ -171,6 +157,35 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     },
     refetchInterval: 60000 * 5,
   });
+
+  // 지수 데이터를 StockChart 형식으로 변환
+  const kospiChartData = useMemo(() => {
+    if (!kospiData?.indices) return [];
+    return kospiData.indices.map((item) => ({
+      time: new Date(item.date).getTime() / 1000,
+      bucket: item.date,
+      open: item.value,
+      high: item.value,
+      low: item.value,
+      close: item.value,
+      volume: item.volume,
+      amount: item.amount,
+    }));
+  }, [kospiData]);
+
+  const kosdaqChartData = useMemo(() => {
+    if (!kosdaqData?.indices) return [];
+    return kosdaqData.indices.map((item) => ({
+      time: new Date(item.date).getTime() / 1000,
+      bucket: item.date,
+      open: item.value,
+      high: item.value,
+      low: item.value,
+      close: item.value,
+      volume: item.volume,
+      amount: item.amount,
+    }));
+  }, [kosdaqData]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -260,18 +275,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   const isLoading = debouncedQuery.trim() ? isSearching : isRankingLoading;
 
-  const starredList = useMemo(() => {
-    return Array.from(favoriteMap.values()).map((fav) => {
-      const liveData = rankingData.find((r) => r.code === fav.companyId);
-      return {
-        code: fav.companyId,
-        name: fav.companyName,
-        price: liveData ? liveData.price : "-",
-        change: liveData ? liveData.change : "-",
-      };
-    });
-  }, [favoriteMap, rankingData]);
-
   const StarIcon = ({ isActive }: { isActive: boolean }) => (
     <svg
       width="20"
@@ -292,15 +295,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     <div className="animate-fade-in pb-12">
       {/* 실시간 시장 대시보드 섹션 */}
       <div className="mb-12">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900">
-            실시간 시장 대시보드
-          </h2>
-          <p className="text-slate-500 mt-1">
-            주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -330,12 +324,14 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                 </span>
                 <div className="h-24 mt-3">
                   <StockChart
+                    data={kospiChartData}
                     color={
                       kospiData && kospiData.change_rate >= 0
                         ? "#10B981"
                         : "#EF4444"
                     }
                     showAxes={false}
+                    period="1M"
                   />
                 </div>
               </GlassCard>
@@ -366,12 +362,14 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                 </span>
                 <div className="h-24 mt-3">
                   <StockChart
+                    data={kosdaqChartData}
                     color={
                       kosdaqData && kosdaqData.change_rate >= 0
                         ? "#10B981"
                         : "#EF4444"
                     }
                     showAxes={false}
+                    period="1M"
                   />
                 </div>
               </GlassCard>
@@ -381,7 +379,58 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             />
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 flex flex-col gap-4">
+            {/* 기업 검색 */}
+            <div className="relative" ref={searchContainerRef}>
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                <Search className="text-gray-400" size={20} />
+              </div>
+              <input
+                type="text"
+                placeholder="기업명 또는 종목코드 검색..."
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#0046ff] focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsDropdownOpen(true);
+                }}
+                onFocus={() => setIsDropdownOpen(true)}
+              />
+              {isDropdownOpen && searchQuery.trim() && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-64 overflow-y-auto z-50">
+                  {isSearching ? (
+                    <SkeletonSearchResults count={3} />
+                  ) : searchResults.length > 0 ? (
+                    <ul>
+                      {searchResults.map((item: RankingItem) => (
+                        <li
+                          key={item.code}
+                          onClick={() => handleCompanyClick(item.code)}
+                          className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-bold text-slate-800 text-sm">
+                                {item.name}
+                              </div>
+                              <div className="text-xs text-gray-400 font-mono">
+                                {item.code}
+                              </div>
+                            </div>
+                            <ChevronRight size={16} className="text-gray-300" />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="py-4 text-center text-gray-500 text-sm">
+                      검색 결과가 없습니다
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* 자본시장 공시 */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
               <h3 className="text-base font-bold mb-5 flex items-center gap-2">
@@ -429,237 +478,86 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         </div>
       </div>
 
-      {/* 기업 검색 섹션 */}
-      <div className="flex flex-col items-center justify-center mb-10 pt-4">
-        <div className="w-full max-w-2xl relative" ref={searchContainerRef}>
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
-            <Search className="text-gray-400" size={24} />
+      {/* 시가총액 랭킹 리스트 */}
+      <div className="mt-8">
+        <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
+          <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <TrendingUp size={20} className="text-[#0046ff]" />
+              {isLoading
+                ? "로딩 중..."
+                : debouncedQuery
+                  ? `검색 결과 (${displayList.length})`
+                  : "시가총액 상위 랭킹"}
+            </h2>
           </div>
-          <input
-            type="text"
-            placeholder="기업명 또는 종목코드를 입력하세요..."
-            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setIsDropdownOpen(true);
-            }}
-            onFocus={() => setIsDropdownOpen(true)}
-          />
-          {isDropdownOpen && searchQuery.trim() && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto z-50">
-              {isSearching ? (
-                <SkeletonSearchResults count={4} />
-              ) : searchResults.length > 0 ? (
-                <ul>
-                  {searchResults.map((item: RankingItem) => (
-                    <li
+
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-white text-gray-500 font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-6 py-4 w-16 text-center">순위</th>
+                  <th className="px-6 py-4 w-16">관심</th>
+                  <th className="px-6 py-4">기업명</th>
+                  <th className="px-6 py-4 text-right">현재가</th>
+                  <th className="px-6 py-4 text-right">등락률</th>
+                  <th className="px-6 py-4 text-right">시가총액</th>
+                  <th className="px-6 py-4 w-16"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {!isLoading &&
+                  displayList.map((item: RankingItem, index: number) => (
+                    <tr
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className="px-5 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                      className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-slate-800">
-                            {item.name}
-                          </div>
-                          <div className="text-sm text-gray-400 font-mono">
-                            {item.code}
-                          </div>
-                        </div>
-                        <ChevronRight size={18} className="text-gray-300" />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="py-6 text-center text-gray-500">
-                  검색 결과가 없습니다
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        {/* 메인 리스트 */}
-        <div className="lg:col-span-3">
-          <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
-            <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-[#0046ff]" />
-                {isLoading
-                  ? "로딩 중..."
-                  : debouncedQuery
-                    ? `검색 결과 (${displayList.length})`
-                    : "시가총액 상위 랭킹"}
-              </h2>
-            </div>
-
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-white text-gray-500 font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
-                  <tr>
-                    <th className="px-6 py-4 w-16 text-center">순위</th>
-                    <th className="px-6 py-4 w-16">관심</th>
-                    <th className="px-6 py-4">기업명</th>
-                    <th className="px-6 py-4 text-right">현재가</th>
-                    <th className="px-6 py-4 text-right">등락률</th>
-                    <th className="px-6 py-4 text-right">시가총액</th>
-                    <th className="px-6 py-4 w-16"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {!isLoading &&
-                    displayList.map((item: RankingItem, index: number) => (
-                      <tr
-                        key={item.code}
-                        onClick={() => handleCompanyClick(item.code)}
-                        className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                      <td className="px-6 py-4 text-center font-bold text-slate-500">
+                        {index + 1}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-center"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <td className="px-6 py-4 text-center font-bold text-slate-500">
-                          {index + 1}
-                        </td>
-                        <td
-                          className="px-6 py-4 text-center"
-                          onClick={(e) => e.stopPropagation()}
+                        <button
+                          onClick={() => toggleStar(item.code)}
+                          className="p-1.5 hover:bg-gray-100 rounded-full"
                         >
-                          <button
-                            onClick={() => toggleStar(item.code)}
-                            className="p-1.5 hover:bg-gray-100 rounded-full"
-                          >
-                            <StarIcon isActive={starred.has(item.code)} />
-                          </button>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-slate-800">
-                            {item.name}
-                          </div>
-                          <div className="text-xs text-gray-400 font-mono">
-                            {item.code}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right font-bold text-slate-700">
-                          {item.price}원
-                        </td>
-                        <td
-                          className={`px-6 py-4 text-right font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
-                        >
-                          {item.change}
-                        </td>
-                        <td className="px-6 py-4 text-right font-medium text-slate-600">
-                          {formatMarketCap(item.marketCap)}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <ChevronRight
-                            size={18}
-                            className="text-gray-300 group-hover:text-[#0046ff]"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* 우측 사이드바: 나의 관심 기업 (Sticky 적용) */}
-        <div className="lg:col-span-1 sticky top-14">
-          <GlassCard className="p-0 overflow-hidden flex flex-col bg-white border-2 border-shinhan-light/50 shadow-xl">
-            <div className="p-5 border-b border-gray-100 bg-shinhan-blue text-white">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <Star size={20} className="fill-white" /> 나의 관심 기업
-              </h2>
-              <p className="text-xs text-blue-100 mt-1">
-                {starred.size}개의 기업 구독 중
-              </p>
-            </div>
-
-            <div className="p-3 overflow-hidden">
-              {starredList.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {/* [수정] slice를 사용하여 visibleCount만큼만 렌더링 */}
-                  {starredList.slice(0, visibleCount).map((item) => (
-                    <div
-                      key={item.code}
-                      onClick={() => handleCompanyClick(item.code)}
-                      className="p-3 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-100"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleStar(item.code);
-                            }}
-                            className="text-yellow-400 shrink-0"
-                          >
-                            <Star size={16} fill="currentColor" />
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-bold text-slate-800 text-sm truncate">
-                              {item.name}
-                            </div>
-                            <div className="text-xs text-gray-400 font-mono">
-                              {item.code}
-                            </div>
-                          </div>
+                          <StarIcon isActive={starred.has(item.code)} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-800">
+                          {item.name}
                         </div>
-                        <div className="text-right shrink-0 ml-2">
-                          <div className="font-bold text-slate-700 text-sm">
-                            {item.price}
-                          </div>
-                          <div
-                            className={`text-xs font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
-                          >
-                            {item.change}
-                          </div>
+                        <div className="text-xs text-gray-400 font-mono">
+                          {item.code}
                         </div>
-                      </div>
-                    </div>
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-slate-700">
+                        {item.price}원
+                      </td>
+                      <td
+                        className={`px-6 py-4 text-right font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
+                      >
+                        {item.change}
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-600">
+                        {formatMarketCap(item.marketCap)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <ChevronRight
+                          size={18}
+                          className="text-gray-300 group-hover:text-[#0046ff]"
+                        />
+                      </td>
+                    </tr>
                   ))}
-
-                  {/* [추가] 더 보기 버튼 */}
-                  {starredList.length > visibleCount && (
-                    <button
-                      onClick={() => setVisibleCount((prev) => prev + 3)}
-                      className="mt-2 py-3 w-full flex items-center justify-center gap-1 text-sm font-bold text-shinhan-blue hover:bg-blue-50 rounded-xl transition-all border border-dashed border-blue-200"
-                    >
-                      <ChevronDown size={16} />
-                      {starredList.length - visibleCount}개 더 보기
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-10 px-4">
-                  {isStarredLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"
-                        >
-                          <Skeleton className="w-4 h-4 rounded-full" />
-                          <div className="flex-1">
-                            <Skeleton className="h-4 w-20 mb-1" />
-                            <Skeleton className="h-3 w-14" />
-                          </div>
-                          <Skeleton className="h-4 w-12" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-400 text-sm">
-                      관심 기업이 없습니다.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </GlassCard>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
       </div>
     </div>
   );
