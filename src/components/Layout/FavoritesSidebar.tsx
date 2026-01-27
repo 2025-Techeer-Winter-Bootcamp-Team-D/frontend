@@ -216,6 +216,7 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
                         onClick={() => toggleStar(item.companyId)}
                         className="p-1.5 hover:bg-red-50 rounded-full transition-colors flex-shrink-0"
                         title="관심 해제"
+                        aria-label={`${item.companyName} 관심 해제`}
                       >
                         <Heart
                           size={18}
@@ -385,6 +386,7 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
                           disabled={removeVisitMutation.isPending}
                           className="p-1.5 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
                           title="삭제"
+                          aria-label={`${item.companyName} 방문 기록 삭제`}
                         >
                           <X size={16} className="text-slate-400" />
                         </button>

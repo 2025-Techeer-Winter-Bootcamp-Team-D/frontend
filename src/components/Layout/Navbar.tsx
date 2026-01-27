@@ -97,7 +97,13 @@ const Navbar: React.FC<NavbarProps> = ({
           {isLoggedIn ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+              disabled={!onLogout}
+              aria-label="로그아웃"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors border border-transparent ${
+                onLogout
+                  ? "hover:bg-gray-50 hover:border-gray-200 cursor-pointer"
+                  : "opacity-50 cursor-not-allowed"
+              }`}
             >
               <div className="w-6 h-6 bg-[#0046ff] rounded-full flex items-center justify-center">
                 <User size={14} className="text-white" />
@@ -109,6 +115,7 @@ const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <button
               onClick={() => setPage(PageView.LOGIN)}
+              aria-label="로그인"
               className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
             >
               <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center">

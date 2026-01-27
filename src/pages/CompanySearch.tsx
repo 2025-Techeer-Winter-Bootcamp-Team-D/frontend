@@ -296,6 +296,33 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     </svg>
   );
 
+  const CompanyLogo = ({
+    logoUrl,
+    name,
+  }: {
+    logoUrl?: string | null;
+    name: string;
+  }) => {
+    const [hasError, setHasError] = useState(false);
+
+    if (!logoUrl || hasError) {
+      return (
+        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-500 text-sm shrink-0">
+          {name[0]}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={logoUrl}
+        alt={name}
+        className="w-8 h-8 rounded-lg object-contain bg-white border border-gray-100 shrink-0"
+        onError={() => setHasError(true)}
+      />
+    );
+  };
+
   return (
     <div className="animate-fade-in pb-12">
       {/* 실시간 시장 대시보드 섹션 */}
@@ -426,24 +453,10 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
                         >
                           <div className="flex items-center gap-3">
-                            {item.logo_url ? (
-                              <img
-                                src={item.logo_url}
-                                alt={item.name}
-                                className="w-8 h-8 rounded-lg object-contain bg-white border border-gray-100 flex-shrink-0"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                  e.currentTarget.nextElementSibling?.classList.remove(
-                                    "hidden",
-                                  );
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className={`w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-500 text-sm flex-shrink-0 ${item.logo_url ? "hidden" : ""}`}
-                            >
-                              {item.name[0]}
-                            </div>
+                            <CompanyLogo
+                              logoUrl={item.logo_url}
+                              name={item.name}
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-slate-800 text-sm truncate">
                                 {item.name}
