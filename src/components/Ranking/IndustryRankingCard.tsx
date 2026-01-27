@@ -286,7 +286,7 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
           {/* 헤더 */}
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Ranking size={20} className="text-shinhan-blue" />
+              <Ranking size={20} className="text-[#0046ff]" />
               {selectedIndustry?.name ?? "산업"} 기업 순위
             </h2>
           </div>

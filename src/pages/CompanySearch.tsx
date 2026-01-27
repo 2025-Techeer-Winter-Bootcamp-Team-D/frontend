@@ -623,7 +623,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                         {item.price}원
                       </td>
                       <td
-                        className={`px-6 py-4 text-right font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
+                        className={`px-6 py-4 text-right font-bold ${item.changeVal > 0 ? "text-red-500" : item.changeVal < 0 ? "text-blue-500" : "text-slate-500"}`}
                       >
                         {item.change}
                       </td>
