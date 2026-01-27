@@ -17,12 +17,17 @@ interface StockChartProps {
   period?: string;
 }
 
+// SVG id에서 유효하지 않은 문자 제거 (예: "#")
+const sanitizeId = (str: string): string => str.replace(/[^a-z0-9]/gi, "");
+
 const StockChart: React.FC<StockChartProps> = ({
   data: rawData,
   color = "#0046FF",
   showAxes = true,
   period = "1D",
 }) => {
+  const gradientId = `colorPrice-${sanitizeId(color)}`;
+
   // Y축 범위를 데이터에 밀착시키되 여백 제공
   const getYDomain = (data: { price: number }[]): [number, number] => {
     if (data.length === 0) return [0, 100];
@@ -87,13 +92,7 @@ const StockChart: React.FC<StockChartProps> = ({
           margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
         >
           <defs>
-            <linearGradient
-              id={`colorPrice-${color}`}
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="1"
-            >
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={color} stopOpacity={0.3} />
               <stop offset="95%" stopColor={color} stopOpacity={0} />
             </linearGradient>
@@ -149,7 +148,7 @@ const StockChart: React.FC<StockChartProps> = ({
             stroke={color}
             strokeWidth={2}
             fillOpacity={1}
-            fill={`url(#colorPrice-${color})`}
+            fill={`url(#${gradientId})`}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
-import { Search, TrendingUp, ChevronRight } from "lucide-react";
+import { Search, ChevronRight } from "lucide-react";
 import { Files, Ranking } from "@phosphor-icons/react";
 import {
   Skeleton,
@@ -188,6 +188,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
       amount: item.amount,
     }));
   }, [kosdaqData]);
+
+  // 페이지 진입 시 스크롤 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {

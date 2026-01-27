@@ -85,12 +85,14 @@ const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Icons */}
         <div className="flex items-center gap-3 text-gray-600">
-          <button
-            onClick={onSearchOpen}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors hidden sm:block"
-          >
-            <Search size={18} />
-          </button>
+          {onSearchOpen && (
+            <button
+              onClick={onSearchOpen}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors hidden sm:block"
+            >
+              <Search size={18} />
+            </button>
+          )}
           <div className="h-6 w-px bg-gray-200 mx-2"></div>
           {isLoggedIn ? (
             <button

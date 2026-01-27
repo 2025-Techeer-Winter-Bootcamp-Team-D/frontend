@@ -93,7 +93,7 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
     {
       id: "recent" as TabType,
       label: "최근 본",
-      headerLabel: "최근 본",
+      headerLabel: "최근 본 기업",
       icon: Clock,
     },
     {
