@@ -1,9 +1,4 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   BrowserRouter,
@@ -15,7 +10,7 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
 import FavoritesSidebar from "./components/Layout/FavoritesSidebar";
-import Dashboard from "./pages/Dashboard";
+import OldDashboard from "./pages/OldDashboard";
 import CompanyDetail from "./pages/CompanyDetail";
 import IndustryAnalysis from "./pages/IndustryCompare";
 import CompanyCompare from "./pages/CompanyCompare";
@@ -27,8 +22,6 @@ import { PageView } from "./types";
 import { StarredProvider, useStarred } from "./context/StarredContext";
 import { logout } from "./api/users";
 import { notifyAuthChange, useAuth } from "./hooks/useAuth";
-
-const queryClient = new QueryClient();
 
 // URL 경로와 PageView 매핑
 const PATH_TO_PAGE: Record<string, PageView> = {
@@ -77,8 +70,9 @@ function CompanyDetailPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
-    navigate("/", { state: { targetPage: page } });
+    // 직접 해당 페이지 경로로 이동 (중간에 "/" 거치지 않음)
+    const targetPath = PAGE_TO_PATH[page];
+    navigate(targetPath);
   };
 
   // 로그아웃 핸들러
@@ -251,7 +245,7 @@ function App() {
     switch (page) {
       case PageView.DASHBOARD:
         return (
-          <Dashboard
+          <OldDashboard
             setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
@@ -286,7 +280,7 @@ function App() {
         );
       default:
         return (
-          <Dashboard
+          <OldDashboard
             setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
@@ -300,7 +294,7 @@ function App() {
       className={`font-sans text-slate-800 ${isDashboard ? "h-screen flex flex-col overflow-hidden bg-[#002C9C]" : "min-h-screen pb-10 bg-white"}`}
     >
       <div
-        className={`z-50 transition-all duration-500 ease-in-out ${isDashboard ? "fixed top-0 left-0 right-0" : "sticky top-0"} ${!showNavbar ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
+        className={`z-50 transition-all duration-500 ease-in-out ${isDashboard ? "fixed top-0 left-0 right-0" : "sticky top-0"} ${!showNavbar ? "-translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100 pointer-events-auto"}`}
       >
         <Navbar
           currentPage={page}
@@ -360,23 +354,20 @@ function App() {
 
 function AppWrapper() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <StarredProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/company/:id" element={<CompanyDetailPage />} />
-            {/* 각 페이지에 고유 경로 부여 - 브라우저 뒤로가기 지원 */}
-            <Route path="/" element={<App />} />
-            <Route path="/search" element={<App />} />
-            <Route path="/compare" element={<App />} />
-            <Route path="/industry" element={<App />} />
-            <Route path="/industry/:code" element={<App />} />
-            <Route path="*" element={<App />} />
-          </Routes>
-        </BrowserRouter>
-      </StarredProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <StarredProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/company/:id" element={<CompanyDetailPage />} />
+          {/* 각 페이지에 고유 경로 부여 - 브라우저 뒤로가기 지원 */}
+          <Route path="/" element={<App />} />
+          <Route path="/search" element={<App />} />
+          <Route path="/compare" element={<App />} />
+          <Route path="/industry" element={<App />} />
+          <Route path="/industry/:code" element={<App />} />
+          <Route path="*" element={<App />} />
+        </Routes>
+      </BrowserRouter>
+    </StarredProvider>
   );
 }
 

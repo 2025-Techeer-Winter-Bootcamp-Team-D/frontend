@@ -123,7 +123,8 @@ export const getCompanyOutlook = (stockCode: string) => {
  * GET /companies/reports/recent/
  */
 export const getRecentReports = () => {
-  return api.get<ApiResponse<RecentReportItem[]>>("/companies/reports/recent/");
+  // API가 배열을 직접 반환함 (ApiResponse 래핑 없음)
+  return api.get<RecentReportItem[]>("/companies/reports/recent/");
 };
 
 /**

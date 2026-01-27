@@ -4,14 +4,15 @@ import {
   Plus,
   X,
   Search,
-  TrendingUp,
   BarChart3,
+  ChartColumnBig,
+  ChartNoAxesCombined,
+  ChartScatter,
   HelpCircle,
   Check,
   Edit2,
   CheckCircle2,
   Radar,
-  Crosshair,
   Lock,
 } from "lucide-react";
 import { Skeleton, SkeletonSearchResults } from "../components/Skeleton";
@@ -153,20 +154,20 @@ const CustomFinancialTooltip: React.FC<CustomFinancialTooltipProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
-      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+      className="bg-white rounded-lg shadow-md border border-gray-100 p-2.5 min-w-[140px] animate-fade-in"
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
     >
-      <div className="space-y-2">
+      <div className="space-y-1">
         {payload.map((entry, index) => (
-          <div key={index} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+          <div key={index} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-sm text-gray-600">{entry.name}</span>
+              <span className="text-xs text-gray-600">{entry.name}</span>
             </div>
-            <span className="text-sm font-bold text-slate-800 text-right">
+            <span className="text-xs font-bold text-slate-800 text-right">
               {formatKoreanNumber(entry.value, isMarketCap)}
             </span>
           </div>
@@ -198,25 +199,25 @@ const CustomStockTooltip: React.FC<CustomStockTooltipProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
-      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+      className="bg-white rounded-lg shadow-md border border-gray-100 p-2.5 min-w-[140px] animate-fade-in"
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
     >
       {label && (
-        <div className="text-xs text-gray-500 mb-2 pb-2 border-b border-gray-100">
+        <div className="text-[10px] text-gray-400 mb-1.5 pb-1.5 border-b border-gray-100">
           {label}
         </div>
       )}
-      <div className="space-y-2">
+      <div className="space-y-1">
         {payload.map((entry, index) => (
-          <div key={index} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+          <div key={index} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-sm text-gray-600">{entry.name}</span>
+              <span className="text-xs text-gray-600">{entry.name}</span>
             </div>
-            <span className="text-sm font-bold text-slate-800 text-right">
+            <span className="text-xs font-bold text-slate-800 text-right">
               {entry.value.toLocaleString()}원
             </span>
           </div>
@@ -321,6 +322,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
     setTempSetName(activeComparison?.name ?? "");
     setIsEditingName(true);
   };
+
+  // 페이지 진입 시 스크롤 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   // 검색 디바운스
   useEffect(() => {
@@ -670,33 +676,39 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                 나의 비교 세트
               </h2>
               <div className="space-y-2">
-                {comparisonList.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => setActiveSetId(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                      effectiveSetId === item.id
-                        ? "bg-[#0046ff] text-white shadow-lg shadow-blue-500/30"
-                        : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
-                    }`}
-                  >
-                    <span className="font-medium text-sm truncate max-w-[150px]">
-                      {item.name}
-                    </span>
-                    <button
-                      onClick={(e) => handleDeleteSet(e, item.id)}
-                      disabled={deleteSetMutation.isPending}
-                      className={`p-1 rounded-full transition-colors flex-shrink-0 ${
-                        effectiveSetId === item.id
-                          ? "hover:bg-white/20 text-white"
-                          : "hover:bg-gray-200 text-gray-400 hover:text-red-500"
-                      } disabled:opacity-50`}
-                      title="세트 삭제"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+                {comparisonsQuery.isLoading
+                  ? Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="px-4 py-3 rounded-xl">
+                        <Skeleton className="h-5 w-full" />
+                      </div>
+                    ))
+                  : comparisonList.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => setActiveSetId(item.id)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${
+                          effectiveSetId === item.id
+                            ? "bg-[#0046ff] text-white shadow-lg shadow-blue-500/30"
+                            : "hover:bg-gray-100 text-slate-600 hover:text-slate-800 hover:shadow-sm"
+                        }`}
+                      >
+                        <span className="font-medium text-sm truncate max-w-[150px]">
+                          {item.name}
+                        </span>
+                        <button
+                          onClick={(e) => handleDeleteSet(e, item.id)}
+                          disabled={deleteSetMutation.isPending}
+                          className={`p-1 rounded-full transition-colors flex-shrink-0 ${
+                            effectiveSetId === item.id
+                              ? "hover:bg-white/20 text-white"
+                              : "hover:bg-gray-200 text-gray-400 hover:text-red-500"
+                          } disabled:opacity-50`}
+                          title="세트 삭제"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
               </div>
               <button
                 onClick={handleAddSet}
@@ -814,7 +826,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             <GlassCard className="p-6 hover:shadow-none">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <BarChart3 size={20} className="text-[#0046ff]" />
+                  <ChartColumnBig size={20} className="text-[#0046ff]" />
                   {currentMetricOption.label} 비교 (단위:{" "}
                   {currentMetricOption.unit})
                 </h3>
@@ -835,57 +847,76 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                   ))}
                 </div>
               </div>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={financialChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    barGap={20}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#f0f0f0"
-                    />
-                    <XAxis
-                      dataKey="year"
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) =>
-                        formatKoreanNumber(
-                          value,
-                          selectedMetric === "marketCap",
-                        )
-                      }
-                    />
-                    <Tooltip
-                      cursor={{ fill: "transparent" }}
-                      content={
-                        <CustomFinancialTooltip
-                          isMarketCap={selectedMetric === "marketCap"}
-                        />
-                      }
-                    />
-                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                    {/* Dynamically render bars for each company in the set */}
-                    {activeComparison?.companies?.map((company, index) => (
-                      <Bar
-                        key={company.stock_code}
-                        dataKey={company.companyName}
-                        name={company.companyName}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
-                        radius={[4, 4, 0, 0]}
-                        barSize={40}
+              <div className="h-72 outline-none **:outline-none">
+                {comparisonDetailQuery.isLoading ? (
+                  <div className="h-full flex flex-col justify-between py-4 px-4">
+                    <div className="flex justify-between items-end h-full gap-4">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 flex flex-col justify-end items-center gap-2"
+                        >
+                          <Skeleton
+                            className={`w-10 rounded-t ${i === 0 ? "h-40" : i === 1 ? "h-32" : i === 2 ? "h-48" : "h-24"}`}
+                          />
+                          <Skeleton className="h-3 w-12" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={financialChartData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      barGap={20}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f0f0f0"
                       />
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) =>
+                          formatKoreanNumber(
+                            value,
+                            selectedMetric === "marketCap",
+                          )
+                        }
+                      />
+                      <Tooltip
+                        cursor={{ fill: "transparent" }}
+                        isAnimationActive={false}
+                        content={
+                          <CustomFinancialTooltip
+                            isMarketCap={selectedMetric === "marketCap"}
+                          />
+                        }
+                      />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      {/* Dynamically render bars for each company in the set */}
+                      {activeComparison?.companies?.map((company, index) => (
+                        <Bar
+                          key={company.stock_code}
+                          dataKey={company.companyName}
+                          name={company.companyName}
+                          fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          radius={[4, 4, 0, 0]}
+                          barSize={40}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </GlassCard>
 
@@ -896,7 +927,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             <GlassCard className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <TrendingUp size={20} className="text-[#0046ff]" />
+                  <ChartNoAxesCombined size={20} className="text-[#0046ff]" />
                   주가 추이 (최근 {timeRange})
                 </h3>
                 <div className="flex gap-2">
@@ -915,7 +946,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                   ))}
                 </div>
               </div>
-              <div className="h-72">
+              <div className="h-72 outline-none **:outline-none">
                 {ohlcvQuery.isLoading ? (
                   <div className="h-full flex flex-col justify-between py-4 px-4">
                     <div className="flex justify-between">
@@ -939,7 +970,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                 ) : trendChartData.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-gray-400">
                     <div className="text-center">
-                      <TrendingUp
+                      <ChartNoAxesCombined
                         size={32}
                         className="mx-auto mb-2 opacity-50"
                       />
@@ -972,7 +1003,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip content={<CustomStockTooltip />} />
+                      <Tooltip
+                        isAnimationActive={false}
+                        content={<CustomStockTooltip />}
+                      />
                       <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       {/* Dynamically render lines for each company */}
                       {activeComparison?.companies?.map((company, index) => (
@@ -999,135 +1033,169 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             {/* Row 3: PER-YoY Matrix (Quadrant Style) */}
             <GlassCard className="p-6">
               <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                <Crosshair size={18} className="text-[#0046ff]" />
+                <ChartScatter size={18} className="text-[#0046ff]" />
                 이익 성장성 대비 저평가 분석
               </h3>
               <p className="text-sm text-slate-500 mb-4">
                 PER(주가수익비율)과 YoY(전년 대비 성장률)를 기준으로 기업의
                 가치와 성장성을 비교합니다.
               </p>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart
-                    margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis
-                      type="number"
-                      dataKey="yoy"
-                      name="YoY"
-                      unit="%"
-                      domain={[minYoy, maxYoy]}
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={{ stroke: "#cbd5e1" }}
-                      label={{
-                        value: "YoY 성장률 (%)",
-                        position: "bottom",
-                        offset: 0,
-                        style: { fontSize: 12, fill: "#64748b" },
-                      }}
-                    />
-                    <YAxis
-                      type="number"
-                      dataKey="per"
-                      name="PER"
-                      domain={[0, maxPer]}
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={{ stroke: "#cbd5e1" }}
-                      label={{
-                        value: "PER (배)",
-                        angle: -90,
-                        position: "insideLeft",
-                        style: { fontSize: 12, fill: "#64748b" },
-                      }}
-                    />
-                    <Tooltip
-                      cursor={{ strokeDasharray: "3 3" }}
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                      formatter={(value, name) => {
-                        const numValue = typeof value === "number" ? value : 0;
-                        return [
-                          name === "PER"
-                            ? `${numValue.toFixed(1)}배`
-                            : `${numValue.toFixed(1)}%`,
-                          name,
-                        ];
-                      }}
-                      labelFormatter={(_, payload) =>
-                        payload?.[0]?.payload?.name ?? ""
-                      }
-                    />
-                    {/* 사분면 구분 */}
-                    <ReferenceArea
-                      x1={0}
-                      x2={maxYoy}
-                      y1={0}
-                      y2={avgPer}
-                      fill="#dcfce7"
-                      fillOpacity={0.4}
-                    />
-                    <ReferenceArea
-                      x1={minYoy}
-                      x2={0}
-                      y1={avgPer}
-                      y2={maxPer}
-                      fill="#fef2f2"
-                      fillOpacity={0.4}
-                    />
-                    <ReferenceLine
-                      x={0}
-                      stroke="#94a3b8"
-                      strokeDasharray="5 5"
-                    />
-                    <ReferenceLine
-                      y={avgPer}
-                      stroke="#94a3b8"
-                      strokeDasharray="5 5"
-                      label={{
-                        value: `평균 PER: ${avgPer.toFixed(1)}`,
-                        position: "right",
-                        style: { fontSize: 10, fill: "#64748b" },
-                      }}
-                    />
-                    <Scatter
-                      name="기업"
-                      data={perYoyChartData}
-                      shape={(props: unknown) => {
-                        const { cx, cy, payload } = props as {
-                          cx: number;
-                          cy: number;
-                          payload: { fill: string; name: string };
-                        };
-                        return (
-                          <g>
-                            <circle
-                              cx={cx}
-                              cy={cy}
-                              r={8}
-                              fill={payload.fill}
-                              stroke="#fff"
-                              strokeWidth={2}
-                            />
-                            <text
-                              x={cx}
-                              y={cy - 14}
-                              textAnchor="middle"
-                              fontSize={11}
-                              fontWeight="bold"
-                              fill="#334155"
-                            >
-                              {payload.name}
-                            </text>
-                          </g>
-                        );
-                      }}
-                    />
-                  </ScatterChart>
-                </ResponsiveContainer>
+              <div className="h-80 outline-none **:outline-none">
+                {comparisonDetailQuery.isLoading ? (
+                  <div className="h-full flex flex-col justify-center items-center gap-4 p-8">
+                    <div className="relative w-full h-full">
+                      {/* X축 라벨 */}
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                      {/* Y축 라벨 */}
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90">
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                      {/* 그리드 라인 */}
+                      <div className="absolute inset-8 flex flex-col justify-between">
+                        <Skeleton className="h-px w-full opacity-50" />
+                        <Skeleton className="h-px w-full opacity-50" />
+                        <Skeleton className="h-px w-full opacity-50" />
+                        <Skeleton className="h-px w-full opacity-50" />
+                      </div>
+                      {/* 산점도 점들 */}
+                      <div className="absolute inset-8 flex items-center justify-around">
+                        <Skeleton className="h-6 w-6 rounded-full" />
+                        <Skeleton className="h-6 w-6 rounded-full mt-8" />
+                        <Skeleton className="h-6 w-6 rounded-full -mt-4" />
+                        <Skeleton className="h-6 w-6 rounded-full mt-12" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart
+                      margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis
+                        type="number"
+                        dataKey="yoy"
+                        name="YoY"
+                        unit="%"
+                        domain={[minYoy, maxYoy]}
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={{ stroke: "#cbd5e1" }}
+                        label={{
+                          value: "YoY 성장률 (%)",
+                          position: "bottom",
+                          offset: 0,
+                          style: { fontSize: 12, fill: "#64748b" },
+                        }}
+                      />
+                      <YAxis
+                        type="number"
+                        dataKey="per"
+                        name="PER"
+                        domain={[0, maxPer]}
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={{ stroke: "#cbd5e1" }}
+                        label={{
+                          value: "PER (배)",
+                          angle: -90,
+                          position: "insideLeft",
+                          style: { fontSize: 12, fill: "#64748b" },
+                        }}
+                      />
+                      <Tooltip
+                        cursor={{ strokeDasharray: "3 3" }}
+                        isAnimationActive={false}
+                        offset={15}
+                        contentStyle={{
+                          borderRadius: "10px",
+                          border: "none",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                          padding: "8px 10px",
+                          fontSize: "12px",
+                        }}
+                        formatter={(value, name) => {
+                          const numValue =
+                            typeof value === "number" ? value : 0;
+                          return [
+                            name === "PER"
+                              ? `${numValue.toFixed(1)}배`
+                              : `${numValue.toFixed(1)}%`,
+                            name,
+                          ];
+                        }}
+                        labelFormatter={(_, payload) =>
+                          payload?.[0]?.payload?.name ?? ""
+                        }
+                      />
+                      {/* 사분면 구분 */}
+                      <ReferenceArea
+                        x1={0}
+                        x2={maxYoy}
+                        y1={0}
+                        y2={avgPer}
+                        fill="#dcfce7"
+                        fillOpacity={0.4}
+                      />
+                      <ReferenceArea
+                        x1={minYoy}
+                        x2={0}
+                        y1={avgPer}
+                        y2={maxPer}
+                        fill="#fef2f2"
+                        fillOpacity={0.4}
+                      />
+                      <ReferenceLine
+                        x={0}
+                        stroke="#94a3b8"
+                        strokeDasharray="5 5"
+                      />
+                      <ReferenceLine
+                        y={avgPer}
+                        stroke="#94a3b8"
+                        strokeDasharray="5 5"
+                        label={{
+                          value: `평균 PER: ${avgPer.toFixed(1)}`,
+                          position: "right",
+                          style: { fontSize: 10, fill: "#64748b" },
+                        }}
+                      />
+                      <Scatter
+                        name="기업"
+                        data={perYoyChartData}
+                        shape={(props: unknown) => {
+                          const { cx, cy, payload } = props as {
+                            cx: number;
+                            cy: number;
+                            payload: { fill: string; name: string };
+                          };
+                          return (
+                            <g>
+                              <circle
+                                cx={cx}
+                                cy={cy}
+                                r={8}
+                                fill={payload.fill}
+                                stroke="#fff"
+                                strokeWidth={2}
+                              />
+                              <text
+                                x={cx}
+                                y={cy - 14}
+                                textAnchor="middle"
+                                fontSize={11}
+                                fontWeight="bold"
+                                fill="#334155"
+                              >
+                                {payload.name}
+                              </text>
+                            </g>
+                          );
+                        }}
+                      />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div className="flex justify-center gap-6 mt-4 text-xs text-slate-500">
                 <div className="flex items-center gap-2">
@@ -1168,47 +1236,83 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                 ))}
               </div>
             </div>
-            <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="80%"
-                  data={radarData}
-                >
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis
-                    dataKey="subject"
-                    tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
-                  />
-                  <PolarRadiusAxis
-                    angle={30}
-                    domain={[radarMin, radarMax]}
-                    tick={false}
-                    axisLine={false}
-                  />
-                  <RechartsRadar
-                    name={selectedRadarCompany}
-                    dataKey="A"
-                    stroke="#0046FF"
-                    strokeWidth={2}
-                    fill="#0046FF"
-                    fillOpacity={0.2}
-                  />
-                  <RechartsRadar
-                    name="비교 평균"
-                    dataKey="B"
-                    stroke="#94A3B8"
-                    strokeWidth={2}
-                    fill="#94A3B8"
-                    fillOpacity={0.1}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
-                  />
-                  <Tooltip />
-                </RadarChart>
-              </ResponsiveContainer>
+            <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2 outline-none **:outline-none">
+              {comparisonDetailQuery.isLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="relative w-64 h-64">
+                    {/* 레이더 차트 오각형 스켈레톤 */}
+                    <Skeleton className="absolute inset-0 rounded-full opacity-20" />
+                    <Skeleton className="absolute inset-8 rounded-full opacity-30" />
+                    <Skeleton className="absolute inset-16 rounded-full opacity-40" />
+                    {/* 축 라벨 스켈레톤 */}
+                    <Skeleton className="absolute -top-2 left-1/2 -translate-x-1/2 h-3 w-10" />
+                    <Skeleton className="absolute top-1/4 -right-4 h-3 w-10" />
+                    <Skeleton className="absolute bottom-1/4 -right-4 h-3 w-10" />
+                    <Skeleton className="absolute bottom-1/4 -left-4 h-3 w-10" />
+                    <Skeleton className="absolute top-1/4 -left-4 h-3 w-10" />
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="80%"
+                    data={radarData}
+                  >
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis
+                      dataKey="subject"
+                      tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[radarMin, radarMax]}
+                      tick={false}
+                      axisLine={false}
+                    />
+                    <RechartsRadar
+                      name={selectedRadarCompany}
+                      dataKey="A"
+                      stroke="#0046FF"
+                      strokeWidth={2}
+                      fill="#0046FF"
+                      fillOpacity={0.2}
+                    />
+                    <RechartsRadar
+                      name="비교 평균"
+                      dataKey="B"
+                      stroke="#94A3B8"
+                      strokeWidth={2}
+                      fill="#94A3B8"
+                      fillOpacity={0.1}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
+                    />
+                    <Tooltip
+                      isAnimationActive={false}
+                      formatter={(value, name) => {
+                        const numValue = typeof value === "number" ? value : 0;
+                        const displayName =
+                          name === "A"
+                            ? effectiveRadarCompany
+                            : name === "B"
+                              ? "비교 평균"
+                              : (name ?? "");
+                        return [numValue.toFixed(2), displayName];
+                      }}
+                      contentStyle={{
+                        borderRadius: "10px",
+                        border: "none",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                      }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </GlassCard>
 
@@ -1247,18 +1351,18 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                           </div>
 
                           {/* Info Tooltip (Hover style) */}
-                          <div className="absolute top-8 right-0 z-20 w-72 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-xl p-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                            <h4 className="font-bold text-slate-800 text-lg mb-2">
+                          <div className="absolute top-7 right-0 z-20 w-60 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg p-3 opacity-0 invisible translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 ease-out">
+                            <h4 className="font-bold text-slate-800 text-sm mb-1.5">
                               {info.title}란?
                             </h4>
-                            <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                            <p className="text-xs text-slate-600 leading-relaxed mb-2">
                               {info.desc}
                             </p>
-                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                              <p className="text-xs text-slate-500 font-bold mb-1">
+                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                              <p className="text-[10px] text-slate-500 font-bold mb-0.5">
                                 계산식
                               </p>
-                              <p className="text-sm font-mono text-[#0046ff]">
+                              <p className="text-xs font-mono text-[#0046ff]">
                                 {info.formula}
                               </p>
                             </div>
@@ -1266,7 +1370,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         </div>
                       </div>
 
-                      <div className="flex-1 min-h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-4">
+                      <div className="flex-1 min-h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-4 outline-none **:outline-none">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={info.data}
@@ -1290,10 +1394,13 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                             />
                             <Tooltip
                               cursor={{ fill: "transparent" }}
+                              isAnimationActive={false}
                               contentStyle={{
                                 borderRadius: "12px",
                                 border: "none",
                                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                padding: "12px 16px",
+                                fontSize: "14px",
                               }}
                             />
                             <Bar

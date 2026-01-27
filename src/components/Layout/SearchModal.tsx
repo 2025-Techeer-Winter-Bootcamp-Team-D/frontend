@@ -269,7 +269,22 @@ const SearchModal: React.FC<SearchModalProps> = ({
                 className="w-full flex items-center justify-between p-3 hover:bg-blue-50 rounded-xl transition-colors group text-left"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-600 group-hover:bg-blue-100 group-hover:text-[#0046ff] transition-colors">
+                  {company.logo_url ? (
+                    <img
+                      src={company.logo_url}
+                      alt={company.company_name}
+                      className="w-10 h-10 rounded-lg object-contain bg-white border border-gray-100"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.nextElementSibling?.classList.remove(
+                          "hidden",
+                        );
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-600 group-hover:bg-blue-100 group-hover:text-[#0046ff] transition-colors ${company.logo_url ? "hidden" : ""}`}
+                  >
                     {company.company_name[0]}
                   </div>
                   <div>

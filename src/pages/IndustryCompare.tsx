@@ -1,26 +1,19 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import AIBubbleChart from "../components/Charts/AIBubbleChart";
-import {
-  ArrowLeft,
-  TrendingUp,
-  Info,
-  ChevronDown,
-  X,
-  ChevronRight,
-  RotateCcw,
-  Filter,
-} from "lucide-react";
+import { Skeleton } from "../components/Skeleton";
+import { ChevronDown, X, RotateCcw, Filter } from "lucide-react";
+import { ChartLine } from "@phosphor-icons/react";
 import { PageView } from "../types";
 import type {
   Stock,
   AxisKey,
   BrushRange,
   IndustryNewsItem,
-  IndustryData,
   TimeRange,
   IndustryKey,
 } from "../types";
@@ -48,7 +41,7 @@ import {
   INDUTY_CODE_BY_KEY,
 } from "../hooks/useIndustryQueries";
 import { getStockOhlcv, getCompanyFinancials } from "../api/company";
-import { getNewsKeywords } from "../api/news";
+import { getNewsKeywords, getNewsDetail } from "../api/news";
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -237,7 +230,34 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
   const [showAllCompanies, setShowAllCompanies] = useState(false);
+
+  // 뉴스 상세 조회 핸들러
+  const handleNewsClick = async (newsId: number) => {
+    setIsNewsLoading(true);
+    try {
+      const response = await getNewsDetail(newsId);
+      const data = response.data;
+      if (data) {
+        setSelectedNews({
+          id: data.news_id,
+          title: data.title,
+          summary: data.summary,
+          source: data.press,
+          time: data.published_at,
+          author: data.author ?? undefined,
+          content: data.content,
+          keywords: data.keywords,
+          url: data.url,
+        });
+      }
+    } catch (error) {
+      console.error("뉴스 상세 조회 실패:", error);
+    } finally {
+      setIsNewsLoading(false);
+    }
+  };
 
   // -----------------------------
   // TanStack Query - 커스텀 훅 사용
@@ -253,7 +273,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   } = useIndustryData(selectedIndustry, timeRange);
 
   // 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
-  const { data: keywordsData } = useQuery({
+  const { data: keywordsData, isLoading: isKeywordsLoading } = useQuery({
     queryKey: ["newsKeywords"],
     queryFn: async () => {
       const response = await getNewsKeywords({ size: 15 });
@@ -710,22 +730,31 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         <div className="lg:col-span-2 flex flex-col">
           <div className="mb-6">
             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
-              <TrendingUp size={20} className="text-[#0046ff]" />
+              <ChartLine size={20} className="text-[#0046ff]" />
               {currentIndustryInfo.indexName} 추이
             </h3>
             <div className="flex justify-between items-end">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">
-                  {(latestIndexData?.current_value ?? 0).toLocaleString()}
-                </span>
-                <span
-                  className={`font-medium px-2 py-0.5 rounded text-sm ${(latestIndexData?.change_value ?? 0) > 0 ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
-                >
-                  {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
-                  {latestIndexData?.change_value ?? 0} (
-                  {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
-                  {latestIndexData?.change_percent ?? 0}%)
-                </span>
+                {chartQuery.isLoading ? (
+                  <>
+                    <Skeleton className="h-9 w-32" />
+                    <Skeleton className="h-6 w-24 rounded" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold text-slate-900">
+                      {(latestIndexData?.current_value ?? 0).toLocaleString()}
+                    </span>
+                    <span
+                      className={`font-medium px-2 py-0.5 rounded text-sm ${(latestIndexData?.change_value ?? 0) > 0 ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
+                    >
+                      {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
+                      {latestIndexData?.change_value ?? 0} (
+                      {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
+                      {latestIndexData?.change_percent ?? 0}%)
+                    </span>
+                  </>
+                )}
               </div>
               <div className="flex gap-2">
                 {["1M", "3M", "6M", "1Y"].map((p) => (
@@ -748,66 +777,87 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             className="flex-1 w-full min-h-[200px] outline-none **:outline-none"
             tabIndex={-1}
           >
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="5%"
-                      stopColor={
-                        (latestIndexData?.change_value ?? 0) > 0
-                          ? "#EF4444"
-                          : "#0046FF"
-                      }
-                      stopOpacity={0.2}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={
-                        (latestIndexData?.change_value ?? 0) > 0
-                          ? "#EF4444"
-                          : "#0046FF"
-                      }
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(255, 255, 255, 0.9)",
-                    borderRadius: "12px",
-                    border: "none",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  }}
-                  formatter={(value: number | undefined) => [
-                    value ? value.toLocaleString() : "0",
-                    "지수",
-                  ]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={
-                    (latestIndexData?.change_value ?? 0) > 0
-                      ? "#EF4444"
-                      : "#0046FF"
-                  }
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorValue)"
-                />
-                <XAxis
-                  dataKey="time"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#94A3B8" }}
-                  interval={xAxisProps.interval}
-                  minTickGap={xAxisProps.minTickGap}
-                  tickFormatter={xAxisProps.formatter}
-                />
-                <YAxis hide domain={["auto", "auto"]} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {chartQuery.isLoading ? (
+              <div className="h-full w-full flex flex-col justify-between py-4">
+                <div className="flex justify-between px-4">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <div className="flex justify-between px-4">
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor={
+                          (latestIndexData?.change_value ?? 0) > 0
+                            ? "#EF4444"
+                            : "#0046FF"
+                        }
+                        stopOpacity={0.2}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={
+                          (latestIndexData?.change_value ?? 0) > 0
+                            ? "#EF4444"
+                            : "#0046FF"
+                        }
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(255, 255, 255, 0.9)",
+                      borderRadius: "12px",
+                      border: "none",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                    formatter={(value: number | undefined) => [
+                      value ? value.toLocaleString() : "0",
+                      "지수",
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke={
+                      (latestIndexData?.change_value ?? 0) > 0
+                        ? "#EF4444"
+                        : "#0046FF"
+                    }
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorValue)"
+                  />
+                  <XAxis
+                    dataKey="time"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: "#94A3B8" }}
+                    interval={xAxisProps.interval}
+                    minTickGap={xAxisProps.minTickGap}
+                    tickFormatter={xAxisProps.formatter}
+                  />
+                  <YAxis hide domain={["auto", "auto"]} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -832,9 +882,27 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               산업분야 전망
             </h3>
             {loading ? (
-              <p className="text-white/60 text-sm">
-                로딩 중입니다. 잠시만 기다려 주십시오.
-              </p>
+              <div className="space-y-3 flex-1">
+                <div className="relative overflow-hidden rounded-2xl bg-white/10 p-4">
+                  <Skeleton className="h-4 w-full mb-2 bg-white/20" />
+                  <Skeleton className="h-4 w-5/6 mb-2 bg-white/20" />
+                  <Skeleton className="h-4 w-4/6 bg-white/20" />
+                </div>
+                <div className="space-y-2">
+                  <div className="relative overflow-hidden rounded-2xl bg-white/10 p-3">
+                    <div className="flex gap-3">
+                      <Skeleton className="h-[18px] w-12 rounded-full bg-white/20" />
+                      <Skeleton className="h-3 w-full bg-white/20" />
+                    </div>
+                  </div>
+                  <div className="relative overflow-hidden rounded-2xl bg-white/10 p-3">
+                    <div className="flex gap-3">
+                      <Skeleton className="h-[18px] w-12 rounded-full bg-white/20" />
+                      <Skeleton className="h-3 w-full bg-white/20" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : error ? (
               <p className="text-red-300 text-sm">{error}</p>
             ) : (
@@ -944,85 +1012,119 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {(showAllCompanies
-                  ? companiesData
-                  : companiesData.slice(0, 5)
-                ).map((company, index) => (
-                  <tr
-                    key={company.code}
-                    className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
-                    onClick={() => handleCompanyClick(company.code)}
-                  >
-                    <td className="pl-3 pr-1 py-4">
-                      <button
-                        onClick={(e) => handleToggleStar(e, company.code)}
-                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                {companiesQuery.isLoading
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="pl-3 pr-1 py-4">
+                          <Skeleton className="w-5 h-5 rounded-full" />
+                        </td>
+                        <td className="px-1 py-4 text-center">
+                          <Skeleton className="w-6 h-6 mx-auto" />
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <Skeleton className="w-8 h-8 rounded-md mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-24 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-20 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-16 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-8 w-24 mx-auto rounded" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-14 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-20 mx-auto" />
+                        </td>
+                      </tr>
+                    ))
+                  : (showAllCompanies
+                      ? companiesData
+                      : companiesData.slice(0, 5)
+                    ).map((company, index) => (
+                      <tr
+                        key={company.code}
+                        className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
+                        onClick={() => handleCompanyClick(company.code)}
                       >
-                        <StarIcon
-                          isActive={starred?.has(company.code) ?? false}
-                        />
-                      </button>
-                    </td>
-                    <td className="px-1 py-4 text-center">
-                      <span className="font-bold text-slate-600 text-lg">
-                        {index + 1}
-                      </span>
-                    </td>
-                    <td className="px-2 py-4 text-center">
-                      <div className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center overflow-hidden shadow-sm">
-                        {company.logo ? (
-                          <img
-                            src={company.logo}
-                            alt={company.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                              (
-                                e.target as HTMLImageElement
-                              ).nextElementSibling?.classList.remove("hidden");
-                            }}
-                          />
-                        ) : null}
-                        <span
-                          className={`font-bold text-slate-600 text-xs ${company.logo ? "hidden" : ""}`}
+                        <td className="pl-3 pr-1 py-4">
+                          <button
+                            onClick={(e) => handleToggleStar(e, company.code)}
+                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                          >
+                            <HeartIcon
+                              isActive={starred?.has(company.code) ?? false}
+                            />
+                          </button>
+                        </td>
+                        <td className="px-1 py-4 text-center">
+                          <span className="font-bold text-slate-600 text-lg">
+                            {index + 1}
+                          </span>
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <div className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center overflow-hidden shadow-sm">
+                            {company.logo ? (
+                              <img
+                                src={company.logo}
+                                alt={company.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                  (
+                                    e.target as HTMLImageElement
+                                  ).nextElementSibling?.classList.remove(
+                                    "hidden",
+                                  );
+                                }}
+                              />
+                            ) : null}
+                            <span
+                              className={`font-bold text-slate-600 text-xs ${company.logo ? "hidden" : ""}`}
+                            >
+                              {company.name.charAt(0)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 text-center font-bold text-slate-800 text-base">
+                          {company.name}
+                        </td>
+                        <td className="px-3 py-4 text-center font-medium text-slate-700 text-base">
+                          {company.price}
+                        </td>
+                        <td
+                          className={`px-3 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                         >
-                          {company.name.charAt(0)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 text-center font-bold text-slate-800 text-base">
-                      {company.name}
-                    </td>
-                    <td className="px-3 py-4 text-center font-medium text-slate-700 text-base">
-                      {company.price}
-                    </td>
-                    <td
-                      className={`px-3 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
-                    >
-                      {company.change}
-                    </td>
-                    <td className="px-3 py-4 text-center">
-                      <div className="inline-block">
-                        <MiniChart
-                          color={
-                            company.change.startsWith("+")
-                              ? "#EF4444"
-                              : "#3B82F6"
-                          }
-                          data={company.chartData}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 text-center font-medium text-slate-800">
-                      {company.roe >= 0 ? "+" : ""}
-                      {company.roe}%
-                    </td>
-                    <td className="px-3 py-4 text-center text-slate-600 font-medium whitespace-nowrap">
-                      {company.marketCap}
-                    </td>
-                  </tr>
-                ))}
+                          {company.change}
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <div className="inline-block">
+                            <MiniChart
+                              color={
+                                company.change.startsWith("+")
+                                  ? "#EF4444"
+                                  : "#3B82F6"
+                              }
+                              data={company.chartData}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 text-center font-medium text-slate-800">
+                          {company.roe >= 0 ? "+" : ""}
+                          {company.roe}%
+                        </td>
+                        <td className="px-3 py-4 text-center text-slate-600 font-medium whitespace-nowrap">
+                          {company.marketCap}
+                        </td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
           </div>
@@ -1318,37 +1420,48 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                               : coordinate.x + 15;
 
                           return (
-                            <div
-                              className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
-                              style={{
-                                position: "absolute",
-                                left,
-                                top: coordinate.y - 40,
-                                pointerEvents: "none",
-                                minWidth: "120px",
-                              }}
-                            >
-                              <div className="font-bold mb-1 text-slate-800 text-sm">
-                                {data.name}
-                              </div>
-                              <div className="space-y-0.5">
-                                <div>
-                                  ROE:{" "}
-                                  <span className="text-shinhan-blue font-bold">
-                                    {data.x}%
-                                  </span>
+                            <AnimatePresence>
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 300,
+                                  damping: 20,
+                                }}
+                                className="bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-2xl border border-slate-200 text-xs whitespace-nowrap"
+                                style={{
+                                  position: "absolute",
+                                  left,
+                                  top: coordinate.y - 50,
+                                  pointerEvents: "none",
+                                  minWidth: "140px",
+                                }}
+                              >
+                                <div className="font-bold mb-2 text-slate-800 text-sm flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-[#0046FF]" />
+                                  {data.name}
                                 </div>
-                                <div>
-                                  PBR:{" "}
-                                  <span className="text-shinhan-blue font-bold">
-                                    {data.y}배
-                                  </span>
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">ROE</span>
+                                    <span className="text-[#0046FF] font-bold">
+                                      {data.x}%
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">PBR</span>
+                                    <span className="text-[#0046FF] font-bold">
+                                      {data.y}배
+                                    </span>
+                                  </div>
+                                  <div className="pt-1.5 mt-1.5 border-t border-slate-100 text-slate-400 text-[10px]">
+                                    버블 크기 = 시가총액
+                                  </div>
                                 </div>
-                                <div className="text-gray-500 mt-1">
-                                  시가총액 비례 크기
-                                </div>
-                              </div>
-                            </div>
+                              </motion.div>
+                            </AnimatePresence>
                           );
                         }
                         return null;
@@ -1490,34 +1603,47 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                               : coordinate.x + 15;
 
                           return (
-                            <div
-                              className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
-                              style={{
-                                position: "absolute",
-                                left,
-                                top: coordinate.y - 40,
-                                pointerEvents: "none",
-                                minWidth: "120px",
-                              }}
-                            >
-                              <div className="font-bold mb-1 text-slate-800 text-sm">
-                                {data.name}
-                              </div>
-                              <div className="space-y-0.5">
-                                <div>
-                                  ROE:{" "}
-                                  <span className="text-shinhan-blue font-bold">
-                                    {data.roe}%
-                                  </span>
+                            <AnimatePresence>
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 300,
+                                  damping: 20,
+                                }}
+                                className="bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-2xl border border-slate-200 text-xs whitespace-nowrap"
+                                style={{
+                                  position: "absolute",
+                                  left,
+                                  top: coordinate.y - 50,
+                                  pointerEvents: "none",
+                                  minWidth: "140px",
+                                }}
+                              >
+                                <div className="font-bold mb-2 text-slate-800 text-sm flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                  {data.name}
                                 </div>
-                                <div>
-                                  부채비율:{" "}
-                                  <span className="font-bold text-slate-600">
-                                    {data.debt}%
-                                  </span>
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">ROE</span>
+                                    <span className="text-[#0046FF] font-bold">
+                                      {data.roe}%
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">
+                                      부채비율
+                                    </span>
+                                    <span className="text-slate-700 font-bold">
+                                      {data.debt}%
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                              </motion.div>
+                            </AnimatePresence>
                           );
                         }
                         return null;
@@ -1636,7 +1762,26 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               <div className="pointer-events-none absolute -bottom-[80px] -right-[80px] h-[300px] w-[300px] rounded-full bg-blue-400/30 blur-[70px]" />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-3xl" />
               <div className="relative p-4">
-                <AIBubbleChart keywords={keywordsData} />
+                {isKeywordsLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <div className="flex flex-wrap gap-3 justify-center items-center p-8">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <Skeleton
+                          key={i}
+                          className={`rounded-full ${
+                            i % 3 === 0
+                              ? "w-20 h-20"
+                              : i % 3 === 1
+                                ? "w-14 h-14"
+                                : "w-10 h-10"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <AIBubbleChart keywords={keywordsData} />
+                )}
               </div>
             </div>
           </div>
@@ -1647,36 +1792,38 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               뉴스
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {industryNews.length > 0 ? (
+              {newsQuery.isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <GlassCard key={i} className="p-5 flex flex-col">
+                    <Skeleton className="h-5 w-full mb-2" />
+                    <Skeleton className="h-4 w-3/4 mb-3" />
+                    <Skeleton className="h-3 w-full mb-1" />
+                    <Skeleton className="h-3 w-2/3 mb-3" />
+                    <div className="flex items-center gap-2 mt-auto">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                  </GlassCard>
+                ))
+              ) : industryNews.length > 0 ? (
                 industryNews.slice(0, 4).map((news) => (
-                  <GlassCard
+                  <div
                     key={news.id}
-                    className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
-                    onClick={() => {
-                      if (news.url) {
-                        const newWindow = window.open(
-                          news.url,
-                          "_blank",
-                          "noopener,noreferrer",
-                        );
-                        if (newWindow) newWindow.opener = null;
-                      } else {
-                        setSelectedNews(news);
-                      }
-                    }}
+                    onClick={() => handleNewsClick(news.id)}
+                    className="p-4 border border-gray-100 rounded-xl hover:bg-white hover:shadow-md hover:border-blue-100 transition-all cursor-pointer group flex flex-col bg-white"
                   >
-                    <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
+                    <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug text-sm">
                       {news.title}
                     </h4>
                     <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
-                      {news.content}
+                      {news.summary || news.content}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
                       <span>{news.source}</span>
                       <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                       <span>{news.time}</span>
                     </div>
-                  </GlassCard>
+                  </div>
                 ))
               ) : (
                 <div className="col-span-2 text-center py-10 text-gray-400 bg-white/50 rounded-md border border-gray-100">
@@ -1688,50 +1835,113 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
-      {/* --- News Modal (Bottom Sheet Style) --- */}
-      {selectedNews && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      {/* --- News Modal --- */}
+      {(selectedNews || isNewsLoading) && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setSelectedNews(null)}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !isNewsLoading && setSelectedNews(null)}
           ></div>
-          {/* Rounded-lg */}
-          <div className="bg-white w-full max-w-2xl sm:rounded-lg rounded-t-lg shadow-2xl z-10 animate-fade-in-up max-h-[85vh] overflow-y-auto flex flex-col relative">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 p-5 relative z-10 rounded-t-lg">
-              <h3 className="font-bold text-sm text-slate-500 text-center">
-                토픽 인사이트
-              </h3>
-              <button
-                onClick={() => setSelectedNews(null)}
-                className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 leading-snug mb-4">
-                {selectedNews.title}
-              </h2>
-              <div className="flex items-center gap-3 text-sm text-gray-500 mb-8 border-b border-gray-100 pb-4">
-                <span className="font-medium text-slate-700">
-                  {selectedNews.source}
-                </span>
-                <span>{selectedNews.time}</span>
+          <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
+            {isNewsLoading ? (
+              <div className="py-4 space-y-4">
+                <div className="flex gap-2 mb-4">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-7 w-full" />
+                <Skeleton className="h-7 w-3/4" />
+                <div className="flex gap-3 py-4 border-b border-gray-100">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="space-y-3 pt-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
               </div>
-
-              <div className="flex flex-col sm:flex-row-reverse gap-6 mb-6">
-                {/* Rounded-md */}
-                <div className="w-full sm:w-1/3 h-40 bg-gray-200 rounded-md flex-shrink-0"></div>
-                <p className="text-slate-700 leading-loose text-lg flex-1">
-                  {selectedNews.content}
-                </p>
-              </div>
-
-              {/* Rounded-md */}
-            </div>
+            ) : (
+              selectedNews && (
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNews.keywords?.slice(0, 3).map((keyword, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setSelectedNews(null)}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={24} className="text-gray-400" />
+                    </button>
+                  </div>
+                  <h2 className="text-xl font-bold mb-3 text-slate-800 leading-tight">
+                    {selectedNews.title}
+                  </h2>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-100">
+                    {selectedNews.source && (
+                      <span className="font-medium text-slate-700">
+                        {selectedNews.source}
+                      </span>
+                    )}
+                    {selectedNews.author && (
+                      <span>· {selectedNews.author}</span>
+                    )}
+                    {selectedNews.time && (
+                      <span>
+                        ·{" "}
+                        {new Date(selectedNews.time).toLocaleDateString(
+                          "ko-KR",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-2 mb-4">
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-sm">
+                      {selectedNews.content || selectedNews.summary}
+                    </p>
+                  </div>
+                  {selectedNews.url && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <a
+                        href={selectedNews.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        원문 보기
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                </>
+              )
+            )}
           </div>
         </div>
       )}
@@ -1739,20 +1949,20 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   );
 };
 
-// Helper Icon for Star
-const StarIcon = ({ isActive }: { isActive: boolean }) => (
+// Helper Icon for Heart
+const HeartIcon = ({ isActive }: { isActive: boolean }) => (
   <svg
     width="20"
     height="20"
     viewBox="0 0 24 24"
-    fill={isActive ? "#FFD700" : "none"}
-    stroke={isActive ? "#FFD700" : "#CBD5E1"}
+    fill={isActive ? "#EF4444" : "none"}
+    stroke={isActive ? "#EF4444" : "#CBD5E1"}
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
     className="transition-colors duration-200"
   >
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
 );
 

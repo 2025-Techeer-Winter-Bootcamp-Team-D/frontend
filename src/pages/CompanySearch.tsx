@@ -1,14 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
-import {
-  Search,
-  Star,
-  TrendingUp,
-  ChevronRight,
-  ChevronDown,
-  Bell,
-} from "lucide-react";
+import { Search, ChevronRight } from "lucide-react";
+import { Files, Ranking } from "@phosphor-icons/react";
 import {
   Skeleton,
   SkeletonSearchResults,
@@ -121,18 +115,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 }) => {
   void _setPage;
   const navigate = useNavigate();
-  const {
-    starred,
-    toggleStar,
-    favoriteMap,
-    isLoading: isStarredLoading,
-  } = useStarred();
+  const { starred, toggleStar } = useStarred();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  // [추가] 관심기업 노출 개수 상태 (초기 7개)
-  const [visibleCount, setVisibleCount] = useState(7);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // 시장 지수 데이터
@@ -167,10 +154,45 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     queryKey: ["recentReports"],
     queryFn: async () => {
       const response = await getRecentReports();
-      return response.data.data ?? [];
+      // API가 배열을 직접 반환함
+      return response.data ?? [];
     },
     refetchInterval: 60000 * 5,
   });
+
+  // 지수 데이터를 StockChart 형식으로 변환
+  const kospiChartData = useMemo(() => {
+    if (!kospiData?.indices) return [];
+    return kospiData.indices.map((item) => ({
+      time: new Date(item.date).getTime() / 1000,
+      bucket: item.date,
+      open: item.value,
+      high: item.value,
+      low: item.value,
+      close: item.value,
+      volume: item.volume,
+      amount: item.amount,
+    }));
+  }, [kospiData]);
+
+  const kosdaqChartData = useMemo(() => {
+    if (!kosdaqData?.indices) return [];
+    return kosdaqData.indices.map((item) => ({
+      time: new Date(item.date).getTime() / 1000,
+      bucket: item.date,
+      open: item.value,
+      high: item.value,
+      low: item.value,
+      close: item.value,
+      volume: item.volume,
+      amount: item.amount,
+    }));
+  }, [kosdaqData]);
+
+  // 페이지 진입 시 스크롤 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -233,7 +255,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     enabled: !!debouncedQuery.trim(),
     select: (response: any) => {
       const responseData = response.data;
-      if (!responseData?.data?.results) return [] as RankingItem[];
+      if (!responseData?.data?.results)
+        return [] as (RankingItem & { logo_url?: string | null })[];
       return responseData.data.results.map((item: any, index: number) => ({
         rank: index + 1,
         name: item.company_name,
@@ -243,7 +266,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         change: "-",
         changeVal: 0,
         marketCap: "-",
-      })) as RankingItem[];
+        logo_url: item.logo_url,
+      })) as (RankingItem & { logo_url?: string | null })[];
     },
   });
 
@@ -254,53 +278,55 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     navigate(`/company/${code}`);
   };
 
-  const displayList = useMemo(() => {
-    return debouncedQuery.trim() ? searchResults : rankingData;
-  }, [debouncedQuery, searchResults, rankingData]);
+  // 검색 드롭다운과 랭킹 테이블 분리 - 테이블은 항상 랭킹 데이터만 표시
 
-  const isLoading = debouncedQuery.trim() ? isSearching : isRankingLoading;
-
-  const starredList = useMemo(() => {
-    return Array.from(favoriteMap.values()).map((fav) => {
-      const liveData = rankingData.find((r) => r.code === fav.companyId);
-      return {
-        code: fav.companyId,
-        name: fav.companyName,
-        price: liveData ? liveData.price : "-",
-        change: liveData ? liveData.change : "-",
-      };
-    });
-  }, [favoriteMap, rankingData]);
-
-  const StarIcon = ({ isActive }: { isActive: boolean }) => (
+  const HeartIcon = ({ isActive }: { isActive: boolean }) => (
     <svg
       width="20"
       height="20"
       viewBox="0 0 24 24"
-      fill={isActive ? "#F59E0B" : "none"}
-      stroke={isActive ? "#F59E0B" : "#CBD5E1"}
+      fill={isActive ? "#EF4444" : "none"}
+      stroke={isActive ? "#EF4444" : "#CBD5E1"}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="transition-colors"
     >
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   );
+
+  const CompanyLogo = ({
+    logoUrl,
+    name,
+  }: {
+    logoUrl?: string | null;
+    name: string;
+  }) => {
+    const [hasError, setHasError] = useState(false);
+
+    if (!logoUrl || hasError) {
+      return (
+        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-500 text-sm shrink-0">
+          {name[0]}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={logoUrl}
+        alt={name}
+        className="w-8 h-8 rounded-lg object-contain bg-white border border-gray-100 shrink-0"
+        onError={() => setHasError(true)}
+      />
+    );
+  };
 
   return (
     <div className="animate-fade-in pb-12">
       {/* 실시간 시장 대시보드 섹션 */}
       <div className="mb-12">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900">
-            실시간 시장 대시보드
-          </h2>
-          <p className="text-slate-500 mt-1">
-            주요 지수 및 섹터별 랭킹을 한눈에 확인하세요.
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -310,14 +336,16 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
                     KOSPI
                   </h3>
-                  {kospiData && (
+                  {isKospiLoading ? (
+                    <Skeleton className="h-5 w-16" />
+                  ) : kospiData ? (
                     <span
                       className={`font-bold text-sm ${kospiData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
                     >
                       {kospiData.change_rate >= 0 ? "▲" : "▼"}{" "}
                       {Math.abs(kospiData.change_rate).toFixed(2)}%
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 <span className="text-3xl font-extrabold text-slate-900">
                   {isKospiLoading ? (
@@ -329,14 +357,20 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   )}
                 </span>
                 <div className="h-24 mt-3">
-                  <StockChart
-                    color={
-                      kospiData && kospiData.change_rate >= 0
-                        ? "#10B981"
-                        : "#EF4444"
-                    }
-                    showAxes={false}
-                  />
+                  {isKospiLoading ? (
+                    <Skeleton className="h-full w-full rounded-lg" />
+                  ) : (
+                    <StockChart
+                      data={kospiChartData}
+                      color={
+                        kospiData && kospiData.change_rate >= 0
+                          ? "#10B981"
+                          : "#EF4444"
+                      }
+                      showAxes={false}
+                      period="1M"
+                    />
+                  )}
                 </div>
               </GlassCard>
 
@@ -346,14 +380,16 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
                     KOSDAQ
                   </h3>
-                  {kosdaqData && (
+                  {isKosdaqLoading ? (
+                    <Skeleton className="h-5 w-16" />
+                  ) : kosdaqData ? (
                     <span
                       className={`font-bold text-sm ${kosdaqData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
                     >
                       {kosdaqData.change_rate >= 0 ? "▲" : "▼"}{" "}
                       {Math.abs(kosdaqData.change_rate).toFixed(2)}%
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 <span className="text-3xl font-extrabold text-slate-900">
                   {isKosdaqLoading ? (
@@ -365,14 +401,20 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   )}
                 </span>
                 <div className="h-24 mt-3">
-                  <StockChart
-                    color={
-                      kosdaqData && kosdaqData.change_rate >= 0
-                        ? "#10B981"
-                        : "#EF4444"
-                    }
-                    showAxes={false}
-                  />
+                  {isKosdaqLoading ? (
+                    <Skeleton className="h-full w-full rounded-lg" />
+                  ) : (
+                    <StockChart
+                      data={kosdaqChartData}
+                      color={
+                        kosdaqData && kosdaqData.change_rate >= 0
+                          ? "#10B981"
+                          : "#EF4444"
+                      }
+                      showAxes={false}
+                      period="1M"
+                    />
+                  )}
                 </div>
               </GlassCard>
             </div>
@@ -381,11 +423,69 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             />
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 flex flex-col gap-4">
+            {/* 기업 검색 */}
+            <div className="relative" ref={searchContainerRef}>
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                <Search className="text-gray-400" size={20} />
+              </div>
+              <input
+                type="text"
+                placeholder="기업명 또는 종목코드 검색..."
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#0046ff] focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsDropdownOpen(true);
+                }}
+                onFocus={() => setIsDropdownOpen(true)}
+              />
+              {isDropdownOpen && searchQuery.trim() && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-64 overflow-y-auto z-50">
+                  {isSearching ? (
+                    <SkeletonSearchResults count={3} />
+                  ) : searchResults.length > 0 ? (
+                    <ul>
+                      {searchResults.map((item) => (
+                        <li
+                          key={item.code}
+                          onClick={() => handleCompanyClick(item.code)}
+                          className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <CompanyLogo
+                              logoUrl={item.logo_url}
+                              name={item.name}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-slate-800 text-sm truncate">
+                                {item.name}
+                              </div>
+                              <div className="text-xs text-gray-400 font-mono">
+                                {item.code}
+                              </div>
+                            </div>
+                            <ChevronRight
+                              size={16}
+                              className="text-gray-300 flex-shrink-0"
+                            />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="py-4 text-center text-gray-500 text-sm">
+                      검색 결과가 없습니다
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* 자본시장 공시 */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
               <h3 className="text-base font-bold mb-5 flex items-center gap-2">
-                <Bell size={18} className="text-blue-600" /> 자본시장 공시
+                <Files size={22} className="text-blue-600" /> 자본시장 공시
               </h3>
               <div className="space-y-4">
                 {isReportsLoading ? (
@@ -395,7 +495,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     공시 데이터를 불러오지 못했습니다
                   </div>
                 ) : recentReports.length > 0 ? (
-                  recentReports.slice(0, 4).map((report) => (
+                  recentReports.slice(0, 5).map((report) => (
                     <div
                       key={report.id}
                       className="pb-3 border-b border-slate-50"
@@ -429,237 +529,119 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         </div>
       </div>
 
-      {/* 기업 검색 섹션 */}
-      <div className="flex flex-col items-center justify-center mb-10 pt-4">
-        <div className="w-full max-w-2xl relative" ref={searchContainerRef}>
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
-            <Search className="text-gray-400" size={24} />
+      {/* 시가총액 랭킹 리스트 */}
+      <div className="mt-8">
+        <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
+          <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Ranking size={20} className="text-[#0046ff]" />
+              {isRankingLoading ? "로딩 중..." : "시가총액 상위 랭킹"}
+            </h2>
           </div>
-          <input
-            type="text"
-            placeholder="기업명 또는 종목코드를 입력하세요..."
-            className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-blue-500/5 text-lg focus:outline-none focus:border-[#0046ff] focus:ring-4 focus:ring-blue-100 transition-all text-slate-800"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setIsDropdownOpen(true);
-            }}
-            onFocus={() => setIsDropdownOpen(true)}
-          />
-          {isDropdownOpen && searchQuery.trim() && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto z-50">
-              {isSearching ? (
-                <SkeletonSearchResults count={4} />
-              ) : searchResults.length > 0 ? (
-                <ul>
-                  {searchResults.map((item: RankingItem) => (
-                    <li
+
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-white text-gray-500 font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-4 py-4 w-16 whitespace-nowrap text-center">
+                    순위
+                  </th>
+                  <th className="px-4 py-4 w-16 whitespace-nowrap text-center">
+                    관심
+                  </th>
+                  <th className="px-6 py-4 w-64 whitespace-nowrap">기업명</th>
+                  <th className="px-6 py-4 whitespace-nowrap text-right">
+                    현재가
+                  </th>
+                  <th className="px-6 py-4 whitespace-nowrap text-right">
+                    등락률
+                  </th>
+                  <th className="px-6 py-4 whitespace-nowrap text-right">
+                    시가총액
+                  </th>
+                  <th className="px-4 py-4 w-12"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {isRankingLoading &&
+                  Array.from({ length: 10 }).map((_, index) => (
+                    <tr key={index} className="animate-pulse">
+                      <td className="px-4 py-4 text-center">
+                        <Skeleton className="h-5 w-6 mx-auto" />
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <Skeleton className="h-5 w-5 mx-auto rounded-full" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-5 w-32 mb-1" />
+                        <Skeleton className="h-3 w-16" />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Skeleton className="h-5 w-20 ml-auto" />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Skeleton className="h-5 w-14 ml-auto" />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Skeleton className="h-5 w-24 ml-auto" />
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <Skeleton className="h-4 w-4 ml-auto" />
+                      </td>
+                    </tr>
+                  ))}
+                {!isRankingLoading &&
+                  rankingData.map((item: RankingItem, index: number) => (
+                    <tr
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
-                      className="px-5 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                      className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-slate-800">
-                            {item.name}
-                          </div>
-                          <div className="text-sm text-gray-400 font-mono">
-                            {item.code}
-                          </div>
-                        </div>
-                        <ChevronRight size={18} className="text-gray-300" />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="py-6 text-center text-gray-500">
-                  검색 결과가 없습니다
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        {/* 메인 리스트 */}
-        <div className="lg:col-span-3">
-          <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
-            <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-[#0046ff]" />
-                {isLoading
-                  ? "로딩 중..."
-                  : debouncedQuery
-                    ? `검색 결과 (${displayList.length})`
-                    : "시가총액 상위 랭킹"}
-              </h2>
-            </div>
-
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-white text-gray-500 font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
-                  <tr>
-                    <th className="px-6 py-4 w-16 text-center">순위</th>
-                    <th className="px-6 py-4 w-16">관심</th>
-                    <th className="px-6 py-4">기업명</th>
-                    <th className="px-6 py-4 text-right">현재가</th>
-                    <th className="px-6 py-4 text-right">등락률</th>
-                    <th className="px-6 py-4 text-right">시가총액</th>
-                    <th className="px-6 py-4 w-16"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {!isLoading &&
-                    displayList.map((item: RankingItem, index: number) => (
-                      <tr
-                        key={item.code}
-                        onClick={() => handleCompanyClick(item.code)}
-                        className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                      <td className="px-4 py-4 text-center font-bold text-slate-500">
+                        {index + 1}
+                      </td>
+                      <td
+                        className="px-4 py-4 text-center"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <td className="px-6 py-4 text-center font-bold text-slate-500">
-                          {index + 1}
-                        </td>
-                        <td
-                          className="px-6 py-4 text-center"
-                          onClick={(e) => e.stopPropagation()}
+                        <button
+                          onClick={() => toggleStar(item.code)}
+                          className="p-1.5 hover:bg-gray-100 rounded-full"
                         >
-                          <button
-                            onClick={() => toggleStar(item.code)}
-                            className="p-1.5 hover:bg-gray-100 rounded-full"
-                          >
-                            <StarIcon isActive={starred.has(item.code)} />
-                          </button>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-slate-800">
-                            {item.name}
-                          </div>
-                          <div className="text-xs text-gray-400 font-mono">
-                            {item.code}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right font-bold text-slate-700">
-                          {item.price}원
-                        </td>
-                        <td
-                          className={`px-6 py-4 text-right font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
-                        >
-                          {item.change}
-                        </td>
-                        <td className="px-6 py-4 text-right font-medium text-slate-600">
-                          {formatMarketCap(item.marketCap)}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <ChevronRight
-                            size={18}
-                            className="text-gray-300 group-hover:text-[#0046ff]"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* 우측 사이드바: 나의 관심 기업 (Sticky 적용) */}
-        <div className="lg:col-span-1 sticky top-14">
-          <GlassCard className="p-0 overflow-hidden flex flex-col bg-white border-2 border-shinhan-light/50 shadow-xl">
-            <div className="p-5 border-b border-gray-100 bg-shinhan-blue text-white">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <Star size={20} className="fill-white" /> 나의 관심 기업
-              </h2>
-              <p className="text-xs text-blue-100 mt-1">
-                {starred.size}개의 기업 구독 중
-              </p>
-            </div>
-
-            <div className="p-3 overflow-hidden">
-              {starredList.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {/* [수정] slice를 사용하여 visibleCount만큼만 렌더링 */}
-                  {starredList.slice(0, visibleCount).map((item) => (
-                    <div
-                      key={item.code}
-                      onClick={() => handleCompanyClick(item.code)}
-                      className="p-3 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-100"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleStar(item.code);
-                            }}
-                            className="text-yellow-400 shrink-0"
-                          >
-                            <Star size={16} fill="currentColor" />
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-bold text-slate-800 text-sm truncate">
-                              {item.name}
-                            </div>
-                            <div className="text-xs text-gray-400 font-mono">
-                              {item.code}
-                            </div>
-                          </div>
+                          <HeartIcon isActive={starred.has(item.code)} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-800">
+                          {item.name}
                         </div>
-                        <div className="text-right shrink-0 ml-2">
-                          <div className="font-bold text-slate-700 text-sm">
-                            {item.price}
-                          </div>
-                          <div
-                            className={`text-xs font-bold ${item.change?.startsWith("+") ? "text-red-500" : item.change?.startsWith("-") ? "text-blue-500" : "text-slate-500"}`}
-                          >
-                            {item.change}
-                          </div>
+                        <div className="text-xs text-gray-400 font-mono">
+                          {item.code}
                         </div>
-                      </div>
-                    </div>
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-slate-700">
+                        {item.price}원
+                      </td>
+                      <td
+                        className={`px-6 py-4 text-right font-bold ${item.changeVal > 0 ? "text-red-500" : item.changeVal < 0 ? "text-blue-500" : "text-slate-500"}`}
+                      >
+                        {item.change}
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-600">
+                        {formatMarketCap(item.marketCap)}
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <ChevronRight
+                          size={18}
+                          className="text-gray-300 group-hover:text-[#0046ff]"
+                        />
+                      </td>
+                    </tr>
                   ))}
-
-                  {/* [추가] 더 보기 버튼 */}
-                  {starredList.length > visibleCount && (
-                    <button
-                      onClick={() => setVisibleCount((prev) => prev + 3)}
-                      className="mt-2 py-3 w-full flex items-center justify-center gap-1 text-sm font-bold text-shinhan-blue hover:bg-blue-50 rounded-xl transition-all border border-dashed border-blue-200"
-                    >
-                      <ChevronDown size={16} />
-                      {starredList.length - visibleCount}개 더 보기
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-10 px-4">
-                  {isStarredLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"
-                        >
-                          <Skeleton className="w-4 h-4 rounded-full" />
-                          <div className="flex-1">
-                            <Skeleton className="h-4 w-20 mb-1" />
-                            <Skeleton className="h-3 w-14" />
-                          </div>
-                          <Skeleton className="h-4 w-12" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-400 text-sm">
-                      관심 기업이 없습니다.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </GlassCard>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
       </div>
     </div>
   );

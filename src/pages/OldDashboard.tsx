@@ -268,7 +268,7 @@ const AINewsBriefing: React.FC<{ visibleSections: Set<string> }> = ({
 
 // --- Main Dashboard Component ---
 
-const Dashboard: React.FC<DashboardProps> = ({
+const OldDashboard: React.FC<DashboardProps> = ({
   onIndustryClick,
   onShowNavbar,
 }) => {
@@ -513,7 +513,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     queryKey: ["recentReports"],
     queryFn: async () => {
       const response = await getRecentReports();
-      return response.data.data ?? [];
+      return response.data ?? [];
     },
     refetchInterval: 60000 * 5, // 5분마다 갱신
   });
@@ -954,4 +954,4 @@ const Dashboard: React.FC<DashboardProps> = ({
   );
 };
 
-export default Dashboard;
+export default OldDashboard;
