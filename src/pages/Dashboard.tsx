@@ -82,7 +82,10 @@ const App: React.FC = () => {
               복잡한 재무제표를 QUASA만의 인사이트로 재정의하세요.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <button className="bg-[#0046FF] text-white text-sm font-semibold px-6 py-3.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2">
+              <button
+                onClick={() => setCurrentPage("search" as PageView)}
+                className="bg-[#0046FF] text-white text-sm font-semibold px-6 py-3.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
+              >
                 지금 시작하기 <ArrowRight size={16} />
               </button>
               <div className="relative group flex-1 max-w-xs">
@@ -333,7 +336,10 @@ const App: React.FC = () => {
               대한민국 1위 전자공시 분석 플랫폼 QUASA와 함께하세요.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="group relative bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden">
+              <button
+                onClick={() => setCurrentPage("signup" as PageView)}
+                className="group relative bg-[`#0046FF`] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
+              >
                 <span className="relative z-10 flex items-center gap-2">
                   무료로 시작하기{" "}
                   <ChevronRight
