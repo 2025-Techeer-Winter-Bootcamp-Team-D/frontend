@@ -398,24 +398,6 @@ const App: React.FC = () => {
   );
 };
 
-const ComparisonFeature: React.FC<{ number: string; text: string }> = ({
-  number,
-  text,
-}) => (
-  <motion.div
-    initial={{ opacity: 0, x: 20 }}
-    whileInView={{ opacity: 1, x: 0 }}
-    transition={{ duration: 0.6, delay: Number(number) * 0.2 }}
-    whileHover={{ x: 5 }}
-    className="p-4 rounded-xl bg-white border border-gray-100 flex items-center gap-3 shadow-sm group hover:border-[#0046FF]/20 transition-all"
-  >
-    <div className="w-9 h-9 rounded-lg bg-[#0046FF] flex items-center justify-center text-white shadow-md font-semibold text-sm group-hover:scale-105 transition-transform">
-      {number}
-    </div>
-    <p className="text-sm font-medium text-quasa-dark">{text}</p>
-  </motion.div>
-);
-
 const FooterColumn: React.FC<{ title: string; links: string[] }> = ({
   title,
   links,

@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Star,
 } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface OutlookCardProps {
   data: {
