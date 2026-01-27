@@ -153,7 +153,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     queryKey: ["recentReports"],
     queryFn: async () => {
       const response = await getRecentReports();
-      return response.data.data ?? [];
+      // API가 배열을 직접 반환함
+      return response.data ?? [];
     },
     refetchInterval: 60000 * 5,
   });
@@ -444,7 +445,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     공시 데이터를 불러오지 못했습니다
                   </div>
                 ) : recentReports.length > 0 ? (
-                  recentReports.slice(0, 4).map((report) => (
+                  recentReports.slice(0, 5).map((report) => (
                     <div
                       key={report.id}
                       className="pb-3 border-b border-slate-50"
