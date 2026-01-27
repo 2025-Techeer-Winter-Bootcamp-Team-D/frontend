@@ -249,7 +249,77 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
   return (
     <GlassCard className="p-0 overflow-hidden">
       <div className="flex">
-        {/* 왼쪽: 산업별 기업 순위 (2/3) */}
+        {/* 왼쪽: 산업 순위 (1/3) */}
+        <div className="flex-1 min-w-0">
+          {/* 헤더 */}
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Building2 size={20} className="text-shinhan-blue" />
+              산업 순위
+            </h2>
+          </div>
+
+          {/* 리스트 - 최대 5개만 표시 */}
+          <div className="divide-y divide-gray-50">
+            {isIndustryLoading ? (
+              <div className="py-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="px-6 py-4 flex items-center gap-4">
+                    <Skeleton className="w-8 h-6" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              industryRankings.slice(0, 5).map((item) => (
+                <div
+                  key={item.industryId}
+                  onClick={() =>
+                    setSelectedIndustry(
+                      selectedIndustry?.id === item.industryId
+                        ? null
+                        : { id: item.industryId, name: item.name },
+                    )
+                  }
+                  className={`px-6 py-4 flex items-center gap-4 cursor-pointer transition-colors ${
+                    selectedIndustry?.id === item.industryId
+                      ? "bg-shinhan-blue text-white"
+                      : "hover:bg-blue-50/50"
+                  }`}
+                >
+                  {/* 순위 */}
+                  <span
+                    className={`text-xl font-bold min-w-[32px] ${
+                      selectedIndustry?.id === item.industryId
+                        ? "text-white"
+                        : item.rank <= 3
+                          ? "text-shinhan-blue"
+                          : "text-gray-400"
+                    }`}
+                  >
+                    {formatRank(item.rank)}
+                  </span>
+
+                  {/* 산업명 */}
+                  <div
+                    className={`font-bold text-base ${
+                      selectedIndustry?.id === item.industryId
+                        ? "text-white"
+                        : "text-slate-800"
+                    }`}
+                  >
+                    {item.name}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* 세로 구분선 */}
+        <div className="w-px bg-gray-200" />
+
+        {/* 오른쪽: 산업별 기업 순위 (2/3) */}
         <div className="flex-[2] min-w-0">
           {/* 헤더 */}
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
@@ -325,76 +395,6 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
                     className={`font-bold text-base ${getChangeColor(item.changePercent)}`}
                   >
                     {formatChange(item.changePercent)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* 세로 구분선 */}
-        <div className="w-px bg-gray-200" />
-
-        {/* 오른쪽: 산업 순위 (1/3) */}
-        <div className="flex-1 min-w-0">
-          {/* 헤더 */}
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Building2 size={20} className="text-shinhan-blue" />
-              산업 순위
-            </h2>
-          </div>
-
-          {/* 리스트 - 최대 5개만 표시 */}
-          <div className="divide-y divide-gray-50">
-            {isIndustryLoading ? (
-              <div className="py-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="px-6 py-4 flex items-center gap-4">
-                    <Skeleton className="w-8 h-6" />
-                    <Skeleton className="h-5 w-20" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              industryRankings.slice(0, 5).map((item) => (
-                <div
-                  key={item.industryId}
-                  onClick={() =>
-                    setSelectedIndustry(
-                      selectedIndustry?.id === item.industryId
-                        ? null
-                        : { id: item.industryId, name: item.name },
-                    )
-                  }
-                  className={`px-6 py-4 flex items-center gap-4 cursor-pointer transition-colors ${
-                    selectedIndustry?.id === item.industryId
-                      ? "bg-shinhan-blue text-white"
-                      : "hover:bg-blue-50/50"
-                  }`}
-                >
-                  {/* 순위 */}
-                  <span
-                    className={`text-xl font-bold min-w-[32px] ${
-                      selectedIndustry?.id === item.industryId
-                        ? "text-white"
-                        : item.rank <= 3
-                          ? "text-shinhan-blue"
-                          : "text-gray-400"
-                    }`}
-                  >
-                    {formatRank(item.rank)}
-                  </span>
-
-                  {/* 산업명 */}
-                  <div
-                    className={`font-bold text-base ${
-                      selectedIndustry?.id === item.industryId
-                        ? "text-white"
-                        : "text-slate-800"
-                    }`}
-                  >
-                    {item.name}
                   </div>
                 </div>
               ))

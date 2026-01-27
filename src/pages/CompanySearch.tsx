@@ -270,11 +270,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     navigate(`/company/${code}`);
   };
 
-  const displayList = useMemo(() => {
-    return debouncedQuery.trim() ? searchResults : rankingData;
-  }, [debouncedQuery, searchResults, rankingData]);
-
-  const isLoading = debouncedQuery.trim() ? isSearching : isRankingLoading;
+  // 검색 드롭다운과 랭킹 테이블 분리 - 테이블은 항상 랭킹 데이터만 표시
 
   const StarIcon = ({ isActive }: { isActive: boolean }) => (
     <svg
@@ -485,11 +481,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <TrendingUp size={20} className="text-[#0046ff]" />
-              {isLoading
-                ? "로딩 중..."
-                : debouncedQuery
-                  ? `검색 결과 (${displayList.length})`
-                  : "시가총액 상위 랭킹"}
+              {isRankingLoading ? "로딩 중..." : "시가총액 상위 랭킹"}
             </h2>
           </div>
 
@@ -507,8 +499,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {!isLoading &&
-                  displayList.map((item: RankingItem, index: number) => (
+                {!isRankingLoading &&
+                  rankingData.map((item: RankingItem, index: number) => (
                     <tr
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
