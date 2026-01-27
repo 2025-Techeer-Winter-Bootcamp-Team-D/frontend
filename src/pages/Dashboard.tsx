@@ -94,7 +94,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         const results =
           "results" in data
             ? (data.results ?? [])
-            : ((data as any).data?.results ?? []);
+            : "data" in data
+              ? (data.data?.results ?? [])
+              : [];
         setSearchResults(Array.isArray(results) ? results : []);
       } catch (error) {
         console.error("검색 실패:", error);
@@ -222,7 +224,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             />
                           ) : (
                             <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-sm text-slate-600">
-                              {company.company_name[0]}
+                              {company.company_name?.[0] || "?"}
                             </div>
                           )}
                           <div className="flex-1">
