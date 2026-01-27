@@ -249,7 +249,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     enabled: !!debouncedQuery.trim(),
     select: (response: any) => {
       const responseData = response.data;
-      if (!responseData?.data?.results) return [] as RankingItem[];
+      if (!responseData?.data?.results)
+        return [] as (RankingItem & { logo_url?: string | null })[];
       return responseData.data.results.map((item: any, index: number) => ({
         rank: index + 1,
         name: item.company_name,
@@ -259,7 +260,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         change: "-",
         changeVal: 0,
         marketCap: "-",
-      })) as RankingItem[];
+        logo_url: item.logo_url,
+      })) as (RankingItem & { logo_url?: string | null })[];
     },
   });
 
@@ -399,22 +401,43 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     <SkeletonSearchResults count={3} />
                   ) : searchResults.length > 0 ? (
                     <ul>
-                      {searchResults.map((item: RankingItem) => (
+                      {searchResults.map((item) => (
                         <li
                           key={item.code}
                           onClick={() => handleCompanyClick(item.code)}
                           className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-bold text-slate-800 text-sm">
+                          <div className="flex items-center gap-3">
+                            {item.logo_url ? (
+                              <img
+                                src={item.logo_url}
+                                alt={item.name}
+                                className="w-8 h-8 rounded-lg object-contain bg-white border border-gray-100 flex-shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  e.currentTarget.nextElementSibling?.classList.remove(
+                                    "hidden",
+                                  );
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-slate-500 text-sm flex-shrink-0 ${item.logo_url ? "hidden" : ""}`}
+                            >
+                              {item.name[0]}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-slate-800 text-sm truncate">
                                 {item.name}
                               </div>
                               <div className="text-xs text-gray-400 font-mono">
                                 {item.code}
                               </div>
                             </div>
-                            <ChevronRight size={16} className="text-gray-300" />
+                            <ChevronRight
+                              size={16}
+                              className="text-gray-300 flex-shrink-0"
+                            />
                           </div>
                         </li>
                       ))}
