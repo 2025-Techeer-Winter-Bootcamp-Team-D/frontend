@@ -1,17 +1,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueries } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
   Heart,
   Clock,
   FileText,
+  Scale,
+  Plus,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { useStarred } from "../../context/StarredContext";
 import { useAuth } from "../../hooks/useAuth";
+import { useComparisons } from "../../hooks/useCompareQueries";
+import { getComparison } from "../../api/comparison";
 
-type TabType = "portfolio" | "favorites" | "recent" | "realtime";
+type TabType = "recent" | "favorites" | "portfolio";
 
 interface FavoritesSidebarProps {
   onShowLogin?: () => void;
@@ -24,16 +30,45 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  // 비교 세트 목록 조회
+  const { data: comparisonList = [], isLoading: isComparisonsLoading } =
+    useComparisons();
+
+  // 각 비교 세트의 기업 목록 조회
+  const comparisonDetails = useQueries({
+    queries: comparisonList.map((comparison) => ({
+      queryKey: ["comparison-companies", comparison.id],
+      queryFn: async () => {
+        const res = await getComparison(comparison.id);
+        const apiData = res?.data ?? res;
+        return {
+          id: comparison.id,
+          name: comparison.name,
+          companies: (apiData?.companies ?? []) as Array<{
+            stock_code: string;
+            companyName: string;
+          }>,
+        };
+      },
+      enabled: isAuthenticated && activeTab === "portfolio",
+      staleTime: 1000 * 60 * 5,
+    })),
+  });
+
   const tabs = [
-    { id: "portfolio" as TabType, label: "내 투자", icon: TrendingUp },
-    { id: "favorites" as TabType, label: "관심", icon: Heart },
     { id: "recent" as TabType, label: "최근 본", icon: Clock },
+    { id: "favorites" as TabType, label: "관심", icon: Heart },
+    { id: "portfolio" as TabType, label: "내 비교", icon: Scale },
   ];
 
   const favoritesList = Array.from(favoriteMap.values());
 
   const handleCompanyClick = (companyId: string) => {
     navigate(`/company/${companyId}`);
+  };
+
+  const handleComparisonClick = (comparisonId: number) => {
+    navigate(`/compare?set=${comparisonId}`);
   };
 
   const handleTabClick = (tabId: TabType) => {
@@ -143,6 +178,92 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
                   </li>
                 ))}
               </ul>
+            )
+          ) : activeTab === "portfolio" ? (
+            // 내 비교 세트 목록
+            isComparisonsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : comparisonList.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center px-4 py-8 text-center">
+                <Scale size={32} className="text-slate-200 mb-3" />
+                <p className="text-sm text-slate-400">
+                  비교 세트를 만들어보세요
+                </p>
+                <button
+                  onClick={() => navigate("/compare")}
+                  className="mt-3 flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium"
+                >
+                  <ArrowLeft size={14} />
+                  비교 페이지로 이동
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 space-y-2">
+                {comparisonDetails.map((query, index) => {
+                  const comparison = query.data;
+                  const listItem = comparisonList[index];
+                  const isDetailLoading = query.isLoading;
+
+                  return (
+                    <button
+                      key={listItem.id}
+                      onClick={() => handleComparisonClick(listItem.id)}
+                      className="w-full p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors text-left group"
+                    >
+                      {/* 세트 이름 */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm text-slate-800 group-hover:text-blue-600 truncate">
+                          {listItem.name}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {comparison?.companies?.length ??
+                            listItem.companyCount ??
+                            0}
+                          개
+                        </span>
+                      </div>
+                      {/* 기업 뱃지 */}
+                      <div className="flex flex-wrap gap-1">
+                        {isDetailLoading ? (
+                          <div className="flex gap-1">
+                            <span className="px-2 py-0.5 bg-slate-200 rounded-full text-xs animate-pulse w-12 h-5" />
+                            <span className="px-2 py-0.5 bg-slate-200 rounded-full text-xs animate-pulse w-10 h-5" />
+                          </div>
+                        ) : comparison?.companies?.length ? (
+                          comparison.companies.slice(0, 4).map((company) => (
+                            <span
+                              key={company.stock_code}
+                              className="px-2 py-0.5 bg-white border border-slate-200 rounded-full text-xs text-slate-600 truncate max-w-20"
+                            >
+                              {company.companyName}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400">
+                            기업 없음
+                          </span>
+                        )}
+                        {comparison?.companies &&
+                          comparison.companies.length > 4 && (
+                            <span className="px-2 py-0.5 bg-slate-100 rounded-full text-xs text-slate-500">
+                              +{comparison.companies.length - 4}
+                            </span>
+                          )}
+                      </div>
+                    </button>
+                  );
+                })}
+                {/* 새 비교 만들기 버튼 */}
+                <button
+                  onClick={() => navigate("/compare")}
+                  className="w-full p-3 border border-dashed border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl transition-colors flex items-center justify-center gap-1 text-slate-400 hover:text-blue-500"
+                >
+                  <ArrowLeft size={16} />
+                  <span className="text-sm">비교 페이지로 이동</span>
+                </button>
+              </div>
             )
           ) : (
             // 다른 탭 (준비 중)
