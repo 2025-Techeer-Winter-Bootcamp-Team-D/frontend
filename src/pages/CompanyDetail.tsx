@@ -118,7 +118,7 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({
   <div className="relative group inline-flex" tabIndex={0}>
     {children}
     <div
-      className="absolute left-full ml-3 top-0 px-4 py-3 bg-white text-slate-700 text-xs leading-relaxed rounded-xl opacity-0 invisible scale-95 group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:scale-100 transition-all duration-200 ease-out w-64 text-left z-50 shadow-xl border border-slate-200 pointer-events-none"
+      className="absolute left-full ml-3 top-0 px-3 py-2 bg-white text-slate-700 text-xs leading-relaxed rounded-lg opacity-0 invisible translate-x-1 group-hover:visible group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-x-0 transition-all duration-200 ease-out w-56 text-left z-50 shadow-lg border border-slate-200 pointer-events-none"
       role="tooltip"
     >
       {text}

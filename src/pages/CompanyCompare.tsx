@@ -154,20 +154,20 @@ const CustomFinancialTooltip: React.FC<CustomFinancialTooltipProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
-      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+      className="bg-white rounded-lg shadow-md border border-gray-100 p-2.5 min-w-[140px] animate-fade-in"
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
     >
-      <div className="space-y-2">
+      <div className="space-y-1">
         {payload.map((entry, index) => (
-          <div key={index} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+          <div key={index} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-sm text-gray-600">{entry.name}</span>
+              <span className="text-xs text-gray-600">{entry.name}</span>
             </div>
-            <span className="text-sm font-bold text-slate-800 text-right">
+            <span className="text-xs font-bold text-slate-800 text-right">
               {formatKoreanNumber(entry.value, isMarketCap)}
             </span>
           </div>
@@ -199,25 +199,25 @@ const CustomStockTooltip: React.FC<CustomStockTooltipProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-w-[180px]"
-      style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+      className="bg-white rounded-lg shadow-md border border-gray-100 p-2.5 min-w-[140px] animate-fade-in"
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
     >
       {label && (
-        <div className="text-xs text-gray-500 mb-2 pb-2 border-b border-gray-100">
+        <div className="text-[10px] text-gray-400 mb-1.5 pb-1.5 border-b border-gray-100">
           {label}
         </div>
       )}
-      <div className="space-y-2">
+      <div className="space-y-1">
         {payload.map((entry, index) => (
-          <div key={index} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+          <div key={index} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-sm text-gray-600">{entry.name}</span>
+              <span className="text-xs text-gray-600">{entry.name}</span>
             </div>
-            <span className="text-sm font-bold text-slate-800 text-right">
+            <span className="text-xs font-bold text-slate-800 text-right">
               {entry.value.toLocaleString()}원
             </span>
           </div>
@@ -847,7 +847,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                   ))}
                 </div>
               </div>
-              <div className="h-72">
+              <div className="h-72 outline-none **:outline-none">
                 {comparisonDetailQuery.isLoading ? (
                   <div className="h-full flex flex-col justify-between py-4 px-4">
                     <div className="flex justify-between items-end h-full gap-4">
@@ -895,6 +895,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                       />
                       <Tooltip
                         cursor={{ fill: "transparent" }}
+                        isAnimationActive={false}
                         content={
                           <CustomFinancialTooltip
                             isMarketCap={selectedMetric === "marketCap"}
@@ -945,7 +946,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                   ))}
                 </div>
               </div>
-              <div className="h-72">
+              <div className="h-72 outline-none **:outline-none">
                 {ohlcvQuery.isLoading ? (
                   <div className="h-full flex flex-col justify-between py-4 px-4">
                     <div className="flex justify-between">
@@ -1002,7 +1003,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip content={<CustomStockTooltip />} />
+                      <Tooltip
+                        isAnimationActive={false}
+                        content={<CustomStockTooltip />}
+                      />
                       <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       {/* Dynamically render lines for each company */}
                       {activeComparison?.companies?.map((company, index) => (
@@ -1036,7 +1040,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                 PER(주가수익비율)과 YoY(전년 대비 성장률)를 기준으로 기업의
                 가치와 성장성을 비교합니다.
               </p>
-              <div className="h-80">
+              <div className="h-80 outline-none **:outline-none">
                 {comparisonDetailQuery.isLoading ? (
                   <div className="h-full flex flex-col justify-center items-center gap-4 p-8">
                     <div className="relative w-full h-full">
@@ -1101,10 +1105,14 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                       />
                       <Tooltip
                         cursor={{ strokeDasharray: "3 3" }}
+                        isAnimationActive={false}
+                        offset={15}
                         contentStyle={{
-                          borderRadius: "12px",
+                          borderRadius: "10px",
                           border: "none",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                          padding: "8px 10px",
+                          fontSize: "12px",
                         }}
                         formatter={(value, name) => {
                           const numValue =
@@ -1228,7 +1236,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                 ))}
               </div>
             </div>
-            <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2">
+            <div className="h-80 w-full bg-white/50 rounded-xl border border-slate-100 p-2 outline-none **:outline-none">
               {comparisonDetailQuery.isLoading ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="relative w-64 h-64">
@@ -1282,7 +1290,26 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                     <Legend
                       wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
                     />
-                    <Tooltip />
+                    <Tooltip
+                      isAnimationActive={false}
+                      formatter={(value, name) => {
+                        const numValue = typeof value === "number" ? value : 0;
+                        const displayName =
+                          name === "A"
+                            ? effectiveRadarCompany
+                            : name === "B"
+                              ? "비교 평균"
+                              : (name ?? "");
+                        return [numValue.toFixed(2), displayName];
+                      }}
+                      contentStyle={{
+                        borderRadius: "10px",
+                        border: "none",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                      }}
+                    />
                   </RadarChart>
                 </ResponsiveContainer>
               )}
@@ -1324,18 +1351,18 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                           </div>
 
                           {/* Info Tooltip (Hover style) */}
-                          <div className="absolute top-8 right-0 z-20 w-72 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-xl p-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                            <h4 className="font-bold text-slate-800 text-lg mb-2">
+                          <div className="absolute top-7 right-0 z-20 w-60 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg p-3 opacity-0 invisible translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 ease-out">
+                            <h4 className="font-bold text-slate-800 text-sm mb-1.5">
                               {info.title}란?
                             </h4>
-                            <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                            <p className="text-xs text-slate-600 leading-relaxed mb-2">
                               {info.desc}
                             </p>
-                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                              <p className="text-xs text-slate-500 font-bold mb-1">
+                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                              <p className="text-[10px] text-slate-500 font-bold mb-0.5">
                                 계산식
                               </p>
-                              <p className="text-sm font-mono text-[#0046ff]">
+                              <p className="text-xs font-mono text-[#0046ff]">
                                 {info.formula}
                               </p>
                             </div>
@@ -1343,7 +1370,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         </div>
                       </div>
 
-                      <div className="flex-1 min-h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-4">
+                      <div className="flex-1 min-h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-4 outline-none **:outline-none">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={info.data}
@@ -1367,10 +1394,13 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                             />
                             <Tooltip
                               cursor={{ fill: "transparent" }}
+                              isAnimationActive={false}
                               contentStyle={{
-                                borderRadius: "12px",
+                                borderRadius: "10px",
                                 border: "none",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                padding: "8px 10px",
+                                fontSize: "12px",
                               }}
                             />
                             <Bar
