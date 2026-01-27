@@ -404,11 +404,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       <footer className="bg-white py-12 px-5 border-t border-gray-100 text-quasa-gray">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start gap-10">
           <div className="max-w-sm text-left">
-            <img
-              src="/publish/logo.png"
-              alt="Quasa Logo"
-              className="h-8 w-auto mb-4 object-contain"
-            />
+            <picture>
+              <source srcSet="/publish/logo.webp" type="image/webp" />
+              <img
+                src="/publish/logo.png"
+                alt="Quasa Logo"
+                className="h-8 w-auto mb-4 object-contain"
+              />
+            </picture>
             <p className="text-sm font-medium leading-relaxed mb-2 text-quasa-dark">
               전자공시시스템 연동 프리미엄 기업 분석 플랫폼
             </p>
