@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
-/* Tailwind v4 theme - shinhan custom colors */
+/* Tailwind v4 theme - shinhan custom colors & font */
 @theme {
+  --font-family-sans: "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
   --color-shinhan-blue: #0046ff;
   --color-shinhan-dark: #002c9c;
   --color-shinhan-light: #e6f0ff;
@@ -15,6 +16,13 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+/* Apply font after Tailwind preflight */
+@layer base {
+  * {
+    font-family: "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  }
 }
 
 /* Custom scrollbar utility */

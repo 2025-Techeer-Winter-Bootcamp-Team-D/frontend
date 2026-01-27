@@ -1565,7 +1565,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
             ) : outlookData ? (
               <div className="space-y-6">
                 {/* 전망 요약 */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-lg font-bold text-slate-800">
                       전망 요약
