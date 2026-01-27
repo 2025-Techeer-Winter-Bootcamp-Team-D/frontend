@@ -14,9 +14,9 @@ import {
   getCompanyReports,
   getReportAnalysis,
   getCompanyFinancials,
-  getCompanyOutlook,
   getCompanySankeys,
 } from "../api/company";
+import OutlookSection from "../components/OutlookSection";
 import { getIndustryCompanies } from "../api/industry";
 import { addVisit } from "../api/users";
 import { useStockWebSocket } from "../hooks";
@@ -37,7 +37,6 @@ import type {
   OhlcvItem,
   CompanyReportItem,
   CompanyFinancialsData,
-  CompanyOutlookData,
   RevenueComposition,
   IndustryCompany,
   SankeyData,
@@ -56,16 +55,7 @@ import {
   PieChart,
   Pie,
 } from "recharts";
-import {
-  Heart,
-  User,
-  X,
-  HelpCircle,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Trophy,
-} from "lucide-react";
+import { Heart, User, X, HelpCircle, Trophy } from "lucide-react";
 import {
   Skeleton,
   SkeletonPage,
@@ -74,7 +64,6 @@ import {
   SkeletonFinancialCard,
   SkeletonPieChart,
   SkeletonSankey,
-  SkeletonOutlook,
   SkeletonNewsCardLight,
   SkeletonDisclosureTable,
   SkeletonText,
@@ -518,14 +507,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
     queryFn: async () => {
       const response = await getCompanyFinancials(companyCode);
       return response.data.data as CompanyFinancialsData;
-    },
-  });
-
-  const { data: outlookData, isLoading: isOutlookLoading } = useQuery({
-    queryKey: ["company", "outlook", companyCode],
-    queryFn: async () => {
-      const response = await getCompanyOutlook(companyCode);
-      return response.data.data as CompanyOutlookData;
     },
   });
 
@@ -1553,95 +1534,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </GlassCard>
         </div>
         <div className="border-t border-gray-200 my-8" />
-        {/* 기업 전망 분석 */}
+        {/* 기업 전망 분석 - 뷰포트 진입 시 로딩 (LCP 최적화) */}
         <div ref={outlookRef} id="outlook" className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-6">
               기업 전망 분석
             </h3>
-
-            {isOutlookLoading ? (
-              <SkeletonOutlook />
-            ) : outlookData ? (
-              <div className="space-y-6">
-                {/* 전망 요약 */}
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-lg font-bold text-slate-800">
-                      전망 요약
-                    </h4>
-                    <span className="text-xs text-gray-400">
-                      분석일시:{" "}
-                      {outlookData.analyzed_at
-                        ? new Date(outlookData.analyzed_at).toLocaleString(
-                            "ko-KR",
-                          )
-                        : "-"}
-                    </span>
-                  </div>
-                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
-                    {outlookData.analysis}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 긍정적 요인 */}
-                  <div className="bg-green-50 rounded-xl p-5 border border-green-100">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp size={20} className="text-green-600" />
-                      <h4 className="font-bold text-green-800">긍정적 요인</h4>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm text-green-700">
-                      <p>{outlookData.positive_factor}</p>
-                    </div>
-                  </div>
-
-                  {/* 리스크 요인 */}
-                  <div className="bg-red-50 rounded-xl p-5 border border-red-100">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingDown size={20} className="text-red-600" />
-                      <h4 className="font-bold text-red-800">리스크 요인</h4>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm text-red-700">
-                      <p>{outlookData.risk_factor}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 투자 의견 */}
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-slate-800">투자 의견</h4>
-                    <div className="flex gap-4">
-                      <span className="text-xs text-gray-500">
-                        뉴스 출처: {outlookData.data_sources?.news_count ?? 0}건
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        리포트 출처:{" "}
-                        {outlookData.data_sources?.report_count ?? 0}건
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-slate-700 leading-relaxed">
-                    {outlookData.opinion}
-                  </p>
-
-                  {outlookData.target_price && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <span className="text-sm text-gray-500">목표 주가: </span>
-                      <span className="text-lg font-bold text-blue-600">
-                        {outlookData.target_price.toLocaleString()}원
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Target size={48} className="mb-3 opacity-50" />
-                <p className="text-sm">기업 전망 데이터가 없습니다.</p>
-              </div>
-            )}
+            <OutlookSection companyCode={companyCode} />
           </GlassCard>
         </div>
 

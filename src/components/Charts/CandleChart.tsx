@@ -137,7 +137,7 @@ const CandleChart: React.FC<CandleChartProps> = ({
   }
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full chart-container">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={processedData}

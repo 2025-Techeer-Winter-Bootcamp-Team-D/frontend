@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense, lazy } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -10,18 +10,27 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
 import FavoritesSidebar from "./components/Layout/FavoritesSidebar";
-import Dashboard from "./pages/Dashboard";
-import CompanyDetail from "./pages/CompanyDetail";
-import IndustryAnalysis from "./pages/IndustryCompare";
-import CompanyCompare from "./pages/CompanyCompare";
-import CompanySearch from "./pages/CompanySearch";
-import SignUp from "./pages/SignUp";
-import Login from "./pages/Login";
 import SearchModal from "./components/Layout/SearchModal";
 import { PageView } from "./types";
 import { StarredProvider, useStarred } from "./context/StarredContext";
 import { logout } from "./api/users";
 import { notifyAuthChange, useAuth } from "./hooks/useAuth";
+
+// 코드 스플리팅: 페이지 컴포넌트 지연 로딩
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const CompanyDetail = lazy(() => import("./pages/CompanyDetail"));
+const IndustryAnalysis = lazy(() => import("./pages/IndustryCompare"));
+const CompanyCompare = lazy(() => import("./pages/CompanyCompare"));
+const CompanySearch = lazy(() => import("./pages/CompanySearch"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const Login = lazy(() => import("./pages/Login"));
+
+// 로딩 폴백 컴포넌트
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+  </div>
+);
 
 // URL 경로와 PageView 매핑
 const PATH_TO_PAGE: Record<string, PageView> = {
@@ -102,14 +111,16 @@ function CompanyDetailPage() {
           onLogout={handleLogout}
         />
       </div>
-      <main className="container mx-auto px-4 pt-6 max-w-7xl">
-        {/* URL 파라미터 id를 우선적으로 사용 */}
-        <CompanyDetail
-          setPage={handlePageChange}
-          starred={starred}
-          onToggleStar={toggleStar}
-          companyCode={id}
-        />
+      <main className="container mx-auto px-4 pt-6 max-w-7xl min-h-[calc(100vh-8rem)]">
+        <Suspense fallback={<PageLoader />}>
+          {/* URL 파라미터 id를 우선적으로 사용 */}
+          <CompanyDetail
+            setPage={handlePageChange}
+            starred={starred}
+            onToggleStar={toggleStar}
+            companyCode={id}
+          />
+        </Suspense>
       </main>
       <footer className="mt-12 border-t border-slate-200 py-8 bg-white text-center">
         <div className="container mx-auto px-4">
@@ -133,17 +144,21 @@ function CompanyDetailPage() {
       {/* 즐겨찾기 사이드바 */}
       <FavoritesSidebar onShowLogin={() => setShowLogin(true)} />
 
-      {/* 로그인 모달 */}
-      {showLogin && (
-        <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
-      )}
-      {/* 회원가입 모달 */}
-      {showSignUp && (
-        <SignUp
-          setPage={handlePageChange}
-          onClose={() => setShowSignUp(false)}
-        />
-      )}
+      {/* 로그인/회원가입 모달 */}
+      <Suspense fallback={null}>
+        {showLogin && (
+          <Login
+            setPage={handlePageChange}
+            onClose={() => setShowLogin(false)}
+          />
+        )}
+        {showSignUp && (
+          <SignUp
+            setPage={handlePageChange}
+            onClose={() => setShowSignUp(false)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }
@@ -307,10 +322,12 @@ function App() {
 
       <main
         className={
-          isDashboard ? "w-full" : "container mx-auto px-4 pt-6 max-w-7xl"
+          isDashboard
+            ? "w-full"
+            : "container mx-auto px-4 pt-6 max-w-7xl min-h-[calc(100vh-8rem)]"
         }
       >
-        {renderPage()}
+        <Suspense fallback={<PageLoader />}>{renderPage()}</Suspense>
       </main>
 
       {!isDashboard && (
@@ -321,15 +338,20 @@ function App() {
         </footer>
       )}
 
-      {showLogin && (
-        <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
-      )}
-      {showSignUp && (
-        <SignUp
-          setPage={handlePageChange}
-          onClose={() => setShowSignUp(false)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showLogin && (
+          <Login
+            setPage={handlePageChange}
+            onClose={() => setShowLogin(false)}
+          />
+        )}
+        {showSignUp && (
+          <SignUp
+            setPage={handlePageChange}
+            onClose={() => setShowSignUp(false)}
+          />
+        )}
+      </Suspense>
 
       <SearchModal
         isOpen={showSearch}

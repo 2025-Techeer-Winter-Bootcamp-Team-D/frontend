@@ -85,7 +85,7 @@ const StockChart: React.FC<StockChartProps> = ({
   }
 
   return (
-    <div className="w-full h-full outline-none focus:outline-none **:outline-none **:focus:outline-none">
+    <div className="w-full h-full chart-container outline-none focus:outline-none **:outline-none **:focus:outline-none">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}

@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
+/* 폰트 시프트 방지: 폴백 폰트 메트릭 조정 */
+@font-face {
+  font-family: "Noto Sans KR Fallback";
+  src: local("Arial");
+  size-adjust: 100%;
+  ascent-override: 105%;
+  descent-override: 35%;
+  line-gap-override: 0%;
+}
+
 /* Tailwind v4 theme - shinhan custom colors & font */
 @theme {
-  --font-family-sans: "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-family-sans:
+    "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui,
+    sans-serif;
   --color-shinhan-blue: #0046ff;
   --color-shinhan-dark: #002c9c;
   --color-shinhan-light: #e6f0ff;
@@ -21,8 +33,15 @@ body,
 /* Apply font after Tailwind preflight */
 @layer base {
   * {
-    font-family: "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+    font-family:
+      "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui,
+      sans-serif;
   }
+}
+
+/* 차트 리플로우 최적화: containment로 레이아웃 재계산 범위 제한 */
+.chart-container {
+  contain: layout style;
 }
 
 /* Custom scrollbar utility */
