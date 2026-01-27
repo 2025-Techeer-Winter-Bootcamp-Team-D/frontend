@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Tailwind v4 theme - shinhan custom colors */
+@theme {
+  --color-shinhan-blue: #0046ff;
+  --color-shinhan-dark: #002c9c;
+  --color-shinhan-light: #e6f0ff;
+  --color-shinhan-gold: #ddbb66;
+}
+
 /* Root height setup for h-full to work */
 html,
 body,

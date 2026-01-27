@@ -137,11 +137,11 @@ const CandleChart: React.FC<CandleChartProps> = ({
   }
 
   return (
-    <div style={{ width: "100%", height: "100%", padding: "20px" }}>
+    <div className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={processedData}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          margin={{ top: 10, right: 0, left: 0, bottom: 20 }}
         >
           <CartesianGrid
             strokeDasharray="3 3"
@@ -160,8 +160,9 @@ const CandleChart: React.FC<CandleChartProps> = ({
             orientation="right"
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 12, fill: "#94A3B8" }}
+            tick={{ fontSize: 11, fill: "#94A3B8", dx: -5 }}
             tickFormatter={(value) => value.toLocaleString()}
+            width={70}
           />
           <Tooltip
             cursor={{ fill: "rgba(0,0,0,0.04)" }}

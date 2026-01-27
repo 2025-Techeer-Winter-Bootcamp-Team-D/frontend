@@ -1201,7 +1201,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         <div className="border-t border-gray-200 my-8" />
 
         <div ref={priceRef} id="price" className="scroll-mt-32">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div className="lg:col-span-8">
               <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
                 <div className="flex justify-between items-center mb-4">
