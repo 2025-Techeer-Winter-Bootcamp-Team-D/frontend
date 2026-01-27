@@ -117,11 +117,11 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({
   <div className="relative group inline-flex" tabIndex={0}>
     {children}
     <div
-      className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-3 py-2 bg-white text-slate-700 text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 w-64 text-left z-50 shadow-lg border border-gray-200 pointer-events-none"
+      className="absolute left-full ml-3 top-0 px-4 py-3 bg-white text-slate-700 text-xs leading-relaxed rounded-xl opacity-0 invisible scale-95 group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:scale-100 transition-all duration-200 ease-out w-64 text-left z-50 shadow-xl border border-slate-200 pointer-events-none"
       role="tooltip"
     >
       {text}
-      <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white"></div>
+      <div className="absolute right-full top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white"></div>
     </div>
   </div>
 );
@@ -1067,7 +1067,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <img
                 src={currentCompany.logoUrl}
                 alt={`${currentCompany.name} 로고`}
-                className="w-full h-full object-contain p-1"
+                className="w-full h-full object-cover"
               />
             ) : (
               <span className="font-bold text-blue-600 text-2xl">
@@ -1179,267 +1179,269 @@ const CompanyDetail: React.FC<DetailProps> = ({
         {/* Section Divider */}
         <div className="border-t border-gray-200 my-8" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8" ref={priceRef}>
-            <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-bold text-slate-800">
-                    주가 분석
-                  </h3>
-                  {/* 실시간 연결 상태 */}
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-gray-300"}`}
-                    />
-                    <span className="text-xs text-gray-400">
-                      {wsConnected ? "실시간" : "연결 끊김"}
-                    </span>
+        <div ref={priceRef} id="price" className="scroll-mt-32">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-8">
+              <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-lg font-bold text-slate-800">
+                      주가 분석
+                    </h3>
+                    {/* 실시간 연결 상태 */}
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-gray-300"}`}
+                      />
+                      <span className="text-xs text-gray-400">
+                        {wsConnected ? "실시간" : "연결 끊김"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                  {["1D", "1W", "1M", "1Y"].map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setChartRange(p)}
-                      className={`px-4 py-1.5 rounded-md text-xs font-bold ${chartRange === p ? "bg-white text-blue-600 shadow-sm" : "text-gray-400"}`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 실시간 주가 정보 */}
-              {realtimePrice && (
-                <div className="flex items-baseline gap-4 mb-4 pb-4 border-b border-gray-100">
-                  <span className="text-3xl font-bold text-slate-800">
-                    {realtimePrice.price.toLocaleString()}
-                    <span className="text-base font-normal text-gray-500 ml-1">
-                      원
-                    </span>
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    체결시간{" "}
-                    {realtimePrice.time
-                      ? `${realtimePrice.time.slice(0, 2)}:${realtimePrice.time.slice(2, 4)}:${realtimePrice.time.slice(4, 6)}`
-                      : "-"}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    체결량 {realtimePrice.volume?.toLocaleString() || "-"}주
-                  </span>
-                </div>
-              )}
-              <div className="flex-1 w-full h-full">
-                {isStockLoading ? (
-                  <div className="h-full flex flex-col justify-between py-4">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-px w-full" />
+                  <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                    {["1D", "1W", "1M", "1Y"].map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setChartRange(p)}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold ${chartRange === p ? "bg-white text-blue-600 shadow-sm" : "text-gray-400"}`}
+                      >
+                        {p}
+                      </button>
                     ))}
                   </div>
-                ) : isStockError ? (
-                  <div className="flex h-full items-center justify-center text-red-500 text-sm">
-                    <div className="text-center">
-                      <p>주가 데이터를 불러오는데 실패했습니다.</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {(stockError as Error)?.message || "알 수 없는 오류"}
-                      </p>
-                    </div>
+                </div>
+
+                {/* 실시간 주가 정보 */}
+                {realtimePrice && (
+                  <div className="flex items-baseline gap-4 mb-4 pb-4 border-b border-gray-100">
+                    <span className="text-3xl font-bold text-slate-800">
+                      {realtimePrice.price.toLocaleString()}
+                      <span className="text-base font-normal text-gray-500 ml-1">
+                        원
+                      </span>
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      체결시간{" "}
+                      {realtimePrice.time
+                        ? `${realtimePrice.time.slice(0, 2)}:${realtimePrice.time.slice(2, 4)}:${realtimePrice.time.slice(4, 6)}`
+                        : "-"}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      체결량 {realtimePrice.volume?.toLocaleString() || "-"}주
+                    </span>
                   </div>
-                ) : stockData.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-gray-400 text-sm">
-                    주가 데이터가 없습니다.
-                  </div>
-                ) : chartRange === "1D" ? (
-                  <CandleChart data={stockData} period={chartRange} />
-                ) : (
-                  <StockChart data={stockData} period={chartRange} />
                 )}
-              </div>
-            </GlassCard>
-          </div>
-
-          <div className="lg:col-span-4">
-            <GlassCard className="p-6 h-full flex flex-col">
-              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Trophy size={20} className="text-yellow-500" />
-                동종업계 순위
-              </h3>
-              {isPeerLoading ? (
-                <div className="flex-1">
-                  <div className="flex items-end justify-center gap-2 mb-4 px-2 pt-2">
-                    <Skeleton className="w-14 h-12 rounded-t" />
-                    <Skeleton className="w-14 h-16 rounded-t" />
-                    <Skeleton className="w-14 h-9 rounded-t" />
-                  </div>
-                  <div className="h-px bg-gray-200 mx-4 mb-4" />
-                  <SkeletonRankingList count={4} />
-                </div>
-              ) : (
-                <div className="flex flex-col">
-                  {/* TOP 3 Podium */}
-                  {peerCompanies.length >= 3 && (
-                    <div className="flex items-end justify-center gap-2 mb-4 px-2 pt-2">
-                      {/* 2nd Place - Left (Silver) */}
-                      {(() => {
-                        const item = peerCompanies.find((p) => p.rank === 2);
-                        if (!item) return null;
-                        return (
-                          <div
-                            key={item.code}
-                            onClick={() => handleCompanyClick(item.code)}
-                            className="flex-1 max-w-[55px] cursor-pointer transition-all group flex flex-col items-center"
-                          >
-                            {/* Medal Circle - Silver */}
-                            <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-white/40 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-gray-300/60"
-                              style={{
-                                background:
-                                  "linear-gradient(145deg, #FAFAFA 0%, #E8E8E8 30%, #D0D0D0 70%, #DCDCDC 100%)",
-                              }}
-                            >
-                              <span className="text-sm font-black text-white drop-shadow-md">
-                                2
-                              </span>
-                            </div>
-                            {/* Podium Bar - Light Gray */}
-                            <div
-                              className={`w-full h-12 rounded-t-md flex items-center justify-center px-1 transition-all ${
-                                currentCompany.name === item.name
-                                  ? "ring-2 ring-blue-400"
-                                  : "group-hover:brightness-105"
-                              }`}
-                              style={{
-                                background:
-                                  "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
-                              }}
-                            >
-                              <span className="text-[10px] font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
-                                {item.name}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* 1st Place - Center (Gold, Tallest) */}
-                      {(() => {
-                        const item = peerCompanies.find((p) => p.rank === 1);
-                        if (!item) return null;
-                        return (
-                          <div
-                            key={item.code}
-                            onClick={() => handleCompanyClick(item.code)}
-                            className="flex-1 max-w-[60px] cursor-pointer transition-all group flex flex-col items-center"
-                          >
-                            {/* Medal Circle - Gold */}
-                            <div
-                              className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-yellow-200/50 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-yellow-300/70"
-                              style={{
-                                background:
-                                  "linear-gradient(145deg, #FFF2B3 0%, #FFE680 30%, #F0D060 70%, #E0C050 100%)",
-                              }}
-                            >
-                              <span className="text-base font-black text-white drop-shadow-md">
-                                1
-                              </span>
-                            </div>
-                            {/* Podium Bar (Tallest) - Light Gray */}
-                            <div
-                              className={`w-full h-16 rounded-t-md flex items-center justify-center px-1 transition-all ${
-                                currentCompany.name === item.name
-                                  ? "ring-2 ring-blue-400"
-                                  : "group-hover:brightness-105"
-                              }`}
-                              style={{
-                                background:
-                                  "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
-                              }}
-                            >
-                              <span className="text-xs font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
-                                {item.name}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* 3rd Place - Right (Bronze) */}
-                      {(() => {
-                        const item = peerCompanies.find((p) => p.rank === 3);
-                        if (!item) return null;
-                        return (
-                          <div
-                            key={item.code}
-                            onClick={() => handleCompanyClick(item.code)}
-                            className="flex-1 max-w-[55px] cursor-pointer transition-all group flex flex-col items-center"
-                          >
-                            {/* Medal Circle - Bronze */}
-                            <div
-                              className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-orange-200/40 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-orange-300/60"
-                              style={{
-                                background:
-                                  "linear-gradient(145deg, #F0C89A 0%, #E0A870 30%, #D09060 70%, #C08050 100%)",
-                              }}
-                            >
-                              <span className="text-xs font-black text-white drop-shadow-md">
-                                3
-                              </span>
-                            </div>
-                            {/* Podium Bar (Shortest) - Light Gray */}
-                            <div
-                              className={`w-full h-9 rounded-t-md flex items-center justify-center px-1 transition-all ${
-                                currentCompany.name === item.name
-                                  ? "ring-2 ring-blue-400"
-                                  : "group-hover:brightness-105"
-                              }`}
-                              style={{
-                                background:
-                                  "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
-                              }}
-                            >
-                              <span className="text-[10px] font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
-                                {item.name}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                  {/* Podium Base Line */}
-                  {peerCompanies.length >= 3 && (
-                    <div className="h-px bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full mx-4 mb-4" />
-                  )}
-
-                  {/* Rest of the rankings (4th and below) */}
-                  <div className="space-y-2 overflow-y-auto max-h-[180px] pr-1">
-                    {peerCompanies
-                      .filter((item) => item.rank > 3)
-                      .map((item) => (
-                        <div
-                          key={item.code}
-                          onClick={() => handleCompanyClick(item.code)}
-                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 flex items-center justify-center text-sm font-bold text-gray-400">
-                              {item.rank}
-                            </span>
-                            <span className="text-sm font-bold text-slate-700">
-                              {item.name}
-                            </span>
-                          </div>
-                          <span className="text-xs text-gray-600">
-                            {item.marketCap}
-                          </span>
-                        </div>
+                <div className="flex-1 w-full h-full">
+                  {isStockLoading ? (
+                    <div className="h-full flex flex-col justify-between py-4">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-px w-full" />
                       ))}
-                  </div>
+                    </div>
+                  ) : isStockError ? (
+                    <div className="flex h-full items-center justify-center text-red-500 text-sm">
+                      <div className="text-center">
+                        <p>주가 데이터를 불러오는데 실패했습니다.</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {(stockError as Error)?.message || "알 수 없는 오류"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : stockData.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-gray-400 text-sm">
+                      주가 데이터가 없습니다.
+                    </div>
+                  ) : chartRange === "1D" ? (
+                    <CandleChart data={stockData} period={chartRange} />
+                  ) : (
+                    <StockChart data={stockData} period={chartRange} />
+                  )}
                 </div>
-              )}
-            </GlassCard>
+              </GlassCard>
+            </div>
+
+            <div className="lg:col-span-4">
+              <GlassCard className="p-6 h-full flex flex-col">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <Trophy size={20} className="text-yellow-500" />
+                  동종업계 순위
+                </h3>
+                {isPeerLoading ? (
+                  <div className="flex-1">
+                    <div className="flex items-end justify-center gap-2 mb-4 px-2 pt-2">
+                      <Skeleton className="w-14 h-12 rounded-t" />
+                      <Skeleton className="w-14 h-16 rounded-t" />
+                      <Skeleton className="w-14 h-9 rounded-t" />
+                    </div>
+                    <div className="h-px bg-gray-200 mx-4 mb-4" />
+                    <SkeletonRankingList count={4} />
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {/* TOP 3 Podium */}
+                    {peerCompanies.length >= 3 && (
+                      <div className="flex items-end justify-center gap-2 mb-4 px-2 pt-2">
+                        {/* 2nd Place - Left (Silver) */}
+                        {(() => {
+                          const item = peerCompanies.find((p) => p.rank === 2);
+                          if (!item) return null;
+                          return (
+                            <div
+                              key={item.code}
+                              onClick={() => handleCompanyClick(item.code)}
+                              className="flex-1 max-w-[55px] cursor-pointer transition-all group flex flex-col items-center"
+                            >
+                              {/* Medal Circle - Silver */}
+                              <div
+                                className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-white/40 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-gray-300/60"
+                                style={{
+                                  background:
+                                    "linear-gradient(145deg, #FAFAFA 0%, #E8E8E8 30%, #D0D0D0 70%, #DCDCDC 100%)",
+                                }}
+                              >
+                                <span className="text-sm font-black text-white drop-shadow-md">
+                                  2
+                                </span>
+                              </div>
+                              {/* Podium Bar - Light Gray */}
+                              <div
+                                className={`w-full h-12 rounded-t-md flex items-center justify-center px-1 transition-all ${
+                                  currentCompany.name === item.name
+                                    ? "ring-2 ring-blue-400"
+                                    : "group-hover:brightness-105"
+                                }`}
+                                style={{
+                                  background:
+                                    "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
+                                }}
+                              >
+                                <span className="text-[10px] font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
+                                  {item.name}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* 1st Place - Center (Gold, Tallest) */}
+                        {(() => {
+                          const item = peerCompanies.find((p) => p.rank === 1);
+                          if (!item) return null;
+                          return (
+                            <div
+                              key={item.code}
+                              onClick={() => handleCompanyClick(item.code)}
+                              className="flex-1 max-w-[60px] cursor-pointer transition-all group flex flex-col items-center"
+                            >
+                              {/* Medal Circle - Gold */}
+                              <div
+                                className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-yellow-200/50 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-yellow-300/70"
+                                style={{
+                                  background:
+                                    "linear-gradient(145deg, #FFF2B3 0%, #FFE680 30%, #F0D060 70%, #E0C050 100%)",
+                                }}
+                              >
+                                <span className="text-base font-black text-white drop-shadow-md">
+                                  1
+                                </span>
+                              </div>
+                              {/* Podium Bar (Tallest) - Light Gray */}
+                              <div
+                                className={`w-full h-16 rounded-t-md flex items-center justify-center px-1 transition-all ${
+                                  currentCompany.name === item.name
+                                    ? "ring-2 ring-blue-400"
+                                    : "group-hover:brightness-105"
+                                }`}
+                                style={{
+                                  background:
+                                    "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
+                                }}
+                              >
+                                <span className="text-xs font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
+                                  {item.name}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* 3rd Place - Right (Bronze) */}
+                        {(() => {
+                          const item = peerCompanies.find((p) => p.rank === 3);
+                          if (!item) return null;
+                          return (
+                            <div
+                              key={item.code}
+                              onClick={() => handleCompanyClick(item.code)}
+                              className="flex-1 max-w-[55px] cursor-pointer transition-all group flex flex-col items-center"
+                            >
+                              {/* Medal Circle - Bronze */}
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg mb-1 ring-2 ring-orange-200/40 transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-hover:ring-orange-300/60"
+                                style={{
+                                  background:
+                                    "linear-gradient(145deg, #F0C89A 0%, #E0A870 30%, #D09060 70%, #C08050 100%)",
+                                }}
+                              >
+                                <span className="text-xs font-black text-white drop-shadow-md">
+                                  3
+                                </span>
+                              </div>
+                              {/* Podium Bar (Shortest) - Light Gray */}
+                              <div
+                                className={`w-full h-9 rounded-t-md flex items-center justify-center px-1 transition-all ${
+                                  currentCompany.name === item.name
+                                    ? "ring-2 ring-blue-400"
+                                    : "group-hover:brightness-105"
+                                }`}
+                                style={{
+                                  background:
+                                    "linear-gradient(to bottom, #F9FAFB, #F3F4F6)",
+                                }}
+                              >
+                                <span className="text-[10px] font-bold text-gray-600 text-center leading-tight drop-shadow-sm line-clamp-2">
+                                  {item.name}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Podium Base Line */}
+                    {peerCompanies.length >= 3 && (
+                      <div className="h-px bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full mx-4 mb-4" />
+                    )}
+
+                    {/* Rest of the rankings (4th and below) */}
+                    <div className="space-y-2 overflow-y-auto max-h-[180px] pr-1">
+                      {peerCompanies
+                        .filter((item) => item.rank > 3)
+                        .map((item) => (
+                          <div
+                            key={item.code}
+                            onClick={() => handleCompanyClick(item.code)}
+                            className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${currentCompany.name === item.name ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="w-8 h-8 flex items-center justify-center text-sm font-bold text-gray-400">
+                                {item.rank}
+                              </span>
+                              <span className="text-sm font-bold text-slate-700">
+                                {item.name}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-600">
+                              {item.marketCap}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </GlassCard>
+            </div>
           </div>
         </div>
 
@@ -1533,8 +1535,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         {/* 기업 전망 분석 */}
         <div ref={outlookRef} id="outlook" className="scroll-mt-32">
           <GlassCard className="p-6">
-            <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <Target size={24} className="text-blue-600" />
+            <h3 className="text-xl font-bold text-slate-800 mb-6">
               기업 전망 분석
             </h3>
 
