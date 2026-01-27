@@ -252,8 +252,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       {/* AI Insight Section */}
       <section className="py-20 px-5 bg-gray-50 overflow-hidden">
-        {" "}
-        {/* 배경색을 gray-50으로 변경하여 컨텐츠가 더 돋보이게 합니다. */}
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <span className="text-blue-600 font-semibold text-xs uppercase tracking-[0.2em] mb-3 block">
