@@ -5,23 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import AIBubbleChart from "../components/Charts/AIBubbleChart";
-import {
-  ArrowLeft,
-  TrendingUp,
-  Info,
-  ChevronDown,
-  X,
-  ChevronRight,
-  RotateCcw,
-  Filter,
-} from "lucide-react";
+import { Skeleton } from "../components/Skeleton";
+import { TrendingUp, ChevronDown, X, RotateCcw, Filter } from "lucide-react";
 import { PageView } from "../types";
 import type {
   Stock,
   AxisKey,
   BrushRange,
   IndustryNewsItem,
-  IndustryData,
   TimeRange,
   IndustryKey,
 } from "../types";
@@ -254,7 +245,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   } = useIndustryData(selectedIndustry, timeRange);
 
   // 뉴스 키워드 데이터 (AI 이슈포착 버블 차트용)
-  const { data: keywordsData } = useQuery({
+  const { data: keywordsData, isLoading: isKeywordsLoading } = useQuery({
     queryKey: ["newsKeywords"],
     queryFn: async () => {
       const response = await getNewsKeywords({ size: 15 });
@@ -716,17 +707,26 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             </h3>
             <div className="flex justify-between items-end">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">
-                  {(latestIndexData?.current_value ?? 0).toLocaleString()}
-                </span>
-                <span
-                  className={`font-medium px-2 py-0.5 rounded text-sm ${(latestIndexData?.change_value ?? 0) > 0 ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
-                >
-                  {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
-                  {latestIndexData?.change_value ?? 0} (
-                  {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
-                  {latestIndexData?.change_percent ?? 0}%)
-                </span>
+                {chartQuery.isLoading ? (
+                  <>
+                    <Skeleton className="h-9 w-32" />
+                    <Skeleton className="h-6 w-24 rounded" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold text-slate-900">
+                      {(latestIndexData?.current_value ?? 0).toLocaleString()}
+                    </span>
+                    <span
+                      className={`font-medium px-2 py-0.5 rounded text-sm ${(latestIndexData?.change_value ?? 0) > 0 ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"}`}
+                    >
+                      {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
+                      {latestIndexData?.change_value ?? 0} (
+                      {(latestIndexData?.change_value ?? 0) > 0 ? "+" : ""}
+                      {latestIndexData?.change_percent ?? 0}%)
+                    </span>
+                  </>
+                )}
               </div>
               <div className="flex gap-2">
                 {["1M", "3M", "6M", "1Y"].map((p) => (
@@ -749,66 +749,87 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
             className="flex-1 w-full min-h-[200px] outline-none **:outline-none"
             tabIndex={-1}
           >
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="5%"
-                      stopColor={
-                        (latestIndexData?.change_value ?? 0) > 0
-                          ? "#EF4444"
-                          : "#0046FF"
-                      }
-                      stopOpacity={0.2}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={
-                        (latestIndexData?.change_value ?? 0) > 0
-                          ? "#EF4444"
-                          : "#0046FF"
-                      }
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(255, 255, 255, 0.9)",
-                    borderRadius: "12px",
-                    border: "none",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  }}
-                  formatter={(value: number | undefined) => [
-                    value ? value.toLocaleString() : "0",
-                    "지수",
-                  ]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={
-                    (latestIndexData?.change_value ?? 0) > 0
-                      ? "#EF4444"
-                      : "#0046FF"
-                  }
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorValue)"
-                />
-                <XAxis
-                  dataKey="time"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#94A3B8" }}
-                  interval={xAxisProps.interval}
-                  minTickGap={xAxisProps.minTickGap}
-                  tickFormatter={xAxisProps.formatter}
-                />
-                <YAxis hide domain={["auto", "auto"]} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {chartQuery.isLoading ? (
+              <div className="h-full w-full flex flex-col justify-between py-4">
+                <div className="flex justify-between px-4">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <div className="flex justify-between px-4">
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor={
+                          (latestIndexData?.change_value ?? 0) > 0
+                            ? "#EF4444"
+                            : "#0046FF"
+                        }
+                        stopOpacity={0.2}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={
+                          (latestIndexData?.change_value ?? 0) > 0
+                            ? "#EF4444"
+                            : "#0046FF"
+                        }
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(255, 255, 255, 0.9)",
+                      borderRadius: "12px",
+                      border: "none",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                    formatter={(value: number | undefined) => [
+                      value ? value.toLocaleString() : "0",
+                      "지수",
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke={
+                      (latestIndexData?.change_value ?? 0) > 0
+                        ? "#EF4444"
+                        : "#0046FF"
+                    }
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorValue)"
+                  />
+                  <XAxis
+                    dataKey="time"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: "#94A3B8" }}
+                    interval={xAxisProps.interval}
+                    minTickGap={xAxisProps.minTickGap}
+                    tickFormatter={xAxisProps.formatter}
+                  />
+                  <YAxis hide domain={["auto", "auto"]} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -833,9 +854,27 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               산업분야 전망
             </h3>
             {loading ? (
-              <p className="text-white/60 text-sm">
-                로딩 중입니다. 잠시만 기다려 주십시오.
-              </p>
+              <div className="space-y-3 flex-1">
+                <div className="relative overflow-hidden rounded-2xl bg-white/10 p-4">
+                  <Skeleton className="h-4 w-full mb-2 bg-white/20" />
+                  <Skeleton className="h-4 w-5/6 mb-2 bg-white/20" />
+                  <Skeleton className="h-4 w-4/6 bg-white/20" />
+                </div>
+                <div className="space-y-2">
+                  <div className="relative overflow-hidden rounded-2xl bg-white/10 p-3">
+                    <div className="flex gap-3">
+                      <Skeleton className="h-[18px] w-12 rounded-full bg-white/20" />
+                      <Skeleton className="h-3 w-full bg-white/20" />
+                    </div>
+                  </div>
+                  <div className="relative overflow-hidden rounded-2xl bg-white/10 p-3">
+                    <div className="flex gap-3">
+                      <Skeleton className="h-[18px] w-12 rounded-full bg-white/20" />
+                      <Skeleton className="h-3 w-full bg-white/20" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : error ? (
               <p className="text-red-300 text-sm">{error}</p>
             ) : (
@@ -945,85 +984,119 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {(showAllCompanies
-                  ? companiesData
-                  : companiesData.slice(0, 5)
-                ).map((company, index) => (
-                  <tr
-                    key={company.code}
-                    className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
-                    onClick={() => handleCompanyClick(company.code)}
-                  >
-                    <td className="pl-3 pr-1 py-4">
-                      <button
-                        onClick={(e) => handleToggleStar(e, company.code)}
-                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                {companiesQuery.isLoading
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="pl-3 pr-1 py-4">
+                          <Skeleton className="w-5 h-5 rounded-full" />
+                        </td>
+                        <td className="px-1 py-4 text-center">
+                          <Skeleton className="w-6 h-6 mx-auto" />
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <Skeleton className="w-8 h-8 rounded-md mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-24 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-20 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-16 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-8 w-24 mx-auto rounded" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-14 mx-auto" />
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <Skeleton className="h-5 w-20 mx-auto" />
+                        </td>
+                      </tr>
+                    ))
+                  : (showAllCompanies
+                      ? companiesData
+                      : companiesData.slice(0, 5)
+                    ).map((company, index) => (
+                      <tr
+                        key={company.code}
+                        className="hover:bg-blue-50/30 transition-colors group cursor-pointer"
+                        onClick={() => handleCompanyClick(company.code)}
                       >
-                        <StarIcon
-                          isActive={starred?.has(company.code) ?? false}
-                        />
-                      </button>
-                    </td>
-                    <td className="px-1 py-4 text-center">
-                      <span className="font-bold text-slate-600 text-lg">
-                        {index + 1}
-                      </span>
-                    </td>
-                    <td className="px-2 py-4 text-center">
-                      <div className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center overflow-hidden shadow-sm">
-                        {company.logo ? (
-                          <img
-                            src={company.logo}
-                            alt={company.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                              (
-                                e.target as HTMLImageElement
-                              ).nextElementSibling?.classList.remove("hidden");
-                            }}
-                          />
-                        ) : null}
-                        <span
-                          className={`font-bold text-slate-600 text-xs ${company.logo ? "hidden" : ""}`}
+                        <td className="pl-3 pr-1 py-4">
+                          <button
+                            onClick={(e) => handleToggleStar(e, company.code)}
+                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                          >
+                            <StarIcon
+                              isActive={starred?.has(company.code) ?? false}
+                            />
+                          </button>
+                        </td>
+                        <td className="px-1 py-4 text-center">
+                          <span className="font-bold text-slate-600 text-lg">
+                            {index + 1}
+                          </span>
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <div className="inline-flex w-8 h-8 rounded-md bg-white border border-gray-200 items-center justify-center overflow-hidden shadow-sm">
+                            {company.logo ? (
+                              <img
+                                src={company.logo}
+                                alt={company.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                  (
+                                    e.target as HTMLImageElement
+                                  ).nextElementSibling?.classList.remove(
+                                    "hidden",
+                                  );
+                                }}
+                              />
+                            ) : null}
+                            <span
+                              className={`font-bold text-slate-600 text-xs ${company.logo ? "hidden" : ""}`}
+                            >
+                              {company.name.charAt(0)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 text-center font-bold text-slate-800 text-base">
+                          {company.name}
+                        </td>
+                        <td className="px-3 py-4 text-center font-medium text-slate-700 text-base">
+                          {company.price}
+                        </td>
+                        <td
+                          className={`px-3 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
                         >
-                          {company.name.charAt(0)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 text-center font-bold text-slate-800 text-base">
-                      {company.name}
-                    </td>
-                    <td className="px-3 py-4 text-center font-medium text-slate-700 text-base">
-                      {company.price}
-                    </td>
-                    <td
-                      className={`px-3 py-4 text-center font-medium ${company.change.startsWith("+") ? "text-red-500" : "text-blue-500"}`}
-                    >
-                      {company.change}
-                    </td>
-                    <td className="px-3 py-4 text-center">
-                      <div className="inline-block">
-                        <MiniChart
-                          color={
-                            company.change.startsWith("+")
-                              ? "#EF4444"
-                              : "#3B82F6"
-                          }
-                          data={company.chartData}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 text-center font-medium text-slate-800">
-                      {company.roe >= 0 ? "+" : ""}
-                      {company.roe}%
-                    </td>
-                    <td className="px-3 py-4 text-center text-slate-600 font-medium whitespace-nowrap">
-                      {company.marketCap}
-                    </td>
-                  </tr>
-                ))}
+                          {company.change}
+                        </td>
+                        <td className="px-3 py-4 text-center">
+                          <div className="inline-block">
+                            <MiniChart
+                              color={
+                                company.change.startsWith("+")
+                                  ? "#EF4444"
+                                  : "#3B82F6"
+                              }
+                              data={company.chartData}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 text-center font-medium text-slate-800">
+                          {company.roe >= 0 ? "+" : ""}
+                          {company.roe}%
+                        </td>
+                        <td className="px-3 py-4 text-center text-slate-600 font-medium whitespace-nowrap">
+                          {company.marketCap}
+                        </td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
           </div>
@@ -1661,7 +1734,26 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               <div className="pointer-events-none absolute -bottom-[80px] -right-[80px] h-[300px] w-[300px] rounded-full bg-blue-400/30 blur-[70px]" />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-3xl" />
               <div className="relative p-4">
-                <AIBubbleChart keywords={keywordsData} />
+                {isKeywordsLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <div className="flex flex-wrap gap-3 justify-center items-center p-8">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <Skeleton
+                          key={i}
+                          className={`rounded-full ${
+                            i % 3 === 0
+                              ? "w-20 h-20"
+                              : i % 3 === 1
+                                ? "w-14 h-14"
+                                : "w-10 h-10"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <AIBubbleChart keywords={keywordsData} />
+                )}
               </div>
             </div>
           </div>
@@ -1672,7 +1764,20 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
               뉴스
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {industryNews.length > 0 ? (
+              {newsQuery.isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <GlassCard key={i} className="p-5 flex flex-col">
+                    <Skeleton className="h-5 w-full mb-2" />
+                    <Skeleton className="h-4 w-3/4 mb-3" />
+                    <Skeleton className="h-3 w-full mb-1" />
+                    <Skeleton className="h-3 w-2/3 mb-3" />
+                    <div className="flex items-center gap-2 mt-auto">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                  </GlassCard>
+                ))
+              ) : industryNews.length > 0 ? (
                 industryNews.slice(0, 4).map((news) => (
                   <GlassCard
                     key={news.id}

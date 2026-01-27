@@ -303,14 +303,16 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
                     KOSPI
                   </h3>
-                  {kospiData && (
+                  {isKospiLoading ? (
+                    <Skeleton className="h-5 w-16" />
+                  ) : kospiData ? (
                     <span
                       className={`font-bold text-sm ${kospiData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
                     >
                       {kospiData.change_rate >= 0 ? "▲" : "▼"}{" "}
                       {Math.abs(kospiData.change_rate).toFixed(2)}%
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 <span className="text-3xl font-extrabold text-slate-900">
                   {isKospiLoading ? (
@@ -322,16 +324,20 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   )}
                 </span>
                 <div className="h-24 mt-3">
-                  <StockChart
-                    data={kospiChartData}
-                    color={
-                      kospiData && kospiData.change_rate >= 0
-                        ? "#10B981"
-                        : "#EF4444"
-                    }
-                    showAxes={false}
-                    period="1M"
-                  />
+                  {isKospiLoading ? (
+                    <Skeleton className="h-full w-full rounded-lg" />
+                  ) : (
+                    <StockChart
+                      data={kospiChartData}
+                      color={
+                        kospiData && kospiData.change_rate >= 0
+                          ? "#10B981"
+                          : "#EF4444"
+                      }
+                      showAxes={false}
+                      period="1M"
+                    />
+                  )}
                 </div>
               </GlassCard>
 
@@ -341,14 +347,16 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <h3 className="font-bold text-slate-500 uppercase tracking-tighter">
                     KOSDAQ
                   </h3>
-                  {kosdaqData && (
+                  {isKosdaqLoading ? (
+                    <Skeleton className="h-5 w-16" />
+                  ) : kosdaqData ? (
                     <span
                       className={`font-bold text-sm ${kosdaqData.change_rate >= 0 ? "text-emerald-500" : "text-red-500"}`}
                     >
                       {kosdaqData.change_rate >= 0 ? "▲" : "▼"}{" "}
                       {Math.abs(kosdaqData.change_rate).toFixed(2)}%
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 <span className="text-3xl font-extrabold text-slate-900">
                   {isKosdaqLoading ? (
@@ -360,16 +368,20 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   )}
                 </span>
                 <div className="h-24 mt-3">
-                  <StockChart
-                    data={kosdaqChartData}
-                    color={
-                      kosdaqData && kosdaqData.change_rate >= 0
-                        ? "#10B981"
-                        : "#EF4444"
-                    }
-                    showAxes={false}
-                    period="1M"
-                  />
+                  {isKosdaqLoading ? (
+                    <Skeleton className="h-full w-full rounded-lg" />
+                  ) : (
+                    <StockChart
+                      data={kosdaqChartData}
+                      color={
+                        kosdaqData && kosdaqData.change_rate >= 0
+                          ? "#10B981"
+                          : "#EF4444"
+                      }
+                      showAxes={false}
+                      period="1M"
+                    />
+                  )}
                 </div>
               </GlassCard>
             </div>

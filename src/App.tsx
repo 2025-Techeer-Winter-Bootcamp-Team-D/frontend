@@ -77,8 +77,9 @@ function CompanyDetailPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    // 모든 페이지 이동을 메인 App으로 위임하면서 state로 목적 페이지 전달
-    navigate("/", { state: { targetPage: page } });
+    // 직접 해당 페이지 경로로 이동 (중간에 "/" 거치지 않음)
+    const targetPath = PAGE_TO_PATH[page];
+    navigate(targetPath);
   };
 
   // 로그아웃 핸들러
