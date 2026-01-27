@@ -18,6 +18,7 @@ import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
 import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
+import { Ranking } from "@phosphor-icons/react";
 
 import type {
   NewsItem,
@@ -49,7 +50,7 @@ import {
   Pie,
 } from "recharts";
 import {
-  Star,
+  Heart,
   User,
   X,
   HelpCircle,
@@ -1104,9 +1105,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
               <div className="ml-auto flex gap-2">
                 <button
                   onClick={() => onToggleStar(companyCode)}
-                  className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${(starred?.has(companyCode) ?? false) ? "border-yellow-500 text-yellow-500 bg-yellow-50" : "border-gray-200 text-gray-500 hover:text-yellow-500"}`}
+                  className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${(starred?.has(companyCode) ?? false) ? "border-red-400 text-red-500 bg-red-50" : "border-gray-200 text-gray-400 hover:text-red-500"}`}
                 >
-                  <Star
+                  <Heart
                     size={20}
                     fill={
                       (starred?.has(companyCode) ?? false)
@@ -1160,7 +1161,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   대표자
                 </span>
                 <span className="font-bold text-slate-800 text-sm flex items-center gap-1">
-                  <User size={14} /> {currentCompany.ceo}
+                  {currentCompany.ceo}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -1285,7 +1286,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
             <div className="lg:col-span-4">
               <GlassCard className="p-6 h-full flex flex-col">
                 <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <Trophy size={20} className="text-yellow-500" />
+                  <Ranking size={20} className="text-yellow-500" />
                   동종업계 순위
                 </h3>
                 {isPeerLoading ? (
@@ -1593,7 +1594,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       <h4 className="font-bold text-green-800">긍정적 요인</h4>
                     </div>
                     <div className="flex items-start gap-2 text-sm text-green-700">
-                      <span className="text-green-500 mt-0.5">•</span>
                       <p>{outlookData.positive_factor}</p>
                     </div>
                   </div>
@@ -1605,7 +1605,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       <h4 className="font-bold text-red-800">리스크 요인</h4>
                     </div>
                     <div className="flex items-start gap-2 text-sm text-red-700">
-                      <span className="text-red-500 mt-0.5">•</span>
                       <p>{outlookData.risk_factor}</p>
                     </div>
                   </div>

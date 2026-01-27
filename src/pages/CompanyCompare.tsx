@@ -4,14 +4,15 @@ import {
   Plus,
   X,
   Search,
-  TrendingUp,
   BarChart3,
+  ChartColumnBig,
+  ChartNoAxesCombined,
+  ChartScatter,
   HelpCircle,
   Check,
   Edit2,
   CheckCircle2,
   Radar,
-  Crosshair,
   Lock,
 } from "lucide-react";
 import { Skeleton, SkeletonSearchResults } from "../components/Skeleton";
@@ -321,6 +322,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
     setTempSetName(activeComparison?.name ?? "");
     setIsEditingName(true);
   };
+
+  // 페이지 진입 시 스크롤 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   // 검색 디바운스
   useEffect(() => {
@@ -820,7 +826,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             <GlassCard className="p-6 hover:shadow-none">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <BarChart3 size={20} className="text-[#0046ff]" />
+                  <ChartColumnBig size={20} className="text-[#0046ff]" />
                   {currentMetricOption.label} 비교 (단위:{" "}
                   {currentMetricOption.unit})
                 </h3>
@@ -920,7 +926,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             <GlassCard className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <TrendingUp size={20} className="text-[#0046ff]" />
+                  <ChartNoAxesCombined size={20} className="text-[#0046ff]" />
                   주가 추이 (최근 {timeRange})
                 </h3>
                 <div className="flex gap-2">
@@ -963,7 +969,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                 ) : trendChartData.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-gray-400">
                     <div className="text-center">
-                      <TrendingUp
+                      <ChartNoAxesCombined
                         size={32}
                         className="mx-auto mb-2 opacity-50"
                       />
@@ -1023,7 +1029,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
             {/* Row 3: PER-YoY Matrix (Quadrant Style) */}
             <GlassCard className="p-6">
               <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                <Crosshair size={18} className="text-[#0046ff]" />
+                <ChartScatter size={18} className="text-[#0046ff]" />
                 이익 성장성 대비 저평가 분석
               </h3>
               <p className="text-sm text-slate-500 mb-4">

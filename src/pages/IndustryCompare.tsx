@@ -6,7 +6,8 @@ import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import AIBubbleChart from "../components/Charts/AIBubbleChart";
 import { Skeleton } from "../components/Skeleton";
-import { TrendingUp, ChevronDown, X, RotateCcw, Filter } from "lucide-react";
+import { ChevronDown, X, RotateCcw, Filter } from "lucide-react";
+import { ChartLine } from "@phosphor-icons/react";
 import { PageView } from "../types";
 import type {
   Stock,
@@ -702,7 +703,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         <div className="lg:col-span-2 flex flex-col">
           <div className="mb-6">
             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
-              <TrendingUp size={20} className="text-[#0046ff]" />
+              <ChartLine size={20} className="text-[#0046ff]" />
               {currentIndustryInfo.indexName} 추이
             </h3>
             <div className="flex justify-between items-end">
@@ -1030,7 +1031,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                             onClick={(e) => handleToggleStar(e, company.code)}
                             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                           >
-                            <StarIcon
+                            <HeartIcon
                               isActive={starred?.has(company.code) ?? false}
                             />
                           </button>
@@ -1869,20 +1870,20 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   );
 };
 
-// Helper Icon for Star
-const StarIcon = ({ isActive }: { isActive: boolean }) => (
+// Helper Icon for Heart
+const HeartIcon = ({ isActive }: { isActive: boolean }) => (
   <svg
     width="20"
     height="20"
     viewBox="0 0 24 24"
-    fill={isActive ? "#FFD700" : "none"}
-    stroke={isActive ? "#FFD700" : "#CBD5E1"}
+    fill={isActive ? "#EF4444" : "none"}
+    stroke={isActive ? "#EF4444" : "#CBD5E1"}
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
     className="transition-colors duration-200"
   >
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
 );
 

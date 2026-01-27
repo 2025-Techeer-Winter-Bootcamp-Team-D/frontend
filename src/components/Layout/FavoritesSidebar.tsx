@@ -20,7 +20,7 @@ interface FavoritesSidebarProps {
 const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("favorites");
-  const { favoriteMap, isLoading } = useStarred();
+  const { favoriteMap, isLoading, toggleStar } = useStarred();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -93,38 +93,53 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
               <ul>
                 {favoritesList.map((item) => (
                   <li key={item.companyId}>
-                    <button
-                      onClick={() => handleCompanyClick(item.companyId)}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-b border-slate-50"
-                    >
-                      {/* 로고 */}
-                      <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 overflow-hidden flex items-center justify-center flex-shrink-0">
-                        {item.logoUrl ? (
-                          <img
-                            src={item.logoUrl}
-                            alt={item.companyName}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                            }}
-                          />
-                        ) : (
-                          <span className="text-xs font-bold text-slate-400">
-                            {item.companyName?.charAt(0)}
-                          </span>
-                        )}
-                      </div>
-                      {/* 기업명 */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate">
-                          {item.companyName}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {item.companyId}
-                        </p>
-                      </div>
-                    </button>
+                    <div className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors border-b border-slate-50">
+                      {/* 클릭 가능한 기업 정보 영역 */}
+                      <button
+                        onClick={() => handleCompanyClick(item.companyId)}
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      >
+                        {/* 로고 */}
+                        <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                          {item.logoUrl ? (
+                            <img
+                              src={item.logoUrl}
+                              alt={item.companyName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display =
+                                  "none";
+                              }}
+                            />
+                          ) : (
+                            <span className="text-xs font-bold text-slate-400">
+                              {item.companyName?.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        {/* 기업명 */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">
+                            {item.companyName}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {item.companyId}
+                          </p>
+                        </div>
+                      </button>
+                      {/* 관심 해제 버튼 */}
+                      <button
+                        onClick={() => toggleStar(item.companyId)}
+                        className="p-1.5 hover:bg-red-50 rounded-full transition-colors flex-shrink-0"
+                        title="관심 해제"
+                      >
+                        <Heart
+                          size={18}
+                          fill="#EF4444"
+                          className="text-red-500"
+                        />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

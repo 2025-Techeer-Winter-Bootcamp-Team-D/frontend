@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GlassCard from "../components/Layout/GlassCard";
-import { Search, TrendingUp, ChevronRight, Bell } from "lucide-react";
+import { Search, TrendingUp, ChevronRight } from "lucide-react";
+import { Files, Ranking } from "@phosphor-icons/react";
 import {
   Skeleton,
   SkeletonSearchResults,
@@ -274,19 +275,19 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
   // 검색 드롭다운과 랭킹 테이블 분리 - 테이블은 항상 랭킹 데이터만 표시
 
-  const StarIcon = ({ isActive }: { isActive: boolean }) => (
+  const HeartIcon = ({ isActive }: { isActive: boolean }) => (
     <svg
       width="20"
       height="20"
       viewBox="0 0 24 24"
-      fill={isActive ? "#F59E0B" : "none"}
-      stroke={isActive ? "#F59E0B" : "#CBD5E1"}
+      fill={isActive ? "#EF4444" : "none"}
+      stroke={isActive ? "#EF4444" : "#CBD5E1"}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="transition-colors"
     >
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   );
 
@@ -466,7 +467,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             {/* 자본시장 공시 */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
               <h3 className="text-base font-bold mb-5 flex items-center gap-2">
-                <Bell size={18} className="text-blue-600" /> 자본시장 공시
+                <Files size={22} className="text-blue-600" /> 자본시장 공시
               </h3>
               <div className="space-y-4">
                 {isReportsLoading ? (
@@ -515,7 +516,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         <GlassCard className="p-0 overflow-hidden min-h-[600px] flex flex-col">
           <div className="p-6 border-b border-gray-100/50 flex justify-between items-center bg-gray-100/50">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp size={20} className="text-[#0046ff]" />
+              <Ranking size={20} className="text-[#0046ff]" />
               {isRankingLoading ? "로딩 중..." : "시가총액 상위 랭킹"}
             </h2>
           </div>
@@ -589,7 +590,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                           onClick={() => toggleStar(item.code)}
                           className="p-1.5 hover:bg-gray-100 rounded-full"
                         >
-                          <StarIcon isActive={starred.has(item.code)} />
+                          <HeartIcon isActive={starred.has(item.code)} />
                         </button>
                       </td>
                       <td className="px-6 py-4">

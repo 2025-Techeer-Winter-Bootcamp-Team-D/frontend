@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GlassCard from "../Layout/GlassCard";
-import { TrendingUp, Building2 } from "lucide-react";
+import { Factory, Ranking } from "@phosphor-icons/react";
 import { Skeleton } from "../Skeleton";
 import { getIndustryRankings, getIndustryCompanies } from "../../api/industry";
 import { getStockOhlcv } from "../../api/company";
@@ -217,7 +217,7 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
           {/* 헤더 */}
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Building2 size={20} className="text-shinhan-blue" />
+              <Factory size={20} className="text-shinhan-blue" />
               산업 순위
             </h2>
           </div>
@@ -286,7 +286,7 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
           {/* 헤더 */}
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp size={20} className="text-shinhan-blue" />
+              <Ranking size={20} className="text-shinhan-blue" />
               {selectedIndustry?.name ?? "산업"} 기업 순위
             </h2>
           </div>
