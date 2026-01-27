@@ -436,7 +436,15 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-24 items-center">
           <div
             className="flex-1 w-full cursor-pointer"
+            role="button"
+            tabIndex={0}
             onClick={() => setPage(PageView.COMPANY_COMPARE)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setPage(PageView.COMPANY_COMPARE);
+              }
+            }}
           >
             <ComparisonGrid />
           </div>
