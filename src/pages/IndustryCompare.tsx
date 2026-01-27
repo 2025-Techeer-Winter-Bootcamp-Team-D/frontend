@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import GlassCard from "../components/Layout/GlassCard";
 import ParallelCoordinatesChart from "../components/Charts/ParallelCoordinatesChart";
 import AIBubbleChart from "../components/Charts/AIBubbleChart";
@@ -1318,37 +1319,48 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                               : coordinate.x + 15;
 
                           return (
-                            <div
-                              className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
-                              style={{
-                                position: "absolute",
-                                left,
-                                top: coordinate.y - 40,
-                                pointerEvents: "none",
-                                minWidth: "120px",
-                              }}
-                            >
-                              <div className="font-bold mb-1 text-slate-800 text-sm">
-                                {data.name}
-                              </div>
-                              <div className="space-y-0.5">
-                                <div>
-                                  ROE:{" "}
-                                  <span className="text-shinhan-blue font-bold">
-                                    {data.x}%
-                                  </span>
+                            <AnimatePresence>
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 300,
+                                  damping: 20,
+                                }}
+                                className="bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-2xl border border-slate-200 text-xs whitespace-nowrap"
+                                style={{
+                                  position: "absolute",
+                                  left,
+                                  top: coordinate.y - 50,
+                                  pointerEvents: "none",
+                                  minWidth: "140px",
+                                }}
+                              >
+                                <div className="font-bold mb-2 text-slate-800 text-sm flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-[#0046FF]" />
+                                  {data.name}
                                 </div>
-                                <div>
-                                  PBR:{" "}
-                                  <span className="text-shinhan-blue font-bold">
-                                    {data.y}배
-                                  </span>
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">ROE</span>
+                                    <span className="text-[#0046FF] font-bold">
+                                      {data.x}%
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">PBR</span>
+                                    <span className="text-[#0046FF] font-bold">
+                                      {data.y}배
+                                    </span>
+                                  </div>
+                                  <div className="pt-1.5 mt-1.5 border-t border-slate-100 text-slate-400 text-[10px]">
+                                    버블 크기 = 시가총액
+                                  </div>
                                 </div>
-                                <div className="text-gray-500 mt-1">
-                                  시가총액 비례 크기
-                                </div>
-                              </div>
-                            </div>
+                              </motion.div>
+                            </AnimatePresence>
                           );
                         }
                         return null;
@@ -1490,34 +1502,47 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                               : coordinate.x + 15;
 
                           return (
-                            <div
-                              className="bg-white/95 backdrop-blur p-3 rounded-lg shadow-xl border border-gray-200 text-xs whitespace-nowrap"
-                              style={{
-                                position: "absolute",
-                                left,
-                                top: coordinate.y - 40,
-                                pointerEvents: "none",
-                                minWidth: "120px",
-                              }}
-                            >
-                              <div className="font-bold mb-1 text-slate-800 text-sm">
-                                {data.name}
-                              </div>
-                              <div className="space-y-0.5">
-                                <div>
-                                  ROE:{" "}
-                                  <span className="text-shinhan-blue font-bold">
-                                    {data.roe}%
-                                  </span>
+                            <AnimatePresence>
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 300,
+                                  damping: 20,
+                                }}
+                                className="bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-2xl border border-slate-200 text-xs whitespace-nowrap"
+                                style={{
+                                  position: "absolute",
+                                  left,
+                                  top: coordinate.y - 50,
+                                  pointerEvents: "none",
+                                  minWidth: "140px",
+                                }}
+                              >
+                                <div className="font-bold mb-2 text-slate-800 text-sm flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                  {data.name}
                                 </div>
-                                <div>
-                                  부채비율:{" "}
-                                  <span className="font-bold text-slate-600">
-                                    {data.debt}%
-                                  </span>
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">ROE</span>
+                                    <span className="text-[#0046FF] font-bold">
+                                      {data.roe}%
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">
+                                      부채비율
+                                    </span>
+                                    <span className="text-slate-700 font-bold">
+                                      {data.debt}%
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                              </motion.div>
+                            </AnimatePresence>
                           );
                         }
                         return null;
