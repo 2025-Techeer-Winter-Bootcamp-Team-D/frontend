@@ -41,7 +41,7 @@ import {
   INDUTY_CODE_BY_KEY,
 } from "../hooks/useIndustryQueries";
 import { getStockOhlcv, getCompanyFinancials } from "../api/company";
-import { getNewsKeywords } from "../api/news";
+import { getNewsKeywords, getNewsDetail } from "../api/news";
 
 interface AnalysisProps {
   setPage: (page: PageView) => void;
@@ -230,7 +230,34 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
   const [selectedNews, setSelectedNews] = useState<IndustryNewsItem | null>(
     null,
   );
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
   const [showAllCompanies, setShowAllCompanies] = useState(false);
+
+  // 뉴스 상세 조회 핸들러
+  const handleNewsClick = async (newsId: number) => {
+    setIsNewsLoading(true);
+    try {
+      const response = await getNewsDetail(newsId);
+      const data = response.data;
+      if (data) {
+        setSelectedNews({
+          id: data.news_id,
+          title: data.title,
+          summary: data.summary,
+          source: data.press,
+          time: data.published_at,
+          author: data.author ?? undefined,
+          content: data.content,
+          keywords: data.keywords,
+          url: data.url,
+        });
+      }
+    } catch (error) {
+      console.error("뉴스 상세 조회 실패:", error);
+    } finally {
+      setIsNewsLoading(false);
+    }
+  };
 
   // -----------------------------
   // TanStack Query - 커스텀 훅 사용
@@ -1780,34 +1807,23 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                 ))
               ) : industryNews.length > 0 ? (
                 industryNews.slice(0, 4).map((news) => (
-                  <GlassCard
+                  <div
                     key={news.id}
-                    className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col"
-                    onClick={() => {
-                      if (news.url) {
-                        const newWindow = window.open(
-                          news.url,
-                          "_blank",
-                          "noopener,noreferrer",
-                        );
-                        if (newWindow) newWindow.opener = null;
-                      } else {
-                        setSelectedNews(news);
-                      }
-                    }}
+                    onClick={() => handleNewsClick(news.id)}
+                    className="p-4 border border-gray-100 rounded-xl hover:bg-white hover:shadow-md hover:border-blue-100 transition-all cursor-pointer group flex flex-col bg-white"
                   >
-                    <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug group-hover:text-shinhan-blue transition-colors text-sm">
+                    <h4 className="font-bold text-slate-800 mb-2 line-clamp-2 leading-snug text-sm">
                       {news.title}
                     </h4>
                     <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
-                      {news.content}
+                      {news.summary || news.content}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
                       <span>{news.source}</span>
                       <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                       <span>{news.time}</span>
                     </div>
-                  </GlassCard>
+                  </div>
                 ))
               ) : (
                 <div className="col-span-2 text-center py-10 text-gray-400 bg-white/50 rounded-md border border-gray-100">
@@ -1819,50 +1835,113 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
         </div>
       </div>
 
-      {/* --- News Modal (Bottom Sheet Style) --- */}
-      {selectedNews && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      {/* --- News Modal --- */}
+      {(selectedNews || isNewsLoading) && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setSelectedNews(null)}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !isNewsLoading && setSelectedNews(null)}
           ></div>
-          {/* Rounded-lg */}
-          <div className="bg-white w-full max-w-2xl sm:rounded-lg rounded-t-lg shadow-2xl z-10 animate-fade-in-up max-h-[85vh] overflow-y-auto flex flex-col relative">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 p-5 relative z-10 rounded-t-lg">
-              <h3 className="font-bold text-sm text-slate-500 text-center">
-                토픽 인사이트
-              </h3>
-              <button
-                onClick={() => setSelectedNews(null)}
-                className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 leading-snug mb-4">
-                {selectedNews.title}
-              </h2>
-              <div className="flex items-center gap-3 text-sm text-gray-500 mb-8 border-b border-gray-100 pb-4">
-                <span className="font-medium text-slate-700">
-                  {selectedNews.source}
-                </span>
-                <span>{selectedNews.time}</span>
+          <div className="bg-white w-full max-w-2xl rounded-2xl z-10 p-8 shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
+            {isNewsLoading ? (
+              <div className="py-4 space-y-4">
+                <div className="flex gap-2 mb-4">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-7 w-full" />
+                <Skeleton className="h-7 w-3/4" />
+                <div className="flex gap-3 py-4 border-b border-gray-100">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="space-y-3 pt-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
               </div>
-
-              <div className="flex flex-col sm:flex-row-reverse gap-6 mb-6">
-                {/* Rounded-md */}
-                <div className="w-full sm:w-1/3 h-40 bg-gray-200 rounded-md flex-shrink-0"></div>
-                <p className="text-slate-700 leading-loose text-lg flex-1">
-                  {selectedNews.content}
-                </p>
-              </div>
-
-              {/* Rounded-md */}
-            </div>
+            ) : (
+              selectedNews && (
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNews.keywords?.slice(0, 3).map((keyword, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setSelectedNews(null)}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={24} className="text-gray-400" />
+                    </button>
+                  </div>
+                  <h2 className="text-xl font-bold mb-3 text-slate-800 leading-tight">
+                    {selectedNews.title}
+                  </h2>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-100">
+                    {selectedNews.source && (
+                      <span className="font-medium text-slate-700">
+                        {selectedNews.source}
+                      </span>
+                    )}
+                    {selectedNews.author && (
+                      <span>· {selectedNews.author}</span>
+                    )}
+                    {selectedNews.time && (
+                      <span>
+                        ·{" "}
+                        {new Date(selectedNews.time).toLocaleDateString(
+                          "ko-KR",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-2 mb-4">
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-sm">
+                      {selectedNews.content || selectedNews.summary}
+                    </p>
+                  </div>
+                  {selectedNews.url && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <a
+                        href={selectedNews.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        원문 보기
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                </>
+              )
+            )}
           </div>
         </div>
       )}
