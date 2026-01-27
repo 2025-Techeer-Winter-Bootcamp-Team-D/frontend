@@ -3,12 +3,12 @@ import { sankey as d3Sankey, sankeyLinkHorizontal } from "d3-sankey";
 import type { SankeyGraph, SankeyNode as D3SankeyNode } from "d3-sankey";
 import type { SankeyData, SankeyNode, SankeyLink } from "../../types";
 
-interface IncomeSankeyChartProps {
+export interface IncomeSankeyChartProps {
   data: SankeyData;
   totalRevenue: number;
 }
 
-interface ExtendedNode extends D3SankeyNode<SankeyNode, SankeyLink> {
+export interface ExtendedNode extends D3SankeyNode<SankeyNode, SankeyLink> {
   id: string;
   name: string;
   color: string;
