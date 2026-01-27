@@ -612,9 +612,9 @@ const CompanyDetail: React.FC<DetailProps> = ({
       return null; // 빈 데이터면 null 반환하여 mock 데이터 사용하도록
     }
     const filtered = composition
-      .filter((item) => item && item.segment && item.ratio > 0)
+      .filter((item) => item && item.segment_name && item.ratio > 0)
       .map((item, index) => ({
-        name: item.segment || "기타",
+        name: item.segment_name || "기타",
         value:
           typeof item.ratio === "number"
             ? item.ratio
@@ -943,11 +943,11 @@ const CompanyDetail: React.FC<DetailProps> = ({
           </div>
         </div>
         {/* Recharts 에러 해결을 위해 부모 div에 명시적 높이(h-48) 부여 */}
-        <div className="w-full h-48 mt-auto focus:outline-none">
+        <div className="w-full h-48 mt-auto outline-none focus:outline-none **:outline-none **:focus:outline-none">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data.history}
-              margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
+              margin={{ top: 30, right: 10, left: 10, bottom: 5 }}
             >
               <XAxis
                 dataKey="year"
@@ -957,7 +957,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
                 dy={5}
                 stroke="#E5E7EB"
               />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>
+              <Bar
+                dataKey="value"
+                radius={[4, 4, 0, 0]}
+                barSize={32}
+                isAnimationActive={false}
+              >
                 <LabelList
                   dataKey="label"
                   position="top"

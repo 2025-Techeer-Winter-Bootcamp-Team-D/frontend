@@ -428,7 +428,7 @@ export interface CompanyReportsResponse {
 export interface RevenueComposition {
   ratio: number;
   revenue: number;
-  segment: string;
+  segment_name: string;
 }
 
 // 추출된 상세 정보
