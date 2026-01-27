@@ -83,7 +83,7 @@ const App: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => setCurrentPage("search" as PageView)}
+                onClick={() => setCurrentPage(PageView.SIGNUP)}
                 className="bg-[#0046FF] text-white text-sm font-semibold px-6 py-3.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
               >
                 지금 시작하기 <ArrowRight size={16} />
@@ -338,7 +338,7 @@ const App: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
                 onClick={() => setCurrentPage("signup" as PageView)}
-                className="group relative bg-[`#0046FF`] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
+                className="group relative bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   무료로 시작하기{" "}
