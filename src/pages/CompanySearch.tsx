@@ -489,16 +489,53 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             <table className="w-full text-sm text-left">
               <thead className="bg-white text-gray-500 font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
                 <tr>
-                  <th className="px-6 py-4 w-16 text-center">순위</th>
-                  <th className="px-6 py-4 w-16">관심</th>
-                  <th className="px-6 py-4">기업명</th>
-                  <th className="px-6 py-4 text-right">현재가</th>
-                  <th className="px-6 py-4 text-right">등락률</th>
-                  <th className="px-6 py-4 text-right">시가총액</th>
-                  <th className="px-6 py-4 w-16"></th>
+                  <th className="px-4 py-4 w-16 whitespace-nowrap text-center">
+                    순위
+                  </th>
+                  <th className="px-4 py-4 w-16 whitespace-nowrap text-center">
+                    관심
+                  </th>
+                  <th className="px-6 py-4 w-64 whitespace-nowrap">기업명</th>
+                  <th className="px-6 py-4 whitespace-nowrap text-right">
+                    현재가
+                  </th>
+                  <th className="px-6 py-4 whitespace-nowrap text-right">
+                    등락률
+                  </th>
+                  <th className="px-6 py-4 whitespace-nowrap text-right">
+                    시가총액
+                  </th>
+                  <th className="px-4 py-4 w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
+                {isRankingLoading &&
+                  Array.from({ length: 10 }).map((_, index) => (
+                    <tr key={index} className="animate-pulse">
+                      <td className="px-4 py-4 text-center">
+                        <Skeleton className="h-5 w-6 mx-auto" />
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <Skeleton className="h-5 w-5 mx-auto rounded-full" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-5 w-32 mb-1" />
+                        <Skeleton className="h-3 w-16" />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Skeleton className="h-5 w-20 ml-auto" />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Skeleton className="h-5 w-14 ml-auto" />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Skeleton className="h-5 w-24 ml-auto" />
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <Skeleton className="h-4 w-4 ml-auto" />
+                      </td>
+                    </tr>
+                  ))}
                 {!isRankingLoading &&
                   rankingData.map((item: RankingItem, index: number) => (
                     <tr
@@ -506,11 +543,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                       onClick={() => handleCompanyClick(item.code)}
                       className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
                     >
-                      <td className="px-6 py-4 text-center font-bold text-slate-500">
+                      <td className="px-4 py-4 text-center font-bold text-slate-500">
                         {index + 1}
                       </td>
                       <td
-                        className="px-6 py-4 text-center"
+                        className="px-4 py-4 text-center"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <button
@@ -539,7 +576,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                       <td className="px-6 py-4 text-right font-medium text-slate-600">
                         {formatMarketCap(item.marketCap)}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         <ChevronRight
                           size={18}
                           className="text-gray-300 group-hover:text-[#0046ff]"
