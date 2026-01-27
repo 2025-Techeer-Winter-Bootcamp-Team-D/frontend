@@ -68,3 +68,52 @@ export const addFavorite = (companyId: string) => {
 export const removeFavorite = (favoriteId: number) => {
   return api.delete<FavoriteActionResponse>(`/users/favorites/${favoriteId}/`);
 };
+
+// 방문 기록 관련 타입
+export interface VisitItem {
+  visitId: number;
+  stockCode: string;
+  companyName: string;
+  logoUrl: string;
+  visitedAt: string;
+}
+
+export interface VisitActionResponse {
+  status: number;
+  message: string;
+  data: VisitItem | null;
+}
+
+/**
+ * 방문 기록 목록 조회
+ * GET /api/users/visits/
+ */
+export const getVisits = () => {
+  return api.get<VisitItem[]>("/users/visits/");
+};
+
+/**
+ * 방문 기록 추가
+ * POST /api/users/visits/
+ */
+export const addVisit = (stockCode: string) => {
+  return api.post<VisitActionResponse>("/users/visits/", { stockCode });
+};
+
+/**
+ * 방문 기록 삭제
+ * DELETE /api/users/visits/:visitId/
+ */
+export const removeVisit = (visitId: number) => {
+  return api.delete<VisitActionResponse>(`/users/visits/${visitId}/`);
+};
+
+/**
+ * 전체 방문 기록 삭제
+ * DELETE /api/users/visits/clear/
+ */
+export const clearVisits = () => {
+  return api.delete<{ status: number; message: string; data: null }>(
+    "/users/visits/clear/",
+  );
+};

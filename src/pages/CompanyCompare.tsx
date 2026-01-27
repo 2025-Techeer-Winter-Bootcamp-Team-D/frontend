@@ -1396,11 +1396,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                               cursor={{ fill: "transparent" }}
                               isAnimationActive={false}
                               contentStyle={{
-                                borderRadius: "10px",
+                                borderRadius: "12px",
                                 border: "none",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                padding: "8px 10px",
-                                fontSize: "12px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                padding: "12px 16px",
+                                fontSize: "14px",
                               }}
                             />
                             <Bar

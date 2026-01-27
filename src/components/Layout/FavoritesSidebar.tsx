@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueries } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueries,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,14 +13,15 @@ import {
   Clock,
   FileText,
   Scale,
-  Plus,
-  ArrowRight,
+  X,
+  Trash2,
   ArrowLeft,
 } from "lucide-react";
 import { useStarred } from "../../context/StarredContext";
 import { useAuth } from "../../hooks/useAuth";
 import { useComparisons } from "../../hooks/useCompareQueries";
 import { getComparison } from "../../api/comparison";
+import { getVisits, removeVisit, clearVisits } from "../../api/users";
 
 type TabType = "recent" | "favorites" | "portfolio";
 
@@ -29,6 +35,34 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
   const { favoriteMap, isLoading, toggleStar } = useStarred();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // 방문 기록 조회
+  const { data: visitList = [], isLoading: isVisitsLoading } = useQuery({
+    queryKey: ["visits"],
+    queryFn: async () => {
+      const res = await getVisits();
+      return res.data ?? res;
+    },
+    enabled: isAuthenticated,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // 방문 기록 삭제 mutation
+  const removeVisitMutation = useMutation({
+    mutationFn: (visitId: number) => removeVisit(visitId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["visits"] });
+    },
+  });
+
+  // 전체 방문 기록 삭제 mutation
+  const clearVisitsMutation = useMutation({
+    mutationFn: clearVisits,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["visits"] });
+    },
+  });
 
   // 비교 세트 목록 조회
   const { data: comparisonList = [], isLoading: isComparisonsLoading } =
@@ -56,9 +90,24 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
   });
 
   const tabs = [
-    { id: "recent" as TabType, label: "최근 본", icon: Clock },
-    { id: "favorites" as TabType, label: "관심", icon: Heart },
-    { id: "portfolio" as TabType, label: "내 비교", icon: Scale },
+    {
+      id: "recent" as TabType,
+      label: "최근 본",
+      headerLabel: "최근 본",
+      icon: Clock,
+    },
+    {
+      id: "favorites" as TabType,
+      label: "관심",
+      headerLabel: "관심",
+      icon: Heart,
+    },
+    {
+      id: "portfolio" as TabType,
+      label: "내 비교",
+      headerLabel: "내 비교 세트",
+      icon: Scale,
+    },
   ];
 
   const favoritesList = Array.from(favoriteMap.values());
@@ -91,7 +140,7 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
         {/* 헤더 */}
         <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
           <h3 className="font-bold text-slate-800">
-            {tabs.find((t) => t.id === activeTab)?.label}
+            {tabs.find((t) => t.id === activeTab)?.headerLabel}
           </h3>
         </div>
 
@@ -242,7 +291,7 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
                           ))
                         ) : (
                           <span className="text-xs text-slate-400">
-                            기업 없음
+                            기업이 없습니다.
                           </span>
                         )}
                         {comparison?.companies &&
@@ -263,6 +312,86 @@ const FavoritesSidebar: React.FC<FavoritesSidebarProps> = ({ onShowLogin }) => {
                   <ArrowLeft size={16} />
                   <span className="text-sm">비교 페이지로 이동</span>
                 </button>
+              </div>
+            )
+          ) : activeTab === "recent" ? (
+            // 최근 본 목록
+            isVisitsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : visitList.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center px-4 py-8 text-center">
+                <Clock size={32} className="text-slate-200 mb-3" />
+                <p className="text-sm text-slate-400">
+                  최근 본 종목이 없습니다
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col h-full">
+                {/* 전체 삭제 버튼 */}
+                <div className="px-4 py-2 border-b border-slate-100 flex justify-end">
+                  <button
+                    onClick={() => clearVisitsMutation.mutate()}
+                    disabled={clearVisitsMutation.isPending}
+                    className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    전체 삭제
+                  </button>
+                </div>
+                <ul className="flex-1 overflow-y-auto">
+                  {visitList.map((item) => (
+                    <li key={item.visitId}>
+                      <div className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors border-b border-slate-50">
+                        {/* 클릭 가능한 기업 정보 영역 */}
+                        <button
+                          onClick={() => handleCompanyClick(item.stockCode)}
+                          className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                        >
+                          {/* 로고 */}
+                          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            {item.logoUrl ? (
+                              <img
+                                src={item.logoUrl}
+                                alt={item.companyName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                }}
+                              />
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400">
+                                {item.companyName?.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          {/* 기업명 */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">
+                              {item.companyName}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {item.stockCode}
+                            </p>
+                          </div>
+                        </button>
+                        {/* 삭제 버튼 */}
+                        <button
+                          onClick={() =>
+                            removeVisitMutation.mutate(item.visitId)
+                          }
+                          disabled={removeVisitMutation.isPending}
+                          className="p-1.5 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
+                          title="삭제"
+                        >
+                          <X size={16} className="text-slate-400" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )
           ) : (

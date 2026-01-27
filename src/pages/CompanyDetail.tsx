@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueries,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   getCompanyDetail,
   getStockOhlcv,
@@ -13,7 +18,9 @@ import {
   getCompanySankeys,
 } from "../api/company";
 import { getIndustryCompanies } from "../api/industry";
+import { addVisit } from "../api/users";
 import { useStockWebSocket } from "../hooks";
+import { useAuth } from "../hooks/useAuth";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
@@ -226,6 +233,26 @@ const CompanyDetail: React.FC<DetailProps> = ({
       }
     };
   }, [wsConnected, companyCode, wsSubscribe, wsUnsubscribe]);
+
+  // 방문 기록 추가
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const visitedRef = useRef<string | null>(null);
+  const addVisitMutation = useMutation({
+    mutationFn: (stockCode: string) => addVisit(stockCode),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["visits"] });
+    },
+  });
+
+  useEffect(() => {
+    // 이미 같은 기업 방문 기록을 추가했다면 스킵
+    if (isAuthenticated && companyCode && visitedRef.current !== companyCode) {
+      visitedRef.current = companyCode;
+      addVisitMutation.mutate(companyCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, companyCode]);
 
   const [activeTab, setActiveTab] = useState("info");
   const [chartRange, setChartRange] = useState("1D");
