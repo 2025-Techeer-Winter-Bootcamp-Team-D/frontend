@@ -16,3 +16,16 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// 401 응답 시 토큰 제거 (만료된 토큰으로 인한 에러 방지)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // 인증 실패 시 토큰 제거
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+    }
+    return Promise.reject(error);
+  },
+);

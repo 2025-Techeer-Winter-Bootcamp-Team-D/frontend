@@ -1,20 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GlassCard from "../Layout/GlassCard";
-import { TrendingUp, Building2 } from "lucide-react";
+import { Factory, Ranking } from "@phosphor-icons/react";
 import { Skeleton } from "../Skeleton";
-import { getCompanyRankings } from "../../api/ranking";
 import { getIndustryRankings, getIndustryCompanies } from "../../api/industry";
 import { getStockOhlcv } from "../../api/company";
-
-// API 응답 타입: 기업 순위 API에서 받는 원시 데이터
-interface CompanyRankingApiItem {
-  rank: number;
-  name: string;
-  stock_code: string;
-  amount?: number;
-  logo?: string | null;
-}
 
 // API 응답 타입: 산업 내 기업 API에서 받는 원시 데이터
 interface IndustryCompanyApiItem {
@@ -112,38 +102,11 @@ interface IndustryRankingCardProps {
 const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
   onCompanyClick,
 }) => {
-  // 선택된 산업 상태 (null이면 전체 기업 순위)
+  // 선택된 산업 상태 (항상 하나의 산업이 선택됨)
   const [selectedIndustry, setSelectedIndustry] = useState<{
     id: string;
     name: string;
   } | null>(null);
-
-  // 전체 기업 순위 조회 (기본)
-  const { data: companyRankings = [], isLoading: isCompanyLoading } = useQuery({
-    queryKey: ["companyRankings"],
-    queryFn: async () => {
-      const response = await getCompanyRankings();
-      const data = normalizeApiResponse<CompanyRankingApiItem>(response);
-      const top4 = data.slice(0, 4);
-
-      // 모든 종목 코드 수집 후 한번에 병렬로 OHLCV 조회
-      const stockCodes = top4.map((item) => item.stock_code);
-      const changeMap = await fetchOhlcvBatch(stockCodes);
-
-      // 결과 매핑
-      return top4.map(
-        (item): CompanyRankItem => ({
-          rank: item.rank,
-          name: item.name,
-          code: item.stock_code,
-          sector: "-",
-          changePercent: changeMap.get(item.stock_code) ?? 0,
-        }),
-      );
-    },
-    enabled: !selectedIndustry,
-    staleTime: 1000 * 60 * 5,
-  });
 
   // 산업 순위 조회
   const { data: industryRankings = [], isLoading: isIndustryLoading } =
@@ -151,22 +114,20 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
       queryKey: ["industryRankings"],
       queryFn: async () => {
         const response = await getIndustryRankings();
-        // API 응답: { rank, name, change, marketCap, id? }
+        // API 응답: { rank, industryId, name, amount }
         const rawData = normalizeApiResponse<{
           rank: number;
+          industryId: string;
           name: string;
-          change?: number;
-          marketCap?: number;
-          id?: string;
-          induty_code?: string;
+          amount?: number;
         }>(response);
         // UI 기대 형식으로 변환
         return rawData.map(
           (item, index): IndustryRankItem => ({
             rank: item.rank ?? index + 1,
-            industryId: item.induty_code ?? item.id ?? item.name,
+            industryId: item.industryId ?? item.name,
             name: item.name,
-            amount: item.marketCap ?? 0,
+            amount: item.amount ?? 0,
           }),
         );
       },
@@ -204,17 +165,19 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
     staleTime: 1000 * 60 * 5,
   });
 
-  // 표시할 기업 데이터
-  const displayCompanyData = useMemo(() => {
-    if (selectedIndustry) {
-      return industryCompanies;
+  // 산업 순위가 로드되면 1위 산업을 기본 선택
+  useEffect(() => {
+    if (industryRankings.length > 0 && !selectedIndustry) {
+      const firstIndustry = industryRankings[0];
+      setSelectedIndustry({
+        id: firstIndustry.industryId,
+        name: firstIndustry.name,
+      });
     }
-    return companyRankings;
-  }, [selectedIndustry, industryCompanies, companyRankings]);
+  }, [industryRankings, selectedIndustry]);
 
-  const isCompanyDataLoading = selectedIndustry
-    ? isIndustryCompaniesLoading
-    : isCompanyLoading;
+  // 로딩 상태
+  const isCompanyDataLoading = isIndustryCompaniesLoading;
 
   // 순위별 메달 (1위: 금, 2위: 은, 3위: 동)
   const getMedal = (rank: number) => {
@@ -249,26 +212,83 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
   return (
     <GlassCard className="p-0 overflow-hidden">
       <div className="flex">
-        {/* 왼쪽: 산업별 기업 순위 (2/3) */}
+        {/* 왼쪽: 산업 순위 (1/3) */}
+        <div className="flex-1 min-w-0">
+          {/* 헤더 */}
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Factory size={20} className="text-shinhan-blue" />
+              산업 순위
+            </h2>
+          </div>
+
+          {/* 리스트 - 최대 5개만 표시 */}
+          <div className="divide-y divide-gray-50">
+            {isIndustryLoading ? (
+              <div className="py-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="px-6 py-4 flex items-center gap-4">
+                    <Skeleton className="w-8 h-6" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              industryRankings.slice(0, 5).map((item) => (
+                <div
+                  key={item.industryId}
+                  onClick={() =>
+                    setSelectedIndustry({
+                      id: item.industryId,
+                      name: item.name,
+                    })
+                  }
+                  className={`px-6 py-4 flex items-center gap-4 cursor-pointer transition-colors ${
+                    selectedIndustry?.id === item.industryId
+                      ? "bg-shinhan-blue text-white"
+                      : "hover:bg-blue-50/50"
+                  }`}
+                >
+                  {/* 순위 */}
+                  <span
+                    className={`text-xl font-bold min-w-[32px] ${
+                      selectedIndustry?.id === item.industryId
+                        ? "text-white"
+                        : item.rank <= 3
+                          ? "text-shinhan-blue"
+                          : "text-gray-400"
+                    }`}
+                  >
+                    {formatRank(item.rank)}
+                  </span>
+
+                  {/* 산업명 */}
+                  <div
+                    className={`font-bold text-base ${
+                      selectedIndustry?.id === item.industryId
+                        ? "text-white"
+                        : "text-slate-800"
+                    }`}
+                  >
+                    {item.name}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* 세로 구분선 */}
+        <div className="w-px bg-gray-200" />
+
+        {/* 오른쪽: 산업 내 기업 순위 (2/3) */}
         <div className="flex-[2] min-w-0">
           {/* 헤더 */}
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-shinhan-blue" />
-                {selectedIndustry
-                  ? `${selectedIndustry.name} 기업 순위`
-                  : "산업별 기업 순위"}
-              </h2>
-              {selectedIndustry && (
-                <button
-                  onClick={() => setSelectedIndustry(null)}
-                  className="text-xs text-gray-500 hover:text-shinhan-blue transition-colors px-2 py-1 rounded hover:bg-blue-50"
-                >
-                  전체 보기
-                </button>
-              )}
-            </div>
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Ranking size={20} className="text-[#0046ff]" />
+              {selectedIndustry?.name ?? "산업"} 기업 순위
+            </h2>
           </div>
 
           {/* 리스트 - 최대 4개만 표시 */}
@@ -286,12 +306,12 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
                   </div>
                 ))}
               </div>
-            ) : displayCompanyData.length === 0 ? (
+            ) : industryCompanies.length === 0 ? (
               <div className="text-center py-12 text-gray-400 text-sm">
                 데이터가 없습니다
               </div>
             ) : (
-              displayCompanyData.slice(0, 4).map((item) => (
+              industryCompanies.slice(0, 4).map((item) => (
                 <div
                   key={item.code}
                   onClick={() => onCompanyClick?.(item.code)}
@@ -325,76 +345,6 @@ const IndustryRankingCard: React.FC<IndustryRankingCardProps> = ({
                     className={`font-bold text-base ${getChangeColor(item.changePercent)}`}
                   >
                     {formatChange(item.changePercent)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* 세로 구분선 */}
-        <div className="w-px bg-gray-200" />
-
-        {/* 오른쪽: 산업 순위 (1/3) */}
-        <div className="flex-1 min-w-0">
-          {/* 헤더 */}
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Building2 size={20} className="text-shinhan-blue" />
-              산업 순위
-            </h2>
-          </div>
-
-          {/* 리스트 - 최대 5개만 표시 */}
-          <div className="divide-y divide-gray-50">
-            {isIndustryLoading ? (
-              <div className="py-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="px-6 py-4 flex items-center gap-4">
-                    <Skeleton className="w-8 h-6" />
-                    <Skeleton className="h-5 w-20" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              industryRankings.slice(0, 5).map((item) => (
-                <div
-                  key={item.industryId}
-                  onClick={() =>
-                    setSelectedIndustry(
-                      selectedIndustry?.id === item.industryId
-                        ? null
-                        : { id: item.industryId, name: item.name },
-                    )
-                  }
-                  className={`px-6 py-4 flex items-center gap-4 cursor-pointer transition-colors ${
-                    selectedIndustry?.id === item.industryId
-                      ? "bg-shinhan-blue text-white"
-                      : "hover:bg-blue-50/50"
-                  }`}
-                >
-                  {/* 순위 */}
-                  <span
-                    className={`text-xl font-bold min-w-[32px] ${
-                      selectedIndustry?.id === item.industryId
-                        ? "text-white"
-                        : item.rank <= 3
-                          ? "text-shinhan-blue"
-                          : "text-gray-400"
-                    }`}
-                  >
-                    {formatRank(item.rank)}
-                  </span>
-
-                  {/* 산업명 */}
-                  <div
-                    className={`font-bold text-base ${
-                      selectedIndustry?.id === item.industryId
-                        ? "text-white"
-                        : "text-slate-800"
-                    }`}
-                  >
-                    {item.name}
                   </div>
                 </div>
               ))

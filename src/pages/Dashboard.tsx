@@ -1,18 +1,9 @@
-import React, { useState } from "react";
-import Navbar from "../components/Layout/Navbar";
+import React, { useEffect } from "react";
 import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
-import ComparisonGrid from "../components/dash_data/ComparisonGrid";
 import OutlookCard from "../components/dash_data/outlookCard";
 import { motion } from "framer-motion";
 import { PageView } from "../types";
 import type { SankeyData } from "../types";
-
-import CompanyCompare from "./CompanyCompare";
-import CompanyDetail from "./CompanyDetail";
-import CompanySearch from "./CompanySearch";
-import IndustryCompare from "./IndustryCompare";
-import Login from "./Login";
-import SignUp from "./SignUp";
 
 import {
   Search,
@@ -28,6 +19,12 @@ import {
   PieChart,
   ChevronRight,
 } from "lucide-react";
+
+interface DashboardProps {
+  setPage: (page: PageView) => void;
+  onIndustryClick: (indutyCode: string) => void;
+  onShowNavbar: (visible: boolean) => void;
+}
 
 // 샘플 Sankey 데이터
 const sankeyData: SankeyData = {
@@ -50,13 +47,23 @@ const sankeyData: SankeyData = {
   ],
 };
 
-const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<PageView>(PageView.DASHBOARD);
+const Dashboard: React.FC<DashboardProps> = ({
+  setPage,
+  onIndustryClick,
+  onShowNavbar,
+}) => {
+  // 스크롤 감지하여 Navbar 표시 여부 결정
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      onShowNavbar(scrollY > 100);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [onShowNavbar]);
 
   return (
     <div className="min-h-screen bg-white selection:bg-[#0046FF] selection:text-white">
-      <Navbar currentPage={currentPage} setPage={setCurrentPage} />
-
       {/* Hero Section */}
       <section className="min-h-screen flex items-center py-16 px-5 overflow-hidden bg-gradient-to-b from-[#f2f4f6] to-white">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -83,7 +90,7 @@ const App: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => setCurrentPage(PageView.SIGN_UP)}
+                onClick={() => setPage(PageView.SIGN_UP)}
                 className="bg-[#0046FF] text-white text-sm font-semibold px-6 py-3.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
               >
                 지금 시작하기 <ArrowRight size={16} />
@@ -343,7 +350,7 @@ const App: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={() => setCurrentPage(PageView.SIGN_UP)}
+                onClick={() => setPage(PageView.SIGN_UP)}
                 className="group relative bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
               >
                 <span className="relative z-10 flex items-center gap-2">
@@ -473,4 +480,4 @@ const VisualCard: React.FC<VisualCardProps> = ({
   );
 };
 
-export default App;
+export default Dashboard;

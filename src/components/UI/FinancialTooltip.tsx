@@ -110,7 +110,7 @@ const FinancialTooltip: React.FC<FinancialTooltipProps> = ({
       {isVisible && (
         <div
           ref={tooltipRef}
-          className={`absolute z-50 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-4 animate-fade-in ${
+          className={`absolute z-50 w-60 bg-white rounded-lg shadow-lg border border-gray-100 p-3 animate-tooltip ${
             position === "top" ? "bottom-full mb-2" : "top-full mt-2"
           } left-1/2 -translate-x-1/2`}
         >
