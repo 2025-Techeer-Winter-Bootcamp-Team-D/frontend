@@ -20,7 +20,7 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
   totalRevenue,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
+  const [dimensions, setDimensions] = useState({ width: 400, height: 280 });
   const [hoveredLink, setHoveredLink] = useState<number | null>(null);
 
   useEffect(() => {
@@ -28,8 +28,8 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
     const observer = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
       setDimensions({
-        width: Math.max(width, 600),
-        height: Math.max(height, 480),
+        width: width || 400,
+        height: height || 280,
       });
     });
     observer.observe(containerRef.current);
@@ -38,8 +38,8 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
 
   const { nodes, links } = useMemo(() => {
     const { width, height } = dimensions;
-    const paddingX = 80;
-    const paddingY = 30;
+    const paddingX = 50;
+    const paddingY = 20;
 
     const sankeyGenerator = d3Sankey<SankeyNode, SankeyLink>()
       .nodeId((d) => d.id)
@@ -72,10 +72,7 @@ export const IncomeSankeyChart: React.FC<IncomeSankeyChartProps> = ({
   const pathGenerator = sankeyLinkHorizontal();
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full min-h-[500px] relative font-sans"
-    >
+    <div ref={containerRef} className="w-full h-full relative font-sans">
       <svg
         width={dimensions.width}
         height={dimensions.height}

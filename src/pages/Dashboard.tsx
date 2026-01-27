@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
 import OutlookCard from "../components/dash_data/outlookCard";
+import ComparisonGrid from "../components/dash_data/ComparisonGrid";
 import { motion } from "framer-motion";
 import { PageView } from "../types";
 import type { SankeyData } from "../types";
@@ -135,17 +136,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
 
                 {/* Main Screen Content */}
-                <div className="flex-1 min-h-0 z-10 relative bg-white flex items-center justify-center">
-                  {/* 1. 내부 컨테이너의 높이를 90%로 제한하여 상하 베젤 여백 확보 
-                      2. aspect-video(16:9) 비율을 강제하여 Sankey가 가장 예쁘게 그려지는 공간 생성
-                    */}
-                  <div className="w-[92%] h-[85%] relative flex items-center justify-center">
-                    <div className="w-full h-full transform scale-[1.05] origin-center">
-                      <IncomeSankeyChart
-                        data={sankeyData}
-                        totalRevenue={1000000000000}
-                      />
-                    </div>
+                <div className="flex-1 min-h-0 z-10 relative bg-white flex items-center justify-center p-4">
+                  <div className="w-full h-full relative">
+                    <IncomeSankeyChart
+                      data={sankeyData}
+                      totalRevenue={1000000000000}
+                    />
                   </div>
                 </div>
                 {/* Home Indicator */}
@@ -261,7 +257,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <span className="text-blue-600 font-semibold text-xs uppercase tracking-[0.2em] mb-3 block">
-              QUASA Intelligence
+              ANALYSIS CORE
             </span>
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
@@ -269,7 +265,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               viewport={{ once: true }}
               className="text-2xl md:text-4xl font-bold text-quasa-dark mb-4 tracking-tight"
             >
-              AI 기업 전망 분석
+              QUASA Intelligence
             </motion.h2>
 
             <p className="text-base md:text-lg text-gray-600 font-normal max-w-2xl mx-auto leading-relaxed">
@@ -306,6 +302,45 @@ const Dashboard: React.FC<DashboardProps> = ({
           />
         </div>
       </section>
+      {/* Corporate Comparison Section */}
+      <section className="py-40 px-6 bg-[#f9fafb]">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-24 items-center">
+          <div className="flex-1 w-full">
+            <ComparisonGrid />
+          </div>
+          <div className="flex-1">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-2xl md:text-4xl font-bold text-quasa-dark mb-4 tracking-tight"
+            >
+              라이벌 기업과
+              <br />
+              <span className="text-quasa-blue">1:1 실시간 대조</span>
+            </motion.h2>
+            <p className="text-xl text-quasa-gray font-medium leading-relaxed mb-16">
+              동종 업계 라이벌들의 재무 체력을 클릭 한 번으로 비교 분석하세요.
+              퀀트 기반의 상대적 가치 평가가 즉시 이루어집니다.
+            </p>
+            <div className="space-y-6">
+              <ComparisonFeature
+                number="01"
+                text="상대적 밸류에이션 실시간 산출"
+              />
+              <ComparisonFeature
+                number="02"
+                text="부문별 시장 점유율 시각적 비교"
+              />
+              <ComparisonFeature
+                number="03"
+                text="AI 기반 라이벌 매칭 시스템"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final Slogan & Enhanced CTA Section */}
       <section className="relative py-16 px-5 bg-[#191f28] text-white overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-30">
@@ -443,6 +478,16 @@ interface VisualCardProps {
   title: string;
   desc: string;
 }
+
+const ComparisonFeature: React.FC<{ number: string; text: string }> = ({
+  number,
+  text,
+}) => (
+  <div className="flex items-center gap-6">
+    <span className="text-4xl font-black text-quasa-blue">{number}</span>
+    <span className="text-xl font-semibold text-quasa-dark">{text}</span>
+  </div>
+);
 
 const VisualCard: React.FC<VisualCardProps> = ({
   variant,
