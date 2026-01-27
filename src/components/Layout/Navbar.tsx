@@ -35,7 +35,7 @@ const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-2 cursor-pointer"
             onClick={handleLogoClick}
           >
-            <img src="/logo.png" alt="Shinhan Insight" className="h-8" />
+            <img src="/logo_new.png" alt="Shinhan Insight" className="h-8" />
           </div>
 
           {/* Navigation Links */}

@@ -87,8 +87,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       try {
         const response = await searchCompanies(searchQuery);
         // API 구조에 맞춰 결과 추출 (optional chaining)
-        const rawData = response as any;
-        const results = rawData.data?.results || rawData.results || [];
+        type SearchCompaniesResponse =
+          | { data?: { results?: CompanySearchItem[] } }
+          | { results?: CompanySearchItem[] };
+        const data = (response.data ?? {}) as SearchCompaniesResponse;
+        const results =
+          "results" in data
+            ? (data.results ?? [])
+            : ((data as any).data?.results ?? []);
         setSearchResults(Array.isArray(results) ? results : []);
       } catch (error) {
         console.error("검색 실패:", error);
