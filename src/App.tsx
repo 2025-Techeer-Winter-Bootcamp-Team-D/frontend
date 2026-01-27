@@ -10,7 +10,7 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
 import FavoritesSidebar from "./components/Layout/FavoritesSidebar";
-import OldDashboard from "./pages/OldDashboard";
+import Dashboard from "./pages/Dashboard";
 import CompanyDetail from "./pages/CompanyDetail";
 import IndustryAnalysis from "./pages/IndustryCompare";
 import CompanyCompare from "./pages/CompanyCompare";
@@ -245,7 +245,7 @@ function App() {
     switch (page) {
       case PageView.DASHBOARD:
         return (
-          <OldDashboard
+          <Dashboard
             setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
@@ -280,7 +280,7 @@ function App() {
         );
       default:
         return (
-          <OldDashboard
+          <Dashboard
             setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
@@ -291,7 +291,7 @@ function App() {
 
   return (
     <div
-      className={`font-sans text-slate-800 ${isDashboard ? "h-screen flex flex-col overflow-hidden bg-[#002C9C]" : "min-h-screen pb-10 bg-white"}`}
+      className={`font-sans text-slate-800 ${isDashboard ? "min-h-screen bg-white" : "min-h-screen pb-10 bg-white"}`}
     >
       <div
         className={`z-50 transition-all duration-500 ease-in-out ${isDashboard ? "fixed top-0 left-0 right-0" : "sticky top-0"} ${!showNavbar ? "-translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100 pointer-events-auto"}`}
@@ -307,9 +307,7 @@ function App() {
 
       <main
         className={
-          isDashboard
-            ? "w-full h-screen relative overflow-hidden"
-            : "container mx-auto px-4 pt-6 max-w-7xl"
+          isDashboard ? "w-full" : "container mx-auto px-4 pt-6 max-w-7xl"
         }
       >
         {renderPage()}
