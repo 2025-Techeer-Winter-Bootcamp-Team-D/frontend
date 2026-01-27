@@ -32,8 +32,14 @@ import { useAuth } from "../hooks/useAuth";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
-import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
 import { Ranking } from "@phosphor-icons/react";
+
+// D3 Sankey를 동적으로 로드하여 초기 Script Evaluation 시간 감소
+const IncomeSankeyChart = lazy(() =>
+  import("../components/Charts/IncomeSankeyChart").then((module) => ({
+    default: module.IncomeSankeyChart,
+  })),
+);
 
 import type {
   NewsItem,
@@ -1368,12 +1374,14 @@ const CompanyDetail: React.FC<DetailProps> = ({
               {isSankeysLoading ? (
                 <SkeletonSankey />
               ) : sankeyChartData ? (
-                <div className="h-[500px]">
-                  <IncomeSankeyChart
-                    data={sankeyChartData.data}
-                    totalRevenue={sankeyChartData.totalRevenue}
-                  />
-                </div>
+                <Suspense fallback={<SkeletonSankey />}>
+                  <div className="h-[500px]">
+                    <IncomeSankeyChart
+                      data={sankeyChartData.data}
+                      totalRevenue={sankeyChartData.totalRevenue}
+                    />
+                  </div>
+                </Suspense>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <svg
