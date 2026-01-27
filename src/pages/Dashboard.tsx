@@ -1,10 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
 import OutlookCard from "../components/dash_data/outlookCard";
 import ComparisonGrid from "../components/dash_data/ComparisonGrid";
 import { motion } from "framer-motion";
 import { PageView } from "../types";
-import type { SankeyData } from "../types";
+import type { SankeyData, CompanySearchItem } from "../types";
+import { searchCompanies } from "../api/company";
 
 import {
   Search,
@@ -25,6 +26,7 @@ interface DashboardProps {
   setPage: (page: PageView) => void;
   onIndustryClick: (indutyCode: string) => void;
   onShowNavbar: (visible: boolean) => void;
+  onCompanySelect?: (stockCode: string) => void;
 }
 
 // 샘플 Sankey 데이터
@@ -52,7 +54,89 @@ const Dashboard: React.FC<DashboardProps> = ({
   setPage,
   onIndustryClick,
   onShowNavbar,
+  onCompanySelect,
 }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<CompanySearchItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  // 수정: 이미지 로드 실패 상태 추가
+  const [imageLoadFailed, setImageLoadFailed] = useState<
+    Record<string, boolean>
+  >({});
+
+  const searchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 검색어 변경 시 API 호출 (디바운스 적용)
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowDropdown(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const response = await searchCompanies(searchQuery);
+        // API 구조에 맞춰 결과 추출 (optional chaining)
+        type SearchCompaniesResponse =
+          | { data?: { results?: CompanySearchItem[] } }
+          | { results?: CompanySearchItem[] };
+        const data = (response.data ?? {}) as SearchCompaniesResponse;
+        const results =
+          "results" in data
+            ? (data.results ?? [])
+            : "data" in data
+              ? (data.data?.results ?? [])
+              : [];
+        setSearchResults(Array.isArray(results) ? results : []);
+      } catch (error) {
+        console.error("검색 실패:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleCompanyClick = (stockCode: string) => {
+    if (onCompanySelect) {
+      onCompanySelect(stockCode);
+    } else {
+      setPage(PageView.COMPANY_DETAIL);
+    }
+    setSearchQuery("");
+    setShowDropdown(false);
+  };
+
   // 스크롤 감지하여 Navbar 표시 여부 결정
   useEffect(() => {
     const handleScroll = () => {
@@ -73,39 +157,94 @@ const Dashboard: React.FC<DashboardProps> = ({
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, ease: "easeOut" }}
             viewport={{ once: true }}
-            className="max-w-xl"
+            className="max-w-2xl"
           >
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-[#0046FF] font-semibold text-xs mb-6 border border-blue-100">
-              <Zap size={12} fill="currentColor" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#0046FF] font-semibold text-sm mb-8 border border-blue-100">
+              <Zap size={14} fill="currentColor" />
               <span>QUASA Intelligence v2.5 정식 출시</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-quasa-dark leading-[1.15] mb-5 tracking-tight">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-quasa-dark leading-[1.1] mb-8 tracking-tight">
               기업을
               <br />
               <span className="text-[#0046FF]">분석</span>하다.
             </h1>
-            <p className="text-base md:text-lg font-normal text-quasa-gray mb-10 leading-relaxed">
+            <p className="text-lg md:text-xl font-normal text-quasa-gray mb-12 leading-relaxed">
               전자공시시스템의 파편화된 데이터를 인공지능이 통합 분석합니다.{" "}
               <br className="hidden md:block" />
               복잡한 재무제표를 QUASA만의 인사이트로 재정의하세요.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-4">
               <button
-                onClick={() => setPage(PageView.SIGN_UP)}
-                className="bg-[#0046FF] text-white text-sm font-semibold px-6 py-3.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
+                onClick={() => setPage(PageView.COMPANY_SEARCH)}
+                className="bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
               >
-                지금 시작하기 <ArrowRight size={16} />
+                지금 시작하기 <ArrowRight size={18} />
               </button>
-              <div className="relative group flex-1 max-w-xs">
-                <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0046FF] transition-colors"
-                  size={18}
-                />
-                <input
-                  type="text"
-                  placeholder="기업명 검색"
-                  className="w-full bg-white border border-gray-200 rounded-xl py-3.5 pl-11 pr-4 focus:outline-none focus:border-[#0046FF]/30 focus:ring-2 focus:ring-[#0046FF]/10 transition-all font-medium text-sm text-quasa-dark"
-                />
+              <div ref={searchRef} className="relative flex-1 max-w-sm">
+                <label className="group flex items-center gap-3 bg-white border border-gray-200 rounded-xl py-4 px-5 focus-within:border-[#0046FF]/30 focus-within:ring-2 focus-within:ring-[#0046FF]/10 transition-all cursor-text">
+                  <Search
+                    className="text-gray-400 group-focus-within:text-[#0046FF] transition-colors flex-shrink-0"
+                    size={20}
+                  />
+                  <input
+                    type="text"
+                    placeholder="기업명 검색"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => searchQuery && setShowDropdown(true)}
+                    className="flex-1 bg-transparent focus:outline-none font-medium text-base text-quasa-dark"
+                  />
+                </label>
+                {/* 검색 드롭다운 */}
+                {showDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50">
+                    {isSearching ? (
+                      <div className="p-4 text-center text-gray-500">
+                        검색 중...
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      searchResults.map((company) => (
+                        <button
+                          key={company.stock_code}
+                          onClick={() => handleCompanyClick(company.stock_code)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+                        >
+                          {company.logo_url &&
+                          !imageLoadFailed[company.stock_code] ? (
+                            <img
+                              src={company.logo_url}
+                              alt={company.company_name}
+                              className="w-8 h-8 rounded-lg object-contain bg-white border border-gray-100"
+                              onError={() =>
+                                setImageLoadFailed((prev) => ({
+                                  ...prev,
+                                  [company.stock_code]: true,
+                                }))
+                              }
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-sm text-slate-600">
+                              {company.company_name?.[0] || "?"}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <span className="font-semibold text-slate-700">
+                              {company.company_name}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-400 font-mono">
+                              {company.stock_code}
+                            </span>
+                          </div>
+                          <ChevronRight size={16} className="text-gray-400" />
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 text-sm">
+                        검색 결과가 없습니다.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -119,9 +258,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           >
             <div className="absolute -inset-16 bg-[#0046FF]/5 blur-[100px] rounded-full"></div>
 
-            {/* Tablet Bezel (Black frame) */}
+            {/* Tablet Bezel */}
             <div className="relative z-10 bg-[#1c1c1e] p-3 rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] border-[1px] border-white/5 mx-auto max-w-[600px]">
-              {/* Tablet Screen */}
               <div className="relative bg-white rounded-[2rem] overflow-hidden flex flex-col aspect-[1.5/1] w-full shadow-inner">
                 {/* Status Bar */}
                 <div className="flex justify-between items-center px-6 py-3 bg-white/95 backdrop-blur-sm z-20 shrink-0">
@@ -135,7 +273,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Main Screen Content */}
                 <div className="flex-1 min-h-0 z-10 relative bg-white flex items-center justify-center p-4">
                   <div className="w-full h-full relative">
                     <IncomeSankeyChart
@@ -144,7 +281,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                     />
                   </div>
                 </div>
-                {/* Home Indicator */}
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-24 h-1 bg-gray-200 rounded-full z-20"></div>
               </div>
             </div>
@@ -176,7 +312,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           </motion.p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* 1. 공시 원문 요약 */}
             <VisualCard
               variant="light"
               icon={
@@ -194,7 +329,6 @@ const Dashboard: React.FC<DashboardProps> = ({
               desc="수백 장의 사업보고서를 핵심 키워드로 시각화해요"
             />
 
-            {/* 2. 실시간 주가 연동 */}
             <VisualCard
               variant="dark"
               icon={
@@ -211,7 +345,6 @@ const Dashboard: React.FC<DashboardProps> = ({
               desc="재무 지표와 주가의 상관관계를 실시간으로 분석해요"
             />
 
-            {/* 3. AI 퀀트 분석 */}
             <VisualCard
               variant="blue"
               icon={
@@ -228,7 +361,6 @@ const Dashboard: React.FC<DashboardProps> = ({
               desc="데이터에 기반한 객관적인 기업 등급을 산출해요"
             />
 
-            {/* 4. 산업 리포트 */}
             <VisualCard
               variant="white"
               icon={
@@ -265,7 +397,6 @@ const Dashboard: React.FC<DashboardProps> = ({
             >
               QUASA Intelligence
             </motion.h2>
-
             <p className="text-base md:text-lg text-gray-600 font-normal max-w-2xl mx-auto leading-relaxed">
               복잡한 시장 데이터를 AI가 실시간으로 분석하여{" "}
               <br className="hidden md:block" />
@@ -273,11 +404,10 @@ const Dashboard: React.FC<DashboardProps> = ({
             </p>
           </div>
 
-          {/* 새로운 OutlookCard 컴포넌트 렌더링 (샘플 데이터) */}
           <OutlookCard
             data={{
               analysis:
-                "반도체 업황의 강력한 회복세와 HBM3E 공급 확대가 삼성전자의 실적 턴어라운드를 주도하고 있습니다. 특히 AI 반도체 수요 폭증에 따른 파운드리 사업부의 성장 잠재력이 높게 평가됩니다.",
+                "반도체 업황의 강력한 회복세와 HBM3E 공급 확대가 삼성전자의 실적 턴어라운드를 주도하고 있습니다.",
               positive_factor: [
                 "HBM3E 등 고대역폭 메모리 시장 선점",
                 "AI 가속기 시장 성장으로 인한 파운드리 수주 증가",
@@ -290,20 +420,32 @@ const Dashboard: React.FC<DashboardProps> = ({
                 "환율 변동성 확대 및 원자재 가격 상승 압력",
               ],
               opinion:
-                "종합적인 AI 분석 결과, 삼성전자에 대한 '매수(Strong Buy)' 의견을 유지하며, 목표주가 상향 조정의 여지가 충분합니다. 장기적 관점에서 비중 확대를 추천합니다.",
+                "종합적인 AI 분석 결과, 삼성전자에 대한 '매수' 의견을 유지합니다.",
               target_price: 110000,
               current_price: 85000,
-              previous_target_price: 100000, // 이전 목표가 (변동성 표시용)
+              previous_target_price: 100000,
               analyzed_at: "2025.12.24",
-              analyst_rating: 4, // 5점 만점에 4점
+              analyst_rating: 4,
             }}
           />
         </div>
       </section>
+
       {/* Corporate Comparison Section */}
       <section className="py-40 px-6 bg-[#f9fafb]">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-24 items-center">
-          <div className="flex-1 w-full">
+          <div
+            className="flex-1 w-full cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onClick={() => setPage(PageView.COMPANY_COMPARE)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setPage(PageView.COMPANY_COMPARE);
+              }
+            }}
+          >
             <ComparisonGrid />
           </div>
           <div className="flex-1">
@@ -315,9 +457,9 @@ const Dashboard: React.FC<DashboardProps> = ({
             >
               라이벌 기업과
               <br />
-              <span className="text-quasa-blue">1:1 실시간 대조</span>
+              <span className="text-[#0046FF]">1:1 실시간 대조</span>
             </motion.h2>
-            <p className="text-xl text-quasa-gray font-medium leading-relaxed mb-16">
+            <p className="text-lg text-quasa-gray font-medium leading-relaxed mb-16">
               동종 업계 라이벌들의 재무 체력을 클릭 한 번으로 비교 분석하세요.
               퀀트 기반의 상대적 가치 평가가 즉시 이루어집니다.
             </p>
@@ -339,8 +481,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </section>
 
-      {/* Final Slogan & Enhanced CTA Section */}
-      <section className="relative py-16 px-5 bg-[#191f28] text-white overflow-hidden">
+      {/* Final Slogan Section */}
+      <section className="relative py-32 px-5 bg-[#191f28] text-white overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-30">
           <motion.div
             animate={{ y: [0, -30, 0], rotate: [0, 10, 0], scale: [1, 1.1, 1] }}
@@ -349,7 +491,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           >
             <BarChart3 size={48} className="text-blue-400" />
           </motion.div>
-
           <motion.div
             animate={{ y: [0, 40, 0], rotate: [0, -15, 0], scale: [1, 0.9, 1] }}
             transition={{
@@ -376,26 +517,18 @@ const Dashboard: React.FC<DashboardProps> = ({
               <br />
               <span className="text-[#0046FF]">분석</span>에서 시작됩니다.
             </h2>
-            <p className="text-base md:text-lg text-gray-400 font-normal mb-10 leading-relaxed max-w-2xl mx-auto">
-              이제 전문가의 시선을 당신의 손끝에.
-              <br />
-              대한민국 1위 전자공시 분석 플랫폼 QUASA와 함께하세요.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
-                onClick={() => setPage(PageView.SIGN_UP)}
-                className="group relative bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  무료로 시작하기{" "}
-                  <ChevronRight
-                    size={18}
-                    className="group-hover:translate-x-1 transition-transform"
-                  />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-              </button>
-            </div>
+            <button
+              onClick={() => setPage(PageView.SIGN_UP)}
+              className="group relative bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                무료로 시작하기{" "}
+                <ChevronRight
+                  size={18}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </span>
+            </button>
           </motion.div>
         </div>
       </section>
@@ -404,16 +537,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       <footer className="bg-white py-12 px-5 border-t border-gray-100 text-quasa-gray">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start gap-10">
           <div className="max-w-sm text-left">
-            <img
-              src="/publish/logo.png"
-              alt="Quasa Logo"
-              className="h-8 w-auto mb-4 object-contain"
-            />
+            <div className="text-xl font-bold text-quasa-dark mb-4">QUASA</div>
             <p className="text-sm font-medium leading-relaxed mb-2 text-quasa-dark">
               전자공시시스템 연동 프리미엄 기업 분석 플랫폼
             </p>
             <p className="text-xs font-normal text-gray-400">
-              금융위원회 정식 등록 데이터 서비스 사업자
+              © {new Date().getFullYear()} QUASA Inc. All rights reserved.
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-left">
@@ -431,25 +560,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             />
           </div>
         </div>
-        <div className="max-w-6xl mx-auto mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center text-xs font-medium text-gray-400 gap-4">
-          <p>© {new Date().getFullYear()} QUASA Inc. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-quasa-dark transition-colors">
-              Instagram
-            </a>
-            <a href="#" className="hover:text-quasa-dark transition-colors">
-              Youtube
-            </a>
-            <a href="#" className="hover:text-quasa-dark transition-colors">
-              Blog
-            </a>
-          </div>
-        </div>
       </footer>
     </div>
   );
 };
 
+// Sub-components
 const FooterColumn: React.FC<{ title: string; links: string[] }> = ({
   title,
   links,
@@ -470,22 +586,22 @@ const FooterColumn: React.FC<{ title: string; links: string[] }> = ({
   </div>
 );
 
-interface VisualCardProps {
-  variant: "light" | "dark" | "blue" | "white";
-  icon: React.ReactNode; // 다시 추가
-  title: string;
-  desc: string;
-}
-
 const ComparisonFeature: React.FC<{ number: string; text: string }> = ({
   number,
   text,
 }) => (
-  <div className="flex items-center gap-6">
-    <span className="text-4xl font-black text-quasa-blue">{number}</span>
-    <span className="text-xl font-semibold text-quasa-dark">{text}</span>
+  <div className="flex items-center gap-5 px-6 py-5 rounded-2xl bg-white/60 backdrop-blur-md border border-white/80 shadow-lg">
+    <span className="text-3xl font-black text-[#0046FF]">{number}</span>
+    <span className="text-lg font-semibold text-quasa-dark">{text}</span>
   </div>
 );
+
+interface VisualCardProps {
+  variant: "light" | "dark" | "blue" | "white";
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}
 
 const VisualCard: React.FC<VisualCardProps> = ({
   variant,
@@ -505,12 +621,9 @@ const VisualCard: React.FC<VisualCardProps> = ({
       whileHover={{ y: -8, scale: 1.01 }}
       className={`flex flex-col h-[420px] rounded-[30px] overflow-hidden text-left transition-all duration-500 hover:shadow-xl group ${styles[variant]}`}
     >
-      {/* 상단 아이콘 영역: 기존 그래픽 유지 */}
       <div className="flex-1 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-700 ease-out p-8">
         <div className="w-full h-full max-h-[140px]">{icon}</div>
       </div>
-
-      {/* 하단 텍스트 영역: 토스 스타일 적용 */}
       <div className="flex flex-col px-8 pb-10">
         <span className="text-[24px] font-bold leading-[1.6] mb-3 tracking-tight">
           {title}
