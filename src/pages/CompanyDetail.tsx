@@ -563,11 +563,26 @@ const CompanyDetail: React.FC<DetailProps> = ({
       }
     });
 
-    // 별도의 스크롤 핸들러 (isScrolled 처리용)
+    // 별도의 스크롤 핸들러 (isScrolled 처리용) - requestAnimationFrame으로 스로틀링
+    let ticking = false;
+    let lastScrolled = window.scrollY > 50;
+    setIsScrolled(lastScrolled); // 초기값 설정
+
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const currentScrolled = window.scrollY > 50;
+          // 상태가 변경될 때만 업데이트
+          if (currentScrolled !== lastScrolled) {
+            lastScrolled = currentScrolled;
+            setIsScrolled(currentScrolled);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       observer.disconnect();
@@ -1058,43 +1073,50 @@ const CompanyDetail: React.FC<DetailProps> = ({
   return (
     <div className="animate-fade-in pb-12">
       {/* 상단 헤더 섹션 */}
-      <div className="mb-6 sticky top-14 z-40 bg-white/95 backdrop-blur-md -mx-4 px-4 border-b border-gray-100/50 shadow-sm">
+      <div className="mb-6 sticky top-14 z-40 bg-white -mx-4 px-4 border-b border-gray-100/50 shadow-sm">
         <div
-          className={`flex items-center gap-4 pt-4 transition-all duration-300 overflow-hidden ${isScrolled ? "max-h-0 opacity-0 pt-0 mb-0" : "max-h-24 opacity-100 mb-4"}`}
+          className="grid transition-[grid-template-rows] duration-200 ease-out"
+          style={{ gridTemplateRows: isScrolled ? "0fr" : "1fr" }}
         >
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center overflow-hidden">
-            {currentCompany.logoUrl ? (
-              <img
-                src={currentCompany.logoUrl}
-                alt={`${currentCompany.name} 로고`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="font-bold text-blue-600 text-2xl">
-                {currentCompany.logo}
-              </span>
-            )}
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-              {currentCompany.name}
-              <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
-                {companyCode}
-              </span>
-            </h1>
-          </div>
-          <div className="ml-auto flex gap-2">
-            <button
-              onClick={() => onToggleStar(companyCode)}
-              className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${(starred?.has(companyCode) ?? false) ? "border-yellow-500 text-yellow-500 bg-yellow-50" : "border-gray-200 text-gray-500 hover:text-yellow-500"}`}
-            >
-              <Star
-                size={20}
-                fill={
-                  (starred?.has(companyCode) ?? false) ? "currentColor" : "none"
-                }
-              />
-            </button>
+          <div className="overflow-hidden">
+            <div className="flex items-center gap-4 py-4">
+              <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center overflow-hidden">
+                {currentCompany.logoUrl ? (
+                  <img
+                    src={currentCompany.logoUrl}
+                    alt={`${currentCompany.name} 로고`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="font-bold text-blue-600 text-2xl">
+                    {currentCompany.logo}
+                  </span>
+                )}
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+                  {currentCompany.name}
+                  <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                    {companyCode}
+                  </span>
+                </h1>
+              </div>
+              <div className="ml-auto flex gap-2">
+                <button
+                  onClick={() => onToggleStar(companyCode)}
+                  className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${(starred?.has(companyCode) ?? false) ? "border-yellow-500 text-yellow-500 bg-yellow-50" : "border-gray-200 text-gray-500 hover:text-yellow-500"}`}
+                >
+                  <Star
+                    size={20}
+                    fill={
+                      (starred?.has(companyCode) ?? false)
+                        ? "currentColor"
+                        : "none"
+                    }
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
