@@ -10,7 +10,7 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
 import FavoritesSidebar from "./components/Layout/FavoritesSidebar";
-import Dashboard from "./pages/Dashboard";
+import OldDashboard from "./pages/OldDashboard";
 import CompanyDetail from "./pages/CompanyDetail";
 import IndustryAnalysis from "./pages/IndustryCompare";
 import CompanyCompare from "./pages/CompanyCompare";
@@ -245,7 +245,7 @@ function App() {
     switch (page) {
       case PageView.DASHBOARD:
         return (
-          <Dashboard
+          <OldDashboard
             setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
@@ -280,7 +280,7 @@ function App() {
         );
       default:
         return (
-          <Dashboard
+          <OldDashboard
             setPage={handlePageChange}
             onIndustryClick={handleIndustryClick}
             onShowNavbar={setIsNavbarVisible}
