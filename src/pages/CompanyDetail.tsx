@@ -1,11 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  lazy,
-  Suspense,
-} from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import {
   useQuery,
@@ -32,14 +25,8 @@ import { useAuth } from "../hooks/useAuth";
 import GlassCard from "../components/Layout/GlassCard";
 import StockChart from "../components/Charts/StockChart";
 import CandleChart from "../components/Charts/CandleChart";
+import { IncomeSankeyChart } from "../components/Charts/IncomeSankeyChart";
 import { Ranking } from "@phosphor-icons/react";
-
-// D3 Sankey를 동적으로 로드하여 초기 Script Evaluation 시간 감소
-const IncomeSankeyChart = lazy(() =>
-  import("../components/Charts/IncomeSankeyChart").then((module) => ({
-    default: module.IncomeSankeyChart,
-  })),
-);
 
 import type {
   NewsItem,
@@ -59,11 +46,7 @@ import type {
 } from "../types";
 
 import { Heart, X } from "lucide-react";
-
-// Recharts를 동적으로 로드하여 초기 Script Evaluation 시간 감소
-const FinancialChartsSection = lazy(
-  () => import("../components/FinancialChartsSection"),
-);
+import FinancialChartsSection from "../components/FinancialChartsSection";
 import {
   Skeleton,
   SkeletonPage,
@@ -1069,7 +1052,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     </span>
                   </div>
                 )}
-                <div className="flex-1 w-full h-full">
+                <div className="flex-1 w-full min-h-[300px]">
                   {isStockLoading ? (
                     <div className="h-full flex flex-col justify-between py-4">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -1320,31 +1303,13 @@ const CompanyDetail: React.FC<DetailProps> = ({
                   </div>
                 </div>
               ) : (
-                <Suspense
-                  fallback={
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-xl p-5 border border-gray-100">
-                          <Skeleton className="h-5 w-20 mb-4" />
-                          <SkeletonPieChart />
-                        </div>
-                        <SkeletonFinancialCard />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <SkeletonFinancialCard />
-                        <SkeletonFinancialCard />
-                      </div>
-                    </div>
+                <FinancialChartsSection
+                  financialData={financialData}
+                  fiscalYear={
+                    financialsData?.financial_statements?.[0]?.fiscal_year
                   }
-                >
-                  <FinancialChartsSection
-                    financialData={financialData}
-                    fiscalYear={
-                      financialsData?.financial_statements?.[0]?.fiscal_year
-                    }
-                    selectedYear={selectedYear}
-                  />
-                </Suspense>
+                  selectedYear={selectedYear}
+                />
               )}
             </LazySection>
           </GlassCard>
@@ -1374,14 +1339,12 @@ const CompanyDetail: React.FC<DetailProps> = ({
               {isSankeysLoading ? (
                 <SkeletonSankey />
               ) : sankeyChartData ? (
-                <Suspense fallback={<SkeletonSankey />}>
-                  <div className="h-[500px]">
-                    <IncomeSankeyChart
-                      data={sankeyChartData.data}
-                      totalRevenue={sankeyChartData.totalRevenue}
-                    />
-                  </div>
-                </Suspense>
+                <div className="h-[500px]">
+                  <IncomeSankeyChart
+                    data={sankeyChartData.data}
+                    totalRevenue={sankeyChartData.totalRevenue}
+                  />
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <svg
