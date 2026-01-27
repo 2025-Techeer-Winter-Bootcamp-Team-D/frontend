@@ -83,7 +83,7 @@ const App: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => setCurrentPage(PageView.SIGNUP)}
+                onClick={() => setCurrentPage(PageView.SIGN_UP)}
                 className="bg-[#0046FF] text-white text-sm font-semibold px-6 py-3.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
               >
                 지금 시작하기 <ArrowRight size={16} />
@@ -256,9 +256,15 @@ const App: React.FC = () => {
             <span className="text-blue-600 font-semibold text-xs uppercase tracking-[0.2em] mb-3 block">
               QUASA Intelligence
             </span>
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-800 mb-6 tracking-tight">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-2xl md:text-4xl font-bold text-quasa-dark mb-4 tracking-tight"
+            >
               AI 기업 전망 분석
-            </h2>
+            </motion.h2>
+
             <p className="text-base md:text-lg text-gray-600 font-normal max-w-2xl mx-auto leading-relaxed">
               복잡한 시장 데이터를 AI가 실시간으로 분석하여{" "}
               <br className="hidden md:block" />
@@ -337,7 +343,7 @@ const App: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={() => setCurrentPage("signup" as PageView)}
+                onClick={() => setCurrentPage(PageView.SIGN_UP)}
                 className="group relative bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
               >
                 <span className="relative z-10 flex items-center gap-2">
