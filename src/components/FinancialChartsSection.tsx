@@ -49,7 +49,7 @@ interface FinancialChartsSectionProps {
 
 /**
  * 재무 차트 섹션 컴포넌트
- * Recharts를 동적 import하여 초기 Script Evaluation 시간 감소
+ * Recharts를 정적 import하여 사용 (상단 import 참조)
  */
 const FinancialChartsSection: React.FC<FinancialChartsSectionProps> = ({
   financialData,

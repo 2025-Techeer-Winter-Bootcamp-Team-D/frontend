@@ -88,14 +88,6 @@ button:focus:not(:focus-visible),
   box-shadow: none;
 }
 
-/* Custom colors */
-:root {
-  --color-shinhan-blue: #0046ff;
-  --color-shinhan-dark: #002c9c;
-  --color-shinhan-light: #e6f0ff;
-  --color-shinhan-gold: #ddbb66;
-}
-
 /* Tooltip & UI Animations */
 @keyframes fade-in {
   from {

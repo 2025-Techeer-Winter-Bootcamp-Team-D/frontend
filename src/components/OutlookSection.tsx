@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCompanyOutlook } from "../api/company";
-import { TrendingUp, TrendingDown, Target } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Target,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { SkeletonOutlook } from "./Skeleton";
 import type { CompanyOutlookData } from "../types";
 
@@ -41,7 +47,13 @@ const OutlookSection: React.FC<OutlookSectionProps> = ({ companyCode }) => {
   }, []);
 
   // 뷰포트에 들어올 때만 데이터 fetch
-  const { data: outlookData, isLoading: isOutlookLoading } = useQuery({
+  const {
+    data: outlookData,
+    isLoading: isOutlookLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["company", "outlook", companyCode],
     queryFn: async () => {
       const response = await getCompanyOutlook(companyCode);
@@ -55,6 +67,23 @@ const OutlookSection: React.FC<OutlookSectionProps> = ({ companyCode }) => {
     <div ref={sectionRef}>
       {!isVisible || isOutlookLoading ? (
         <SkeletonOutlook />
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+          <AlertCircle size={48} className="mb-3 text-red-400" />
+          <p className="text-sm mb-1">
+            기업 전망 데이터를 불러오는데 실패했습니다.
+          </p>
+          <p className="text-xs text-gray-400 mb-4">
+            {(error as Error)?.message || "알 수 없는 오류"}
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+          >
+            <RefreshCw size={16} />
+            다시 시도
+          </button>
+        </div>
       ) : outlookData ? (
         <div className="space-y-6">
           {/* 전망 요약 */}
