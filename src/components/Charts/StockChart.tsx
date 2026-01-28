@@ -85,11 +85,11 @@ const StockChart: React.FC<StockChartProps> = ({
   }
 
   return (
-    <div className="w-full h-full outline-none focus:outline-none **:outline-none **:focus:outline-none">
+    <div className="w-full h-full chart-container outline-none focus:outline-none **:outline-none **:focus:outline-none">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}
-          margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+          margin={{ top: 10, right: 0, left: 0, bottom: 20 }}
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -109,9 +109,10 @@ const StockChart: React.FC<StockChartProps> = ({
             orientation="right"
             axisLine={false}
             tickLine={false}
-            tick={showAxes ? { fontSize: 11, fill: "#94A3B8" } : false}
+            tick={showAxes ? { fontSize: 11, fill: "#94A3B8", dx: -5 } : false}
             tickFormatter={(val) => val.toLocaleString() ?? ""}
             hide={!showAxes}
+            width={70}
           />
           <XAxis
             dataKey="time"

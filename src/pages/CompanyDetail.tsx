@@ -14,9 +14,10 @@ import {
   getCompanyReports,
   getReportAnalysis,
   getCompanyFinancials,
-  getCompanyOutlook,
   getCompanySankeys,
 } from "../api/company";
+import OutlookSection from "../components/OutlookSection";
+import LazySection from "../components/LazySection";
 import { getIndustryCompanies } from "../api/industry";
 import { addVisit } from "../api/users";
 import { useStockWebSocket } from "../hooks";
@@ -31,13 +32,11 @@ import type {
   NewsItem,
   PeerCompanyItem,
   FinancialData,
-  FinancialMetric,
   CompanyApiData,
   PageView,
   OhlcvItem,
   CompanyReportItem,
   CompanyFinancialsData,
-  CompanyOutlookData,
   RevenueComposition,
   IndustryCompany,
   SankeyData,
@@ -46,26 +45,8 @@ import type {
   StockPricesIntervalData,
 } from "../types";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  ResponsiveContainer,
-  Cell,
-  LabelList,
-  PieChart,
-  Pie,
-} from "recharts";
-import {
-  Heart,
-  User,
-  X,
-  HelpCircle,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Trophy,
-} from "lucide-react";
+import { Heart, X } from "lucide-react";
+import FinancialChartsSection from "../components/FinancialChartsSection";
 import {
   Skeleton,
   SkeletonPage,
@@ -74,7 +55,6 @@ import {
   SkeletonFinancialCard,
   SkeletonPieChart,
   SkeletonSankey,
-  SkeletonOutlook,
   SkeletonNewsCardLight,
   SkeletonDisclosureTable,
   SkeletonText,
@@ -104,35 +84,6 @@ const DEFAULT_COMPANY = {
   homepage: "",
   address: "-",
 };
-
-// 재무 지표 설명 툴팁
-const FINANCIAL_TOOLTIPS: Record<string, string> = {
-  사업분석:
-    "기업의 사업 부문별 매출 구성 비율을 보여줍니다. 주력사업, 신규사업, 해외사업 등으로 분류하여 수익 다각화 정도를 파악할 수 있습니다.",
-  매출액:
-    "기업이 제품이나 서비스를 판매하여 얻은 총 수익입니다. 기업의 규모와 성장성을 나타내는 가장 기본적인 지표입니다.",
-  영업이익:
-    "매출액에서 매출원가, 판매비, 관리비 등 영업비용을 뺀 이익입니다. 기업의 핵심 영업활동 수익성을 보여줍니다.",
-  당기순이익:
-    "영업이익에서 이자비용, 세금 등 모든 비용을 차감한 최종 순이익입니다. 주주에게 귀속되는 실제 이익을 나타냅니다.",
-};
-
-// 툴팁 컴포넌트
-const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({
-  text,
-  children,
-}) => (
-  <div className="relative group inline-flex" tabIndex={0}>
-    {children}
-    <div
-      className="absolute left-full ml-3 top-0 px-3 py-2 bg-white text-slate-700 text-xs leading-relaxed rounded-lg opacity-0 invisible translate-x-1 group-hover:visible group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-x-0 transition-all duration-200 ease-out w-56 text-left z-50 shadow-lg border border-slate-200 pointer-events-none"
-      role="tooltip"
-    >
-      {text}
-      <div className="absolute right-full top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white"></div>
-    </div>
-  </div>
-);
 
 // 데이터가 없을 때를 대비한 Mock Data 생성 함수
 const generateFinancialData = (
@@ -260,7 +211,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
   const [selectedQuarter] = useState("1분기");
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [isNewsLoading2, setIsNewsLoading2] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [disclosureTab, setDisclosureTab] = useState<
     "main" | "analysis" | "all"
   >("main");
@@ -522,14 +472,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
     },
   });
 
-  const { data: outlookData, isLoading: isOutlookLoading } = useQuery({
-    queryKey: ["company", "outlook", companyCode],
-    queryFn: async () => {
-      const response = await getCompanyOutlook(companyCode);
-      return response.data.data as CompanyOutlookData;
-    },
-  });
-
   const { data: sankeysData, isLoading: isSankeysLoading } = useQuery({
     queryKey: ["company", "sankeys", companyCode],
     queryFn: async () => {
@@ -591,30 +533,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
       }
     });
 
-    // 별도의 스크롤 핸들러 (isScrolled 처리용) - requestAnimationFrame으로 스로틀링
-    let ticking = false;
-    let lastScrolled = window.scrollY > 50;
-    setIsScrolled(lastScrolled); // 초기값 설정
-
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const currentScrolled = window.scrollY > 50;
-          // 상태가 변경될 때만 업데이트
-          if (currentScrolled !== lastScrolled) {
-            lastScrolled = currentScrolled;
-            setIsScrolled(currentScrolled);
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       observer.disconnect();
-      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -943,149 +863,6 @@ const CompanyDetail: React.FC<DetailProps> = ({
     { id: "disclosure", label: "공시", ref: disclosureRef },
   ];
 
-  // --- 차트 렌더링 (높이 및 레이아웃 수정) ---
-  const renderFinancialBarChart = (title: string, data: FinancialMetric) => {
-    const yoyValue = parseFloat(data.yoy?.replace(/[+%]/g, "") || "0");
-    const isPositive = yoyValue >= 0;
-    const yoyColor =
-      data.yoy === "-"
-        ? "text-gray-500"
-        : isPositive
-          ? "text-red-500"
-          : "text-blue-500";
-    const yoyArrow = data.yoy === "-" ? "" : isPositive ? " ▲" : " ▼";
-
-    return (
-      <div className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col h-full shadow-sm">
-        <div className="flex items-center gap-1 mb-4">
-          <h4 className="font-bold text-slate-800 text-lg">{title}</h4>
-          <Tooltip text={FINANCIAL_TOOLTIPS[title] || ""}>
-            <HelpCircle
-              size={14}
-              className="text-gray-400 cursor-help hover:text-blue-500 transition-colors"
-            />
-          </Tooltip>
-        </div>
-        <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-50">
-          <div>
-            <div className="text-xs text-gray-500 mb-1">
-              {financialsData?.financial_statements?.[0]?.fiscal_year ||
-                selectedYear}
-              년 {title}
-            </div>
-            <div className="text-xl font-bold text-slate-800">
-              {data.current}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-gray-500 mb-1">작년 대비</div>
-            <div className={`text-sm font-bold ${yoyColor}`}>
-              {data.yoy}
-              {yoyArrow}
-            </div>
-          </div>
-        </div>
-        {/* Recharts 에러 해결을 위해 부모 div에 명시적 높이(h-48) 부여 */}
-        <div className="w-full h-48 mt-auto outline-none focus:outline-none **:outline-none **:focus:outline-none">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data.history}
-              margin={{ top: 30, right: 10, left: 10, bottom: 5 }}
-            >
-              <XAxis
-                dataKey="year"
-                axisLine={true}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: "#94A3B8" }}
-                dy={5}
-                stroke="#E5E7EB"
-              />
-              <Bar
-                dataKey="value"
-                radius={[4, 4, 0, 0]}
-                barSize={32}
-                isAnimationActive={false}
-              >
-                <LabelList
-                  dataKey="label"
-                  position="top"
-                  fill="#64748B"
-                  fontSize={10}
-                  fontWeight={500}
-                  offset={8}
-                />
-                {data.history.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={
-                      index === data.history.length - 1 ? "#3B82F6" : "#E5E7EB"
-                    }
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    );
-  };
-
-  const renderBusinessChart = () => {
-    return (
-      <div className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col h-full shadow-sm">
-        <div className="flex items-center gap-1 mb-4">
-          <h4 className="font-bold text-slate-800 text-lg">사업분석</h4>
-          <Tooltip text={FINANCIAL_TOOLTIPS["사업분석"]}>
-            <HelpCircle
-              size={14}
-              className="text-gray-400 cursor-help hover:text-blue-500 transition-colors"
-            />
-          </Tooltip>
-        </div>
-        <div className="flex-1 flex items-center min-h-[180px]">
-          <div className="w-1/2 focus:outline-none">
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie
-                  data={financialData.business}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={65}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {financialData.business.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="w-1/2 space-y-2">
-            {financialData.business.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-slate-600 truncate max-w-[80px]">
-                    {item.name}
-                  </span>
-                </div>
-                <span className="font-bold text-slate-800">{item.value}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   if (isDetailLoading) {
     return <SkeletonPage />;
   }
@@ -1100,55 +877,49 @@ const CompanyDetail: React.FC<DetailProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
-      {/* 상단 헤더 섹션 */}
-      <div className="mb-6 sticky top-14 z-40 bg-white -mx-4 px-4 border-b border-gray-100/50 shadow-sm">
-        <div
-          className="grid transition-[grid-template-rows] duration-200 ease-out"
-          style={{ gridTemplateRows: isScrolled ? "0fr" : "1fr" }}
-        >
-          <div className="overflow-hidden">
-            <div className="flex items-center gap-4 py-4">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center overflow-hidden">
-                {currentCompany.logoUrl ? (
-                  <img
-                    src={currentCompany.logoUrl}
-                    alt={`${currentCompany.name} 로고`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="font-bold text-blue-600 text-2xl">
-                    {currentCompany.logo}
-                  </span>
-                )}
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-                  {currentCompany.name}
-                  <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
-                    {companyCode}
-                  </span>
-                </h1>
-              </div>
-              <div className="ml-auto flex gap-2">
-                <button
-                  onClick={() => onToggleStar(companyCode)}
-                  className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${(starred?.has(companyCode) ?? false) ? "border-red-400 text-red-500 bg-red-50" : "border-gray-200 text-gray-400 hover:text-red-500"}`}
-                >
-                  <Heart
-                    size={20}
-                    fill={
-                      (starred?.has(companyCode) ?? false)
-                        ? "currentColor"
-                        : "none"
-                    }
-                  />
-                </button>
-              </div>
-            </div>
+      {/* 기업 헤더 */}
+      <div className="bg-white -mx-4 px-4 border-b border-gray-100/50">
+        <div className="flex items-center gap-4 py-4">
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center overflow-hidden">
+            {currentCompany.logoUrl ? (
+              <img
+                src={currentCompany.logoUrl}
+                alt={`${currentCompany.name} 로고`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="font-bold text-blue-600 text-2xl">
+                {currentCompany.logo}
+              </span>
+            )}
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+              {currentCompany.name}
+              <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                {companyCode}
+              </span>
+            </h1>
+          </div>
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={() => onToggleStar(companyCode)}
+              className={`p-2.5 rounded-xl bg-white border transition-colors shadow-sm ${(starred?.has(companyCode) ?? false) ? "border-red-400 text-red-500 bg-red-50" : "border-gray-200 text-gray-400 hover:text-red-500"}`}
+            >
+              <Heart
+                size={20}
+                fill={
+                  (starred?.has(companyCode) ?? false) ? "currentColor" : "none"
+                }
+              />
+            </button>
           </div>
         </div>
+      </div>
 
-        <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
+      {/* 탭 바 (sticky) */}
+      <div className="sticky top-14 z-40 bg-white -mx-4 px-4 mb-6">
+        <div className="flex border-b border-gray-200 border-x-0 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -1230,7 +1001,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
         <div className="border-t border-gray-200 my-8" />
 
         <div ref={priceRef} id="price" className="scroll-mt-32">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div className="lg:col-span-8">
               <GlassCard className="p-6 h-full flex flex-col min-h-[450px]">
                 <div className="flex justify-between items-center mb-4">
@@ -1281,7 +1052,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                     </span>
                   </div>
                 )}
-                <div className="flex-1 w-full h-full">
+                <div className="flex-1 w-full min-h-[300px]">
                   {isStockLoading ? (
                     <div className="h-full flex flex-col justify-between py-4">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -1500,35 +1271,47 @@ const CompanyDetail: React.FC<DetailProps> = ({
             <h3 className="text-xl font-bold text-slate-800 mb-6">
               재무 데이터 분석
             </h3>
-            {isFinancialsLoading ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-xl p-5 border border-gray-100">
-                    <Skeleton className="h-5 w-20 mb-4" />
-                    <SkeletonPieChart />
+            <LazySection
+              fallback={
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-xl p-5 border border-gray-100">
+                      <Skeleton className="h-5 w-20 mb-4" />
+                      <SkeletonPieChart />
+                    </div>
+                    <SkeletonFinancialCard />
                   </div>
-                  <SkeletonFinancialCard />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SkeletonFinancialCard />
+                    <SkeletonFinancialCard />
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <SkeletonFinancialCard />
-                  <SkeletonFinancialCard />
+              }
+            >
+              {isFinancialsLoading ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-xl p-5 border border-gray-100">
+                      <Skeleton className="h-5 w-20 mb-4" />
+                      <SkeletonPieChart />
+                    </div>
+                    <SkeletonFinancialCard />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SkeletonFinancialCard />
+                    <SkeletonFinancialCard />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {renderBusinessChart()}
-                  {renderFinancialBarChart("매출액", financialData.revenue)}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {renderFinancialBarChart("영업이익", financialData.operating)}
-                  {renderFinancialBarChart(
-                    "당기순이익",
-                    financialData.netIncome,
-                  )}
-                </div>
-              </div>
-            )}
+              ) : (
+                <FinancialChartsSection
+                  financialData={financialData}
+                  fiscalYear={
+                    financialsData?.financial_statements?.[0]?.fiscal_year
+                  }
+                  selectedYear={selectedYear}
+                />
+              )}
+            </LazySection>
           </GlassCard>
 
           {/* 손익 구조 Sankey 차트 */}
@@ -1552,125 +1335,45 @@ const CompanyDetail: React.FC<DetailProps> = ({
               매출 부문별 구성과 비용 구조를 통해 최종 순익이 어떻게 형성되는지
               시각적으로 보여줍니다.
             </p>
-            {isSankeysLoading ? (
-              <SkeletonSankey />
-            ) : sankeyChartData ? (
-              <div className="h-[500px]">
-                <IncomeSankeyChart
-                  data={sankeyChartData.data}
-                  totalRevenue={sankeyChartData.totalRevenue}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <svg
-                  className="w-12 h-12 mb-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            <LazySection fallback={<SkeletonSankey />}>
+              {isSankeysLoading ? (
+                <SkeletonSankey />
+              ) : sankeyChartData ? (
+                <div className="h-[500px]">
+                  <IncomeSankeyChart
+                    data={sankeyChartData.data}
+                    totalRevenue={sankeyChartData.totalRevenue}
                   />
-                </svg>
-                <p className="text-sm">순익흐름도 데이터가 없습니다.</p>
-              </div>
-            )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <svg
+                    className="w-12 h-12 mb-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                  <p className="text-sm">순익흐름도 데이터가 없습니다.</p>
+                </div>
+              )}
+            </LazySection>
           </GlassCard>
         </div>
         <div className="border-t border-gray-200 my-8" />
-        {/* 기업 전망 분석 */}
+        {/* 기업 전망 분석 - 뷰포트 진입 시 로딩 (LCP 최적화) */}
         <div ref={outlookRef} id="outlook" className="scroll-mt-32">
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-slate-800 mb-6">
               기업 전망 분석
             </h3>
-
-            {isOutlookLoading ? (
-              <SkeletonOutlook />
-            ) : outlookData ? (
-              <div className="space-y-6">
-                {/* 전망 요약 */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-lg font-bold text-slate-800">
-                      전망 요약
-                    </h4>
-                    <span className="text-xs text-gray-400">
-                      분석일시:{" "}
-                      {outlookData.analyzed_at
-                        ? new Date(outlookData.analyzed_at).toLocaleString(
-                            "ko-KR",
-                          )
-                        : "-"}
-                    </span>
-                  </div>
-                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
-                    {outlookData.analysis}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 긍정적 요인 */}
-                  <div className="bg-green-50 rounded-xl p-5 border border-green-100">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp size={20} className="text-green-600" />
-                      <h4 className="font-bold text-green-800">긍정적 요인</h4>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm text-green-700">
-                      <p>{outlookData.positive_factor}</p>
-                    </div>
-                  </div>
-
-                  {/* 리스크 요인 */}
-                  <div className="bg-red-50 rounded-xl p-5 border border-red-100">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingDown size={20} className="text-red-600" />
-                      <h4 className="font-bold text-red-800">리스크 요인</h4>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm text-red-700">
-                      <p>{outlookData.risk_factor}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 투자 의견 */}
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-slate-800">투자 의견</h4>
-                    <div className="flex gap-4">
-                      <span className="text-xs text-gray-500">
-                        뉴스 출처: {outlookData.data_sources?.news_count ?? 0}건
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        리포트 출처:{" "}
-                        {outlookData.data_sources?.report_count ?? 0}건
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-slate-700 leading-relaxed">
-                    {outlookData.opinion}
-                  </p>
-
-                  {outlookData.target_price && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <span className="text-sm text-gray-500">목표 주가: </span>
-                      <span className="text-lg font-bold text-blue-600">
-                        {outlookData.target_price.toLocaleString()}원
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Target size={48} className="mb-3 opacity-50" />
-                <p className="text-sm">기업 전망 데이터가 없습니다.</p>
-              </div>
-            )}
+            <OutlookSection companyCode={companyCode} />
           </GlassCard>
         </div>
 

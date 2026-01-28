@@ -10,6 +10,11 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Layout/Navbar";
 import FavoritesSidebar from "./components/Layout/FavoritesSidebar";
+import SearchModal from "./components/Layout/SearchModal";
+import { PageView } from "./types";
+import { StarredProvider, useStarred } from "./context/StarredContext";
+import { logout } from "./api/users";
+import { notifyAuthChange, useAuth } from "./hooks/useAuth";
 import Dashboard from "./pages/Dashboard";
 import CompanyDetail from "./pages/CompanyDetail";
 import IndustryAnalysis from "./pages/IndustryCompare";
@@ -17,11 +22,6 @@ import CompanyCompare from "./pages/CompanyCompare";
 import CompanySearch from "./pages/CompanySearch";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
-import SearchModal from "./components/Layout/SearchModal";
-import { PageView } from "./types";
-import { StarredProvider, useStarred } from "./context/StarredContext";
-import { logout } from "./api/users";
-import { notifyAuthChange, useAuth } from "./hooks/useAuth";
 
 // URL 경로와 PageView 매핑
 const PATH_TO_PAGE: Record<string, PageView> = {
@@ -102,7 +102,7 @@ function CompanyDetailPage() {
           onLogout={handleLogout}
         />
       </div>
-      <main className="container mx-auto px-4 pt-6 max-w-7xl">
+      <main className="container mx-auto px-4 pt-6 max-w-7xl min-h-[calc(100vh-8rem)]">
         {/* URL 파라미터 id를 우선적으로 사용 */}
         <CompanyDetail
           setPage={handlePageChange}
@@ -133,11 +133,10 @@ function CompanyDetailPage() {
       {/* 즐겨찾기 사이드바 */}
       <FavoritesSidebar onShowLogin={() => setShowLogin(true)} />
 
-      {/* 로그인 모달 */}
+      {/* 로그인/회원가입 모달 */}
       {showLogin && (
         <Login setPage={handlePageChange} onClose={() => setShowLogin(false)} />
       )}
-      {/* 회원가입 모달 */}
       {showSignUp && (
         <SignUp
           setPage={handlePageChange}
@@ -307,7 +306,9 @@ function App() {
 
       <main
         className={
-          isDashboard ? "w-full" : "container mx-auto px-4 pt-6 max-w-7xl"
+          isDashboard
+            ? "w-full"
+            : "container mx-auto px-4 pt-6 max-w-7xl min-h-[calc(100vh-8rem)]"
         }
       >
         {renderPage()}
