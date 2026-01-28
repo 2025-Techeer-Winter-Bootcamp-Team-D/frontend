@@ -397,7 +397,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
             };
           })
           .filter((item: OhlcvItem) => item.time !== 0)
-          .reverse(); // 최신순 -> 오래된순으로 정렬
+          .reverse();
       } catch (error) {
         console.error("주가 데이터 조회 실패:", error);
         throw error;
@@ -1528,6 +1528,15 @@ const CompanyDetail: React.FC<DetailProps> = ({
                       | CompanyReportItem
                       | undefined;
 
+                    // extracted_info가 null이면 표시하지 않음
+                    if (
+                      !query.isLoading &&
+                      !query.isError &&
+                      !analysisData?.extracted_info
+                    ) {
+                      return null;
+                    }
+
                     return (
                       <div
                         key={report?.rcept_no || idx}
@@ -1549,80 +1558,72 @@ const CompanyDetail: React.FC<DetailProps> = ({
                               분석 데이터 로드 중 오류가 발생했습니다.
                             </p>
                           </div>
-                        ) : analysisData?.extracted_info ? (
-                          <div className="relative">
-                            <button
-                              onClick={() => {
-                                if (report?.report_url)
-                                  window.open(
-                                    report.report_url,
-                                    "_blank",
-                                    "noopener,noreferrer",
-                                  );
-                              }}
-                              className="absolute top-0 right-0 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                            >
-                              공시 원본 보기
-                            </button>
-                            <div className="flex gap-8">
-                              <div className="flex-shrink-0 w-64">
-                                <h3 className="text-2xl font-bold text-red-600 leading-tight mb-3">
-                                  {report?.report_name}
-                                </h3>
-                                <p className="text-sm text-gray-500">
-                                  기준 일시:{" "}
-                                  {report?.submitted_at
-                                    ? report.submitted_at.split("T")[0]
-                                    : "-"}
-                                </p>
-                              </div>
-                              <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                <table className="w-full text-sm">
-                                  <tbody>
-                                    {analysisData.extracted_info?.key_info &&
-                                      Object.entries(
-                                        analysisData.extracted_info.key_info,
-                                      ).map(([key, value], i) => (
-                                        <tr
-                                          key={key}
-                                          className={
-                                            i % 2 === 0
-                                              ? "bg-gray-50"
-                                              : "bg-white"
-                                          }
-                                        >
-                                          <td className="px-4 py-3 font-medium text-gray-600 w-40 border-r border-gray-100">
-                                            {key}
-                                          </td>
-                                          <td className="px-4 py-3 text-gray-800">
-                                            {value as string}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    {analysisData.extracted_info?.summary
-                                      ?.one_line && (
-                                      <tr className="bg-white">
+                        ) : (
+                          <div className="flex gap-8">
+                            <div className="flex-shrink-0 w-64">
+                              <h3 className="text-2xl font-bold text-red-600 leading-tight mb-3">
+                                {report?.report_name}
+                              </h3>
+                              <p className="text-sm text-gray-500 mb-3">
+                                기준 일시:{" "}
+                                {report?.submitted_at
+                                  ? report.submitted_at.split("T")[0]
+                                  : "-"}
+                              </p>
+                              <button
+                                onClick={() => {
+                                  if (report?.report_url)
+                                    window.open(
+                                      report.report_url,
+                                      "_blank",
+                                      "noopener,noreferrer",
+                                    );
+                                }}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                              >
+                                공시 원본 보기
+                              </button>
+                            </div>
+                            <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                              <table className="w-full text-sm">
+                                <tbody>
+                                  {analysisData.extracted_info?.key_info &&
+                                    Object.entries(
+                                      analysisData.extracted_info.key_info,
+                                    ).map(([key, value], i) => (
+                                      <tr
+                                        key={key}
+                                        className={
+                                          i % 2 === 0
+                                            ? "bg-gray-50"
+                                            : "bg-white"
+                                        }
+                                      >
                                         <td className="px-4 py-3 font-medium text-gray-600 w-40 border-r border-gray-100">
-                                          요약
+                                          {key}
                                         </td>
                                         <td className="px-4 py-3 text-gray-800">
-                                          {
-                                            analysisData.extracted_info.summary
-                                              .one_line
-                                          }
+                                          {value as string}
                                         </td>
                                       </tr>
-                                    )}
-                                  </tbody>
-                                </table>
-                              </div>
+                                    ))}
+                                  {analysisData.extracted_info?.summary
+                                    ?.one_line && (
+                                    <tr className="bg-white">
+                                      <td className="px-4 py-3 font-medium text-gray-600 w-40 border-r border-gray-100">
+                                        요약
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-800">
+                                        {
+                                          analysisData.extracted_info.summary
+                                            .one_line
+                                        }
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="text-center text-gray-400 py-4">
-                            <p className="text-sm">
-                              분석 데이터를 불러올 수 없습니다.
-                            </p>
                           </div>
                         )}
                       </div>

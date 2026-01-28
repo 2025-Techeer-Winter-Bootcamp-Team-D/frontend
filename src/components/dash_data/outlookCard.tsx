@@ -80,9 +80,9 @@ const OutlookCard: React.FC<OutlookCardProps> = ({ data }) => {
         >
           <div className="flex justify-between items-center mb-3">
             <h4 className="text-lg font-bold text-black flex items-center gap-2">
-              <motion.span variants={iconVariants}>
+              {/* <motion.span variants={iconVariants}>
                 <Target size={20} className="text-[#0046FF]" />
-              </motion.span>
+              </motion.span> */}
               전망 요약
             </h4>
             <span className="text-xs text-gray-500">
@@ -104,9 +104,9 @@ const OutlookCard: React.FC<OutlookCardProps> = ({ data }) => {
             variants={cardVariants}
           >
             <div className="flex items-center gap-2 mb-4">
-              <motion.span variants={iconVariants}>
+              {/* <motion.span variants={iconVariants}>
                 <TrendingUp size={20} className="text-emerald-500" />
-              </motion.span>
+              </motion.span> */}
               <h4 className="font-bold text-emerald-500">긍정적 요인</h4>
             </div>
             <div className="space-y-2">
@@ -134,9 +134,9 @@ const OutlookCard: React.FC<OutlookCardProps> = ({ data }) => {
             variants={cardVariants}
           >
             <div className="flex items-center gap-2 mb-4">
-              <motion.span variants={iconVariants}>
+              {/* <motion.span variants={iconVariants}>
                 <TrendingDown size={20} className="text-rose-500" />
-              </motion.span>
+              </motion.span> */}
               <h4 className="font-bold text-rose-500">리스크 요인</h4>
             </div>
             <div className="space-y-2">

@@ -108,7 +108,32 @@ export function useComparisonDetail(activeSetId: number | null) {
                 signal,
               );
               const financialData = financialRes.data?.data;
-              const latestStatement = financialData?.financial_statements?.[0];
+              const statements = financialData?.financial_statements ?? [];
+              const latestStatement = statements[0];
+
+              // 모든 연도 데이터 추출 (최대 4년)
+              const yearlyData = statements
+                .slice(0, 4)
+                .map(
+                  (stmt: {
+                    fiscal_year: number;
+                    revenue: number;
+                    operating_profit: number;
+                    net_income: number;
+                  }) => ({
+                    year: String(stmt.fiscal_year),
+                    revenue: stmt.revenue
+                      ? Math.round(stmt.revenue / 100000000)
+                      : 0,
+                    operatingProfit: stmt.operating_profit
+                      ? Math.round(stmt.operating_profit / 100000000)
+                      : 0,
+                    netIncome: stmt.net_income
+                      ? Math.round(stmt.net_income / 100000000)
+                      : 0,
+                  }),
+                )
+                .reverse(); // 오래된 연도가 먼저 오도록 정렬
 
               return {
                 stock_code: company.stock_code,
@@ -132,6 +157,7 @@ export function useComparisonDetail(activeSetId: number | null) {
                 yoy: latestStatement?.yoy_revenue ?? 0,
                 qoq: 0,
                 operatingMargin: latestStatement?.operating_profit_margin ?? 0,
+                yearlyData,
               };
             } catch (error) {
               // AbortError는 무시 (정상적인 취소)
@@ -157,6 +183,7 @@ export function useComparisonDetail(activeSetId: number | null) {
                 yoy: 0,
                 qoq: 0,
                 operatingMargin: 0,
+                yearlyData: [],
               };
             }
           },

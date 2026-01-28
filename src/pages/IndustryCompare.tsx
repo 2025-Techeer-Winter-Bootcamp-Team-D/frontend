@@ -1398,7 +1398,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       type="number"
                       dataKey="z"
                       domain={["dataMin", "dataMax"]}
-                      range={[50, 400]}
+                      range={[200, 1000]}
                       name="시가총액"
                     />
                     <Tooltip
@@ -1581,7 +1581,7 @@ const IndustryAnalysis: React.FC<AnalysisProps> = ({
                       type="number"
                       dataKey="z"
                       domain={["dataMin", "dataMax"]}
-                      range={[50, 400]}
+                      range={[200, 1000]}
                       name="시가총액"
                     />
                     <Tooltip

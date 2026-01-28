@@ -44,32 +44,39 @@ const StockChart: React.FC<StockChartProps> = ({
     return [min - padding, max + padding];
   };
 
-  // 기간에 따른 시간 포맷 함수
+  // 기간에 따른 시간 포맷 함수 (bucket 문자열에서 직접 추출)
   const formatTimeLabel = (
     bucket: string | undefined,
-    timestamp: number,
     period: string,
   ): string => {
-    const date = bucket ? new Date(bucket) : new Date(timestamp * 1000);
-    if (isNaN(date.getTime())) return bucket || "";
+    if (!bucket) return "";
 
-    if (period === "1D") {
-      return date.toLocaleTimeString("ko-KR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-    } else {
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${month}/${day}`;
+    // bucket 형식: "2024-01-23T14:30:00" 또는 "2024-01-23 14:30:00"
+    const dateTimeParts = bucket.replace("T", " ").split(" ");
+    const datePart = dateTimeParts[0] || "";
+    const timePart = dateTimeParts[1] || "";
+
+    const [year, month, day] = datePart.split("-");
+    const [hour, minute] = timePart.split(":");
+
+    switch (period) {
+      case "1D":
+        return `${hour || "00"}:${minute || "00"}`;
+      case "1W":
+        return `${month}/${day} ${hour || "00"}:00`;
+      case "1M":
+        return `${month}/${day}`;
+      case "1Y":
+        return `${year?.slice(2) || "00"}.${month}`;
+      default:
+        return `${month}/${day}`;
     }
   };
 
   const data = useMemo(() => {
     if (!rawData || rawData.length === 0) return [];
     return rawData.map((item) => ({
-      time: formatTimeLabel(item.bucket, item.time, period),
+      time: formatTimeLabel(item.bucket, period),
       price: item.close,
     }));
   }, [rawData, period]);

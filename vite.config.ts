@@ -13,8 +13,9 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       proxy: {
         "/api": {
-          target: "http://localhost:8000/",
+          target: "https://api.quasa.info",
           changeOrigin: true,
+          secure: false,
         },
       },
     },

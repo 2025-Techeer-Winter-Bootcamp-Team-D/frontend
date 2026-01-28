@@ -137,14 +137,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     setShowDropdown(false);
   };
 
-  // 스크롤 감지하여 Navbar 표시 여부 결정
+  // 컴포넌트 마운트 시 Navbar 항상 표시
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      onShowNavbar(scrollY > 100);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    onShowNavbar(true);
   }, [onShowNavbar]);
 
   return (
@@ -161,17 +156,17 @@ const Dashboard: React.FC<DashboardProps> = ({
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#0046FF] font-semibold text-sm mb-8 border border-blue-100">
               <Zap size={14} fill="currentColor" />
-              <span>QUASA Intelligence v2.5 정식 출시</span>
+              <span>QUAntitative Stock Analysis</span>
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-quasa-dark leading-[1.1] mb-8 tracking-tight">
-              기업을
+              기업의 가치,
               <br />
-              <span className="text-[#0046FF]">분석</span>하다.
+              <span className="text-[#0046FF]">데이터</span>로 읽다.
             </h1>
-            <p className="text-lg md:text-xl font-normal text-quasa-gray mb-12 leading-relaxed">
-              전자공시시스템의 파편화된 데이터를 인공지능이 통합 분석합니다.{" "}
-              <br className="hidden md:block" />
-              복잡한 재무제표를 QUASA만의 인사이트로 재정의하세요.
+            <p className="text-base md:text-lg font-normal text-quasa-gray mb-12 leading-relaxed">
+              파편화된 공시 데이터를 AI가 하나의 흐름으로 통합합니다.{" "}
+              <br className="hidden md:block text-md" />
+              복잡한 재무제표를 QUASA만의 직관적인 인사이트로 재정의하세요.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <button
@@ -434,19 +429,10 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Corporate Comparison Section */}
       <section className="py-40 px-6 bg-[#f9fafb]">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-24 items-center">
-          <div
-            className="flex-1 w-full cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onClick={() => setPage(PageView.COMPANY_COMPARE)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setPage(PageView.COMPANY_COMPARE);
-              }
-            }}
-          >
-            <ComparisonGrid />
+          <div className="flex-1 w-full">
+            <ComparisonGrid
+              onNavigate={() => setPage(PageView.COMPANY_COMPARE)}
+            />
           </div>
           <div className="flex-1">
             <motion.h2
@@ -455,27 +441,25 @@ const Dashboard: React.FC<DashboardProps> = ({
               viewport={{ once: true }}
               className="text-2xl md:text-4xl font-bold text-quasa-dark mb-4 tracking-tight"
             >
-              라이벌 기업과
+              라이벌 기업들과
               <br />
-              <span className="text-[#0046FF]">1:1 실시간 대조</span>
+              <span className="text-[#0046FF]">실시간 대조</span>
             </motion.h2>
             <p className="text-lg text-quasa-gray font-medium leading-relaxed mb-16">
-              동종 업계 라이벌들의 재무 체력을 클릭 한 번으로 비교 분석하세요.
+              동종 업계 라이벌들의 재무 지표를 클릭 한 번으로 비교 분석하세요.
+              <br />
               퀀트 기반의 상대적 가치 평가가 즉시 이루어집니다.
             </p>
             <div className="space-y-6">
               <ComparisonFeature
                 number="01"
-                text="상대적 밸류에이션 실시간 산출"
+                text="기업별 매출액 및 주가 비교"
               />
               <ComparisonFeature
                 number="02"
-                text="부문별 시장 점유율 시각적 비교"
+                text="기업별 이익성장성 대비 시장평가 비교"
               />
-              <ComparisonFeature
-                number="03"
-                text="AI 기반 라이벌 매칭 시스템"
-              />
+              <ComparisonFeature number="03" text="기업별 투자지표 비교" />
             </div>
           </div>
         </div>
@@ -518,11 +502,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               <span className="text-[#0046FF]">분석</span>에서 시작됩니다.
             </h2>
             <button
-              onClick={() => setPage(PageView.SIGN_UP)}
+              onClick={() => setPage(PageView.COMPANY_SEARCH)}
               className="group relative bg-[#0046FF] text-white text-base font-semibold px-8 py-4 rounded-xl hover:opacity-90 transition-all shadow-lg overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-2">
-                무료로 시작하기{" "}
+                대시보드로 이동하기{" "}
                 <ChevronRight
                   size={18}
                   className="group-hover:translate-x-1 transition-transform"

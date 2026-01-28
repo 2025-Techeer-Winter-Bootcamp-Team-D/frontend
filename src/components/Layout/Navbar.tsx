@@ -48,17 +48,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   : "text-gray-500 hover:text-slate-800 font-medium"
               }`}
             >
-              기업검색
-            </button>
-            <button
-              onClick={() => setPage(PageView.COMPANY_DETAIL)}
-              className={`text-sm transition-colors ${
-                currentPage === PageView.COMPANY_DETAIL
-                  ? "text-[#0046ff] font-bold"
-                  : "text-gray-500 hover:text-slate-800 font-medium"
-              }`}
-            >
-              기업정보
+              대시보드
             </button>
             <button
               onClick={() => setPage(PageView.COMPANY_COMPARE)}

@@ -106,7 +106,7 @@ const OutlookSection: React.FC<OutlookSectionProps> = ({ companyCode }) => {
             {/* 긍정적 요인 */}
             <div className="bg-green-50 rounded-xl p-5 border border-green-100">
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={20} className="text-green-600" />
+                {/* <TrendingUp size={20} className="text-green-600" /> */}
                 <h4 className="font-bold text-green-800">긍정적 요인</h4>
               </div>
               <div className="flex items-start gap-2 text-sm text-green-700">
@@ -117,7 +117,7 @@ const OutlookSection: React.FC<OutlookSectionProps> = ({ companyCode }) => {
             {/* 리스크 요인 */}
             <div className="bg-red-50 rounded-xl p-5 border border-red-100">
               <div className="flex items-center gap-2 mb-4">
-                <TrendingDown size={20} className="text-red-600" />
+                {/* <TrendingDown size={20} className="text-red-600" /> */}
                 <h4 className="font-bold text-red-800">리스크 요인</h4>
               </div>
               <div className="flex items-start gap-2 text-sm text-red-700">

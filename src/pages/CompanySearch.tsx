@@ -120,7 +120,9 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const ITEMS_PER_PAGE = 10;
 
   // 시장 지수 데이터
   const {
@@ -277,6 +279,13 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     setSearchQuery("");
     navigate(`/company/${code}`);
   };
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(rankingData.length / ITEMS_PER_PAGE);
+  const paginatedData = rankingData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
 
   // 검색 드롭다운과 랭킹 테이블 분리 - 테이블은 항상 랭킹 데이터만 표시
 
@@ -591,14 +600,14 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     </tr>
                   ))}
                 {!isRankingLoading &&
-                  rankingData.map((item: RankingItem, index: number) => (
+                  paginatedData.map((item: RankingItem, index: number) => (
                     <tr
                       key={item.code}
                       onClick={() => handleCompanyClick(item.code)}
                       className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
                     >
                       <td className="px-4 py-4 text-center font-bold text-slate-500">
-                        {index + 1}
+                        {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
                       </td>
                       <td
                         className="px-4 py-4 text-center"
@@ -641,6 +650,45 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* 페이지네이션 */}
+          {!isRankingLoading && totalPages > 1 && (
+            <div className="p-4 border-t border-gray-100 flex justify-center items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 text-slate-600"
+              >
+                이전
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? "bg-[#0046ff] text-white"
+                          : "hover:bg-gray-100 text-slate-600"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
+              </div>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 text-slate-600"
+              >
+                다음
+              </button>
+            </div>
+          )}
         </GlassCard>
       </div>
     </div>

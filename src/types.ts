@@ -199,6 +199,14 @@ export interface IndustryAnalysisResponse {
 // Comparison API Types
 // ============================================
 
+// 연도별 재무 데이터
+export interface YearlyFinancial {
+  year: string;
+  revenue: number;
+  operatingProfit: number;
+  netIncome: number;
+}
+
 export interface CompareCompany {
   stock_code: string;
   companyName: string;
@@ -213,6 +221,7 @@ export interface CompareCompany {
   yoy?: number;
   qoq?: number;
   operatingMargin?: number;
+  yearlyData?: YearlyFinancial[];
 }
 
 export interface Comparison {

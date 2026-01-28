@@ -39,7 +39,6 @@ const Login: React.FC<LoginProps> = ({ setPage, onClose, onLogin }) => {
         notifyAuthChange();
         onLogin?.();
         onClose();
-        setPage(PageView.DASHBOARD);
       } else {
         setError("로그인 응답에 토큰이 없습니다.");
       }

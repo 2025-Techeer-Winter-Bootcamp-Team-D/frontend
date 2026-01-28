@@ -461,22 +461,63 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
   // Chart Data (Memoized)
   // -----------------------------
 
-  // 차트 데이터 생성 (API 데이터 기반)
+  // 차트 데이터 생성 (API 데이터 기반 - 모든 연도 표시)
   const financialChartData = useMemo(() => {
     if (!activeComparison?.companies?.length) return [];
 
-    const metricMap: Record<MetricType, keyof CompareCompany> = {
-      revenue: "revenue",
-      operating: "operatingProfit",
-      net: "netIncome",
-      marketCap: "marketCap",
-    };
+    // 시가총액은 연도별 데이터가 없으므로 현재 값만 표시
+    if (selectedMetric === "marketCap") {
+      return [{ year: "현재" }].map((item) => {
+        const dataPoint: Record<string, string | number> = { ...item };
+        activeComparison.companies.forEach((company) => {
+          dataPoint[company.companyName] = company.marketCap ?? 0;
+        });
+        return dataPoint;
+      });
+    }
 
-    return [{ year: "현재" }].map((item) => {
-      const dataPoint: Record<string, string | number> = { ...item };
+    // 모든 기업의 연도 데이터에서 공통 연도 추출
+    const allYears = new Set<string>();
+    activeComparison.companies.forEach((company) => {
+      company.yearlyData?.forEach((yd) => allYears.add(yd.year));
+    });
+
+    // 연도 오름차순 정렬
+    const sortedYears = Array.from(allYears).sort();
+
+    if (sortedYears.length === 0) {
+      // yearlyData가 없으면 현재 값만 표시
+      return [{ year: "현재" }].map((item) => {
+        const dataPoint: Record<string, string | number> = { ...item };
+        activeComparison.companies.forEach((company) => {
+          if (selectedMetric === "revenue") {
+            dataPoint[company.companyName] = company.revenue ?? 0;
+          } else if (selectedMetric === "operating") {
+            dataPoint[company.companyName] = company.operatingProfit ?? 0;
+          } else if (selectedMetric === "net") {
+            dataPoint[company.companyName] = company.netIncome ?? 0;
+          }
+        });
+        return dataPoint;
+      });
+    }
+
+    // 각 연도별로 차트 데이터 생성
+    return sortedYears.map((year) => {
+      const dataPoint: Record<string, string | number> = { year };
       activeComparison.companies.forEach((company) => {
-        dataPoint[company.companyName] =
-          company[metricMap[selectedMetric]] ?? 0;
+        const yearData = company.yearlyData?.find((yd) => yd.year === year);
+        if (yearData) {
+          if (selectedMetric === "revenue") {
+            dataPoint[company.companyName] = yearData.revenue;
+          } else if (selectedMetric === "operating") {
+            dataPoint[company.companyName] = yearData.operatingProfit;
+          } else if (selectedMetric === "net") {
+            dataPoint[company.companyName] = yearData.netIncome;
+          }
+        } else {
+          dataPoint[company.companyName] = 0;
+        }
       });
       return dataPoint;
     });
@@ -1374,7 +1415,12 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={info.data}
-                            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                            margin={{
+                              top: 10,
+                              right: 10,
+                              left: -20,
+                              bottom: 0,
+                            }}
                           >
                             <CartesianGrid
                               strokeDasharray="3 3"
@@ -1386,6 +1432,8 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                               tick={{ fontSize: 12, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
+                              interval={0}
+                              height={35}
                             />
                             <YAxis
                               tick={{ fontSize: 12, fill: "#64748b" }}

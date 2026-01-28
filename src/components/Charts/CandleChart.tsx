@@ -74,30 +74,37 @@ const CandleStickShape = (props: CandleStickShapeProps) => {
   );
 };
 
-// 기간에 따른 시간 포맷 함수
+// 기간에 따른 시간 포맷 함수 (bucket 문자열에서 직접 추출)
 const formatTimeLabel = (
   bucket: string | undefined,
-  timestamp: number,
   period: string,
 ): string => {
-  const date = bucket ? new Date(bucket) : new Date(timestamp * 1000);
+  if (!bucket) return "";
 
-  if (isNaN(date.getTime())) {
-    return bucket || "";
-  }
+  // bucket 형식: "2024-01-23T14:30:00" 또는 "2024-01-23 14:30:00"
+  // 날짜와 시간 부분 분리
+  const dateTimeParts = bucket.replace("T", " ").split(" ");
+  const datePart = dateTimeParts[0] || ""; // "2024-01-23"
+  const timePart = dateTimeParts[1] || ""; // "14:30:00"
 
-  if (period === "1D") {
-    // 1D: 시간만 표시 (예: "14:30")
-    return date.toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  } else {
-    // 1W, 1M, 1Y: 날짜만 표시 (예: "01/23")
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${month}/${day}`;
+  const [year, month, day] = datePart.split("-");
+  const [hour, minute] = timePart.split(":");
+
+  switch (period) {
+    case "1D":
+      // 1D: 시간만 표시 (예: "14:30")
+      return `${hour || "00"}:${minute || "00"}`;
+    case "1W":
+      // 1W: 날짜와 시간 (예: "01/23 14:00")
+      return `${month}/${day} ${hour || "00"}:00`;
+    case "1M":
+      // 1M: 날짜만 (예: "01/23")
+      return `${month}/${day}`;
+    case "1Y":
+      // 1Y: 연월 (예: "24.01")
+      return `${year?.slice(2) || "00"}.${month}`;
+    default:
+      return `${month}/${day}`;
   }
 };
 
@@ -113,7 +120,7 @@ const CandleChart: React.FC<CandleChartProps> = ({
     }
 
     return rawData.map((item) => {
-      const timeLabel = formatTimeLabel(item.bucket, item.time, period);
+      const timeLabel = formatTimeLabel(item.bucket, period);
 
       return {
         time: timeLabel,

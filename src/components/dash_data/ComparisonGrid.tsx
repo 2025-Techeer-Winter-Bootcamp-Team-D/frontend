@@ -53,7 +53,11 @@ export const MOCK_COMPANIES: CompanyDataEx[] = [
 
 type Category = "매출액" | "영업이익" | "순이익" | "시가총액";
 
-const ComparisonGrid: React.FC = () => {
+interface ComparisonGridProps {
+  onNavigate?: () => void;
+}
+
+const ComparisonGrid: React.FC<ComparisonGridProps> = ({ onNavigate }) => {
   const [activeCategory, setActiveCategory] = useState<Category>("영업이익");
 
   const categories: Category[] = ["매출액", "영업이익", "순이익", "시가총액"];
@@ -160,10 +164,7 @@ const ComparisonGrid: React.FC = () => {
                 dataKey="name"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#8b95a1", fontSize: 13, fontWeight: 700 }}
-                dy={10}
-                // Only show "현재" once in the middle conceptually
-                interval={1}
+                tick={false}
               />
               <YAxis
                 axisLine={false}
@@ -220,7 +221,10 @@ const ComparisonGrid: React.FC = () => {
       </div>
 
       <div className="p-8 bg-blue-50/20 border-t border-gray-50 flex justify-center">
-        <button className="text-[#0046FF] font-black flex items-center gap-2 hover:opacity-80 transition-all text-sm tracking-tight">
+        <button
+          onClick={onNavigate}
+          className="text-[#0046FF] font-black flex items-center gap-2 hover:opacity-80 transition-all text-sm tracking-tight"
+        >
           실시간 종목 상세 분석하기
           <div className="w-5 h-5 bg-[#0046FF] rounded-full flex items-center justify-center text-white">
             <svg
