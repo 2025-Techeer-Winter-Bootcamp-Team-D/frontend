@@ -1587,7 +1587,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                             <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden">
                               <table className="w-full text-sm">
                                 <tbody>
-                                  {analysisData.extracted_info?.key_info &&
+                                  {analysisData?.extracted_info?.key_info &&
                                     Object.entries(
                                       analysisData.extracted_info.key_info,
                                     ).map(([key, value], i) => (
@@ -1607,7 +1607,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
                                         </td>
                                       </tr>
                                     ))}
-                                  {analysisData.extracted_info?.summary
+                                  {analysisData?.extracted_info?.summary
                                     ?.one_line && (
                                     <tr className="bg-white">
                                       <td className="px-4 py-3 font-medium text-gray-600 w-40 border-r border-gray-100">
@@ -1615,8 +1615,8 @@ const CompanyDetail: React.FC<DetailProps> = ({
                                       </td>
                                       <td className="px-4 py-3 text-gray-800">
                                         {
-                                          analysisData.extracted_info.summary
-                                            .one_line
+                                          analysisData.extracted_info?.summary
+                                            ?.one_line
                                         }
                                       </td>
                                     </tr>
