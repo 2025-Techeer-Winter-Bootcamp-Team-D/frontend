@@ -1174,14 +1174,14 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         x1={0}
                         x2={maxYoy}
                         y1={0}
-                        y2={avgPer}
+                        y2={38}
                         fill="#dcfce7"
                         fillOpacity={0.4}
                       />
                       <ReferenceArea
                         x1={minYoy}
                         x2={0}
-                        y1={avgPer}
+                        y1={38}
                         y2={maxPer}
                         fill="#fef2f2"
                         fillOpacity={0.4}
@@ -1192,11 +1192,11 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         strokeDasharray="5 5"
                       />
                       <ReferenceLine
-                        y={avgPer}
+                        y={38}
                         stroke="#94a3b8"
                         strokeDasharray="5 5"
                         label={{
-                          value: `평균 PER: ${avgPer.toFixed(1)}`,
+                          value: "산업 평균",
                           position: "right",
                           style: { fontSize: 10, fill: "#64748b" },
                         }}
@@ -1382,7 +1382,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                       key={key}
                       className="p-4 relative flex flex-col animate-fade-in-up"
                     >
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-bold text-slate-800">
                           {info.title}
                         </h3>
@@ -1411,14 +1411,14 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         </div>
                       </div>
 
-                      <div className="flex-1 min-h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-4 outline-none **:outline-none">
+                      <div className="flex-1 min-h-[250px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-1 outline-none **:outline-none">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={info.data}
                             margin={{
                               top: 10,
                               right: 10,
-                              left: -20,
+                              left: -15,
                               bottom: 0,
                             }}
                           >
@@ -1429,7 +1429,7 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                             />
                             <XAxis
                               dataKey="name"
-                              tick={{ fontSize: 12, fill: "#64748b" }}
+                              tick={{ fontSize: 11, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
                               interval={0}
