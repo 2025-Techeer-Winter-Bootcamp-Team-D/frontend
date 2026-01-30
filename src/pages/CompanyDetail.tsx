@@ -230,7 +230,7 @@ const CompanyDetail: React.FC<DetailProps> = ({
   });
 
   // 공시분석 탭에서 모든 분석을 한번에 가져오기
-  const MAX_ANALYSIS_COUNT = 10;
+  const MAX_ANALYSIS_COUNT = 20;
 
   const analysisQueries = useQueries({
     queries:
