@@ -1037,6 +1037,10 @@ const CompanyCompare: React.FC<CompareProps> = ({ setPage, onShowLogin }) => {
                         tick={{ fontSize: 12, fill: "#64748b" }}
                         axisLine={false}
                         tickLine={false}
+                        interval={Math.max(
+                          0,
+                          Math.floor(trendChartData.length / 8) - 1,
+                        )}
                       />
                       <YAxis
                         domain={["auto", "auto"]}
